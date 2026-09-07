@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
-import { doorSpan, localToWorld, wallFrame } from '../../geometry/frames';
+import { doorArc, doorSpan, localToWorld, wallFrame } from '../../geometry/frames';
 import { v3 } from '../../geometry/vec';
 import type { Door, Room } from '../../model/types';
 
@@ -9,6 +9,7 @@ type P3 = [number, number, number];
 
 const DOOR_OFFSET = 2; // mm proud of the wall, so the leaf never z-fights with it
 const ARC_SEGMENTS = 16;
+const FLOOR_Y = 1; // just above the floor plane, so the sweep lines are not z-fought away
 
 export function RoomMesh({ room, door, showRoom }: { room: Room; door: Door; showRoom: boolean }) {
   const { width: W, depth: D, height: H } = room;
@@ -30,13 +31,15 @@ export function RoomMesh({ room, door, showRoom }: { room: Room; door: Door; sho
     const span = doorSpan({ room, door });
     const frame = wallFrame(room, door.wall);
     const c = localToWorld(frame, v3((span.s0 + span.s1) / 2, door.height / 2, DOOR_OFFSET));
-    // Quarter-circle swing arc on the floor, hinged at the s0 end of the opening.
-    const arc: P3[] = Array.from({ length: ARC_SEGMENTS + 1 }, (_, i) => {
-      const a = (Math.PI / 2) * (i / ARC_SEGMENTS);
-      const p = localToWorld(frame, v3(span.s0 + door.width * Math.cos(a), 1, door.width * Math.sin(a)));
-      return [p.x, p.y, p.z];
-    });
-    return { position: [c.x, c.y, c.z] as P3, rotation: [0, frame.yaw, 0] as P3, arc };
+    // Swing arc and open leaf on the floor, hinged and swinging per the door's hinge / swing.
+    const swing = doorArc({ room, door }, ARC_SEGMENTS);
+    const floor = (v: { x: number; z: number }): P3 => [v.x, FLOOR_Y, v.z];
+    return {
+      position: [c.x, c.y, c.z] as P3,
+      rotation: [0, frame.yaw, 0] as P3,
+      arc: swing.arc.map(floor),
+      leaf: [floor(swing.hinge), floor(swing.tip)],
+    };
   }, [room, door]);
 
   return (
@@ -65,6 +68,7 @@ export function RoomMesh({ room, door, showRoom }: { room: Room; door: Door; sho
             <meshStandardMaterial color="#c8b7a6" side={THREE.DoubleSide} transparent opacity={0.45} depthWrite={false} />
           </mesh>
           <Line points={doorGeom.arc} color="#777" lineWidth={1} dashed dashSize={40} gapSize={25} />
+          <Line points={doorGeom.leaf} color="#777" lineWidth={1} dashed dashSize={40} gapSize={25} />
         </group>
       )}
     </group>

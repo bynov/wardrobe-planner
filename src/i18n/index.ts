@@ -22,7 +22,9 @@ export const tm = (lang: Lang, m: Msg): string => t(lang, m.key, m.params);
 export function tmDeep(lang: Lang, m: Msg): string {
   if (!m.params) return t(lang, m.key);
   const params: Params = {};
-  for (const [k, v] of Object.entries(m.params)) params[k] = typeof v === 'string' && v.startsWith('wall.') ? t(lang, v as MessageKey) : v;
+  // A param may itself carry a message key (a wall or a corner name), so those are translated too.
+  const nested = (v: string) => v.startsWith('wall.') || v.startsWith('corner.');
+  for (const [k, v] of Object.entries(m.params)) params[k] = typeof v === 'string' && nested(v) ? t(lang, v as MessageKey) : v;
   return t(lang, m.key, params);
 }
 

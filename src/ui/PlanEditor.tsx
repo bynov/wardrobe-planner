@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { WALLS } from '../geometry/frames';
+import { WALLS, cornerWalls, localToWorld, wallFrame } from '../geometry/frames';
+import { cornerShape } from '../geometry/corner';
+import { v3 } from '../geometry/vec';
 import { planView, wallName } from '../drawing/views';
 import type { Wall } from '../model/types';
 import { drawingToSvgParts } from '../render/svg';
@@ -35,6 +37,7 @@ export function PlanEditor({ big = false, onPick }: PlanEditorProps = {}) {
   const project = useStore((s) => s.project);
   const lastValid = useStore((s) => s.lastValid);
   const selected = useStore((s) => s.ui.selection.wall);
+  const selectedCorner = useStore((s) => s.ui.selection.corner);
   const select = useStore((s) => s.select);
   const { lang, t } = useT();
 
@@ -84,6 +87,31 @@ export function PlanEditor({ big = false, onPick }: PlanEditorProps = {}) {
                   </text>
                 )}
               </g>
+            );
+          })}
+        </g>
+
+        {/* corner hit shapes, above the wall bands: clicking the corner unit (or the square where
+            two runs overlap) opens that corner in the inspector rather than picking a wall */}
+        <g>
+          {WALLS.map((anchor) => {
+            const f = wallFrame(view.p.room, cornerWalls(anchor).a);
+            const pts = cornerShape(view.p, anchor)
+              .map((q) => localToWorld(f, v3(q.x, 0, q.y)))
+              .map((w) => `${w.x},${w.z}`) // plan SVG: x = world x, y = world z
+              .join(' ');
+            return (
+              <polygon
+                key={`corner-${anchor}`}
+                className={`cornerhit${anchor === selectedCorner ? ' on' : ''}`}
+                points={pts}
+                onClick={() => {
+                  select({ wall: cornerWalls(anchor).a, corner: anchor });
+                  onPick?.();
+                }}
+              >
+                <title>{t(`corner.${anchor}`)}</title>
+              </polygon>
             );
           })}
         </g>

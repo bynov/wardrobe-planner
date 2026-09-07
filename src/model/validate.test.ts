@@ -4,6 +4,7 @@ import { MAX_ROOM_DIM, validate } from './validate';
 import { MAX_DRAWER_FRONT } from '../geometry/layout';
 import { tmDeep } from '../i18n';
 import { makeUnit, makeZone } from './factory';
+import type { Zone } from './types';
 
 const clone = (p: ReturnType<typeof defaultProject>) => structuredClone(p);
 
@@ -83,7 +84,7 @@ describe('validate', () => {
     expect(validate(q).some((e) => e.message.key === 'error.zoneHeight')).toBe(true);
   });
 
-  it('error.shelfCount: 0 shelves', () => {
+  it('error.shelfCount: 0 compartments', () => {
     const q = clone(defaultProject());
     const unit = q.wardrobe.walls.back.segments[0][0];
     if (unit.kind === 'unit') unit.zones = [makeZone('shelves', null, 0)];
@@ -160,7 +161,7 @@ describe('validate', () => {
 
   it('per-unit errors name the wall and the 1-based unit across both segments', () => {
     const q = clone(defaultProject());
-    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100 };
+    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     q.wardrobe.walls.back.segments = [
       [makeUnit(300, [makeZone('open')])],
       [makeUnit(100, [makeZone('open')])], // too narrow -> unit 2 of the wall
@@ -176,8 +177,34 @@ describe('validate', () => {
     const q = clone(defaultProject());
     q.wardrobe.walls.back.segments[0].push(makeUnit(600, [makeZone('open')]));
     expect(validate(q).find((e) => e.message.key === 'error.segmentOverflow')!.message.params?.segment).toBe('');
-    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100 };
+    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     expect(validate(q).find((e) => e.message.key === 'error.segmentOverflow')!.message.params?.segment).toBe(' #1');
+  });
+
+  it('error.doorSwingBlocked: an inward door in the corner sweeps into a side wall run', () => {
+    const q = clone(defaultProject());
+    q.door = { wall: 'front', offset: 0, width: 800, height: 2100, swing: 'in', hinge: 'left' };
+    const err = validate(q).find((e) => e.message.key === 'error.doorSwingBlocked');
+    expect(err).toBeTruthy();
+    expect(err!.message.params?.unit).toBe(1);
+    // offset 0 is measured from the world x = 0 corner, so the leaf sweeps into the LEFT run.
+    expect(err!.message.params?.wall).toBe('wall.left');
+    // The path points at the blocking unit itself, so the error chip in the inspector selects it.
+    expect(err!.path).toBe('walls.left.segments.0.0');
+    expect(tmDeep('en', err!.message)).toContain('blocked by');
+  });
+
+  it('the same door opening outwards is never blocked', () => {
+    const q = clone(defaultProject());
+    q.door = { wall: 'front', offset: 0, width: 800, height: 2100, swing: 'out', hinge: 'left' };
+    expect(validate(q).some((e) => e.message.key === 'error.doorSwingBlocked')).toBe(false);
+  });
+
+  it('the default door swings into free floor', () => {
+    expect(validate(defaultProject()).some((e) => e.message.key === 'error.doorSwingBlocked')).toBe(false);
+    const q = clone(defaultProject());
+    q.door.hinge = 'right';
+    expect(validate(q).some((e) => e.message.key === 'error.doorSwingBlocked')).toBe(false);
   });
 
   it('tmDeep renders the wall.* param', () => {
@@ -186,5 +213,89 @@ describe('validate', () => {
     const err = validate(q).find((e) => e.message.key === 'error.wallDepth');
     expect(err).toBeTruthy();
     expect(tmDeep('en', err!.message)).toContain('Back wall');
+  });
+});
+
+describe('validate: corners', () => {
+  const lshelf = (width: number, shelves = 6) => {
+    const q = clone(defaultProject());
+    q.wardrobe.corners.back = { mode: 'lshelf', width, shelves };
+    return q;
+  };
+
+  it('a "none" corner is never checked', () => {
+    const q = clone(defaultProject());
+    q.wardrobe.corners.back = { mode: 'none', width: 10, shelves: -3 };
+    expect(validate(q).some((e) => e.message.key.startsWith('error.corner'))).toBe(false);
+  });
+
+  it('the default 1000 mm leg fits the default room', () => {
+    expect(validate(lshelf(1000)).some((e) => e.message.key === 'error.cornerWidth')).toBe(false);
+  });
+
+  it('error.cornerWidth: a leg shorter than the deeper run + 100', () => {
+    const err = validate(lshelf(650)).find((e) => e.message.key === 'error.cornerWidth');
+    expect(err).toBeTruthy();
+    expect(err!.path).toBe('corners.back');
+    expect(err!.message.params).toMatchObject({ corner: 'corner.back', min: 700, max: 1000 });
+    expect(tmDeep('en', err!.message)).toBe('Back-left corner: leg length must be between 700 and 1000 mm');
+  });
+
+  it('error.cornerWidth: a leg longer than half of either wall', () => {
+    // the left wall is 2000 long, so 1100 > 1000 is too long even though the back wall is 2400
+    expect(validate(lshelf(1100)).some((e) => e.message.key === 'error.cornerWidth')).toBe(true);
+  });
+
+  it('error.cornerShelves: fewer than one compartment', () => {
+    const err = validate(lshelf(1000, 0)).find((e) => e.message.key === 'error.cornerShelves');
+    expect(err).toBeTruthy();
+    expect(err!.path).toBe('corners.back');
+    expect(validate(lshelf(1000, -1)).some((e) => e.message.key === 'error.cornerShelves')).toBe(true);
+    // one compartment is legal: an open corner bay with no board in it
+    expect(validate(lshelf(1000, 1)).some((e) => e.message.key === 'error.cornerShelves')).toBe(false);
+  });
+});
+
+describe('validate: rail height', () => {
+  // Back wall, unit 1: a 600 mm drawers zone under a hanging zone that takes the rest.
+  const withRod = (rod: Zone['rod'] | undefined) => {
+    const q = clone(defaultProject());
+    const u = makeUnit(600, [makeZone('drawers', 600, 3), { ...makeZone('hanging'), rod }]);
+    q.wardrobe.walls.back.segments[0][0] = u;
+    return q;
+  };
+  const rodErrors = (rod: Zone['rod'] | undefined) => validate(withRod(rod)).filter((e) => e.message.key === 'error.rodOutOfZone');
+
+  it('an auto rail is never checked', () => {
+    expect(rodErrors(undefined)).toHaveLength(0);
+  });
+
+  it('a rail inside the zone is accepted from either end', () => {
+    expect(rodErrors({ from: 'top', offset: 100 })).toHaveLength(0);
+    expect(rodErrors({ from: 'bottom', offset: 100 })).toHaveLength(0);
+  });
+
+  it('error.rodOutOfZone: too close to the top of the zone', () => {
+    const err = rodErrors({ from: 'top', offset: 39 })[0];
+    expect(err).toBeTruthy();
+    expect(err.path).toBe('walls.back.segments.0.0.zones.1');
+    expect(err.message.params).toMatchObject({ wall: 'wall.back', unit: 1 });
+    expect(tmDeep('en', err.message)).toBe('Back wall, unit 1: the rail must lie inside its zone (40 mm clearance)');
+  });
+
+  it('error.rodOutOfZone: below the bottom of the zone', () => {
+    expect(rodErrors({ from: 'bottom', offset: 39 })).toHaveLength(1);
+    expect(rodErrors({ from: 'bottom', offset: 5000 })).toHaveLength(1);
+  });
+
+  it('error.rodOutOfZone: a negative offset lands outside the zone from either end', () => {
+    expect(rodErrors({ from: 'top', offset: -10 })).toHaveLength(1);
+    expect(rodErrors({ from: 'bottom', offset: -10 })).toHaveLength(1);
+  });
+
+  it('a rod on a non-hanging zone is ignored', () => {
+    const q = clone(defaultProject());
+    q.wardrobe.walls.back.segments[0][0] = makeUnit(600, [{ ...makeZone('shelves', null, 2), rod: { from: 'top', offset: -10 } }]);
+    expect(validate(q).some((e) => e.message.key === 'error.rodOutOfZone')).toBe(false);
   });
 });

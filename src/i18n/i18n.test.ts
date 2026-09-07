@@ -5,7 +5,7 @@ import { LANGS, detectLang, msg, t, tm } from './index';
 import { WALLS } from '../geometry/frames';
 import { MATERIALS, PART_NAME_KEYS } from '../geometry/parts';
 import { PRESET_KEYS } from '../model/presets';
-import { ZONE_TYPES } from '../model/types';
+import { CORNER_MODES, DOOR_HINGES, DOOR_SWINGS, ROD_REFS, ZONE_TYPES } from '../model/types';
 
 describe('i18n', () => {
   it('ru has exactly the en keys', () => {
@@ -34,6 +34,13 @@ describe('i18n', () => {
     ['wall.abbr.', WALLS],
     ['preset.', PRESET_KEYS],
     ['ui.lang.', LANGS],
+    ['ui.swing.', DOOR_SWINGS],
+    ['ui.swingOpt.', DOOR_SWINGS],
+    ['ui.hinge.', DOOR_HINGES],
+    ['ui.rodFrom.', ROD_REFS],
+    ['corner.', WALLS],
+    ['corner.tag.', WALLS],
+    ['corner.mode.', CORNER_MODES],
   ])('%s has a key for every value', (prefix, values) => {
     for (const v of values as readonly string[]) {
       const key = `${prefix}${v}`;

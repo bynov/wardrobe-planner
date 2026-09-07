@@ -1,10 +1,11 @@
 import { t, type Lang } from '../i18n';
 import {
-  WALLS, cornerClaim, doorSpan, isSideWall, leftOf, localToWorld, rightOf, wallFrame, wallLength, wallSegments,
-  type DoorSpan, type Frame,
+  WALLS, cornerAt, cornerClaim, doorArc, doorSpan, doorSwingSign, isSideWall, leftOf, localToWorld, rightOf, wallFrame, wallLength,
+  wallSegments, type DoorSpan, type Frame,
 } from '../geometry/frames';
+import { layoutCorner } from '../geometry/corner';
 import { REVEAL, ROD_DIAMETER, heights, layoutWall, type ColumnLayout, type GapLayout, type UnitLayout, type ZoneLayout } from '../geometry/layout';
-import { v2, v3, type Vec2 } from '../geometry/vec';
+import { v2, v3, type Vec2, type Vec3 } from '../geometry/vec';
 import type { Project, Wall } from '../model/types';
 import { dim, line, makeDrawing, poly, rectPrim, text, textSizeFor, type Drawing, type Prim } from './ir';
 import { fmtLen } from './dim';
@@ -21,11 +22,13 @@ export const wallName = (lang: Lang, wall: Wall): string => t(lang, `wall.${wall
 export const unitTag = (lang: Lang, wall: Wall, columnIndex: number): string =>
   `${t(lang, `wall.abbr.${wall}`)}${columnIndex + 1}`;
 
+/** "BL"/"BR"/"FR"/"FL": the corner counterpart of `unitTag`, keyed by the anchor wall. */
+export const cornerTag = (lang: Lang, anchor: Wall): string => t(lang, `corner.tag.${anchor}`);
+
 /** Wall-local (s, z) -> plan IR (world x, -world z). */
-const toIR = (f: Frame, s: number, z: number): Vec2 => {
-  const w = localToWorld(f, v3(s, 0, z));
-  return v2(w.x, -w.z);
-};
+const toIR = (f: Frame, s: number, z: number): Vec2 => worldToIR(localToWorld(f, v3(s, 0, z)));
+/** World (x, y, z) -> plan IR (world x, -world z). */
+const worldToIR = (w: Vec3): Vec2 => v2(w.x, -w.z);
 
 const circle = (c: Vec2, r: number, n = ROD_SEGMENTS): Prim =>
   poly(Array.from({ length: n }, (_, i) => {
@@ -59,21 +62,20 @@ function zoneLabelY(z: ZoneLayout, th: number): number {
 
 // ---------------------------------------------------------------- plan view
 
-/** Door leaf + swing arc, and the two wall-line stubs beside the opening. */
+/** Door leaf at 90deg + swing arc, hinged and swinging per `door.hinge` / `door.swing`. */
 function drawDoorPlan(prims: Prim[], p: Project, lang: Lang, s: number): void {
   const d = doorSpan(p);
   const f = wallFrame(p.room, d.wall);
-  const w = p.door.width;
-  prims.push(line(toIR(f, d.s0, 0), toIR(f, d.s0, w), 'thin')); // leaf, hinged at s0
-  const arc: Vec2[] = [];
-  for (let k = 0; k <= ARC_SEGMENTS; k++) {
-    const a = (Math.PI / 2) * (1 - k / ARC_SEGMENTS);
-    arc.push(toIR(f, d.s0 + w * Math.cos(a), w * Math.sin(a)));
-  }
-  prims.push(poly(arc, 'thin', 'none', false));
+  const { hinge, tip, arc } = doorArc(p, ARC_SEGMENTS);
+  prims.push(line(worldToIR(hinge), worldToIR(tip), 'thin')); // the open leaf
+  prims.push(poly(arc.map(worldToIR), 'thin', 'none', false));
+  // The caption follows the leaf: outside the room for an outward swing, so it never lands on a run.
+  const zLabel = doorSwingSign(p) * (p.door.width + 1.2 * s);
   prims.push(text(
-    toIR(f, (d.s0 + d.s1) / 2, w + 1.2 * s),
-    t(lang, 'drawing.door', { w: fmtLen(p.door.width), h: fmtLen(p.door.height) }),
+    toIR(f, (d.s0 + d.s1) / 2, zLabel),
+    t(lang, 'drawing.doorSwing', {
+      w: fmtLen(p.door.width), h: fmtLen(p.door.height), dir: t(lang, `ui.swing.${p.door.swing}`),
+    }),
     s, 'middle', isSideWall(d.wall) ? 90 : undefined,
   ));
 }
@@ -120,6 +122,16 @@ export function planView(p: Project, lang: Lang = 'en'): Drawing {
       }
     }
     labels.push(dim(toIR(f, 0, 0), toIR(f, 0, depth), -1.5 * s)); // unit depth at the start corner
+  }
+
+  // Corner units, once each: they are anchored on wall A, so drawing them in A's frame covers
+  // both runs. The tag sits in the corner square itself, which belongs to neither leg alone.
+  for (const anchor of WALLS) {
+    const L = layoutCorner(p, anchor);
+    if (!L) continue;
+    const f = wallFrame(p.room, L.a);
+    prims.push(poly(L.footprint.map((q) => toIR(f, q.x, q.y)), 'thin', 'panel'));
+    labels.push(text(toIR(f, L.dB / 2, L.dA / 2), cornerTag(lang, anchor), s * 0.8, 'middle', isSideWall(L.a) ? 90 : undefined));
   }
   prims.push(...labels);
 
@@ -192,10 +204,47 @@ function drawDoorElevation(prims: Prim[], p: Project, door: DoorSpan, lang: Lang
     t(lang, 'drawing.door', { w: fmtLen(p.door.width), h: fmtLen(p.door.height) }), s * 0.8, 'middle'));
 }
 
-/** Dashed side-sections of the neighbouring walls that own the corners of a side wall. */
-function drawClaims(prims: Prim[], p: Project, wall: Wall, L: number, topY: number, lang: Lang, s: number): void {
+/**
+ * An L-shaped corner unit as seen from one of its two walls.
+ *
+ * Looking at wall A, the corner unit fills `s ∈ [0, w]`: over `[0, dB]` the nearest board is the
+ * end panel that closes leg B, so that stretch reads as a solid face labelled with wall B; the
+ * rest is leg A's open front, where the shelves show edge-on. Wall B sees the same thing mirrored
+ * into `[L − w, L]`.
+ */
+function drawCornerUnit(prims: Prim[], p: Project, anchor: Wall, side: 'start' | 'end', L: number, lang: Lang, s: number): void {
+  const C = layoutCorner(p, anchor);
+  if (!C) return;
+  const th = C.t;
+  const anchorSide = side === 'start';
+  const x0 = anchorSide ? 0 : L - C.w;
+  // the far leg's end panel, seen face-on; and the near leg's open front
+  const face = anchorSide ? { x: 0, w: C.dB } : { x: L - C.dA, w: C.dA };
+  const open = anchorSide ? { x: C.dB, w: C.w - th - C.dB } : { x: L - C.w + th, w: C.w - th - C.dA };
+  const other = anchorSide ? C.b : C.a;
+
+  prims.push(rectPrim(x0, C.plinth, C.w, C.topY - C.plinth, 'thin'));
+  prims.push(line(v2(x0, C.plinth), v2(x0 + C.w, C.plinth), 'thick')); // plinth top
+  prims.push(rectPrim(face.x, C.plinth, face.w, C.topY - C.plinth, 'thin', 'panel'));
+  prims.push(text(v2(face.x + face.w / 2, (C.plinth + C.topY) / 2),
+    t(lang, 'drawing.wallSection', { wall: wallName(lang, other) }), s * 0.8, 'middle', 90));
+  if (open.w > 0) {
+    prims.push(rectPrim(open.x, C.floorY, open.w, C.interiorHeight, 'thin'));
+    for (const y of C.shelfYs) prims.push(rectPrim(open.x, y, open.w, th, 'thin', 'panel'));
+  }
+  prims.push(text(v2(x0 + 0.3 * s, C.topY + 0.6 * s), cornerTag(lang, anchor), s * 0.9, 'start'));
+  prims.push(dim(v2(x0, 0), v2(x0 + C.w, 0), -1.5 * s));
+}
+
+/** Both corners of this wall: an L-shaped unit where one is fitted, else the v1 dashed section. */
+function drawCorners(prims: Prim[], p: Project, wall: Wall, L: number, topY: number, lang: Lang, s: number): void {
   const plinth = p.wardrobe.plinthHeight;
   for (const side of ['start', 'end'] as const) {
+    const ref = cornerAt(p, wall, side);
+    if (ref.active && ref.plan.mode === 'lshelf') {
+      drawCornerUnit(prims, p, ref.anchor, side, L, lang, s);
+      continue;
+    }
     const c = cornerClaim(p, wall, side);
     if (c <= 0) continue;
     const x0 = side === 'start' ? 0 : L - c;
@@ -238,7 +287,7 @@ export function wallElevation(p: Project, wall: Wall, lang: Lang = 'en'): Drawin
   }
 
   if (door.wall === wall) drawDoorElevation(prims, p, door, lang, s); // after the units, so a clash stays visible
-  drawClaims(prims, p, wall, L, topY, lang, s);
+  drawCorners(prims, p, wall, L, topY, lang, s);
   // A lone segment that covers the whole wall repeats the wall-length dimension below it.
   const segs = wallSegments(p, wall);
   const wholeRun = segs.length === 1 && segs[0].s1 - segs[0].s0 === L;

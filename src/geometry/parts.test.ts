@@ -1,20 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
-import { layoutUnit } from './layout';
+import { ROD_DIAMETER, layoutUnit } from './layout';
+import type { Zone } from '../model/types';
 import { buildParts, buildUnitParts, partBounds } from './parts';
 
 const p = defaultProject();
 
 describe('buildUnitParts', () => {
   it('produces carcass + content for a drawers/shelves/hanging unit', () => {
-    const u = makeUnit(600, [makeZone('drawers', 600, 3), makeZone('shelves', null, 2), makeZone('hanging')]);
+    const u = makeUnit(600, [makeZone('drawers', 600, 3), makeZone('shelves', null, 3), makeZone('hanging')]);
     const parts = buildUnitParts(layoutUnit(p, 'back', 0, 0, u, 0), p);
     const kinds = parts.map((x) => x.kind);
     const count = (k: string) => kinds.filter((x) => x === k).length;
     expect(count('side')).toBe(2); expect(count('top')).toBe(1); expect(count('bottom')).toBe(1);
     expect(count('back')).toBe(1); expect(count('plinth')).toBe(1);
-    expect(count('divider')).toBe(2); expect(count('shelf')).toBe(2);
+    expect(count('divider')).toBe(2); expect(count('shelf')).toBe(2); // 3 compartments = 2 boards
     expect(count('drawerFront')).toBe(3); expect(count('rod')).toBe(1);
     const side = parts.find((x) => x.nameKey === 'sideL')!;
     const b = partBounds(side);
@@ -32,6 +33,18 @@ describe('buildUnitParts', () => {
     const shelf = parts.find((x) => x.kind === 'shelf')!;
     const sb = partBounds(shelf);
     expect(sb.min.z).toBeCloseTo(4); expect(sb.max.z).toBeCloseTo(580);
+  });
+
+  it('an explicit rail moves the rod part without changing its length', () => {
+    const rodBounds = (rod: Zone['rod']) => {
+      const u = makeUnit(600, [{ ...makeZone('hanging', 1000), rod }, makeZone('open')]);
+      return partBounds(buildUnitParts(layoutUnit(p, 'back', 0, 0, u, 0), p).find((x) => x.kind === 'rod')!);
+    };
+    const a = rodBounds(undefined); // auto: 1118 − ROD_DROP
+    const b = rodBounds({ from: 'bottom', offset: 300 }); // 118 + 300
+    expect(a.min.y + ROD_DIAMETER / 2).toBeCloseTo(1038, 0);
+    expect(b.min.y + ROD_DIAMETER / 2).toBeCloseTo(418, 0);
+    expect(b.max.x - b.min.x).toBeCloseTo(a.max.x - a.min.x); // the rod is still interior-width long
   });
 });
 
@@ -76,7 +89,7 @@ describe('buildParts', () => {
     const q = structuredClone(p);
     // offset 1000 puts the opening near the front end, leaving a real segment 1 between it and
     // the corner the back wall claims
-    q.door = { wall: 'left', offset: 1000, width: 800, height: 2100 };
+    q.door = { wall: 'left', offset: 1000, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     q.wardrobe.walls.left.segments = [[], [makeUnit(300, [makeZone('hanging')])]];
     const left = buildParts(q).filter((x) => x.wall === 'left');
     expect(left.length).toBeGreaterThan(5);

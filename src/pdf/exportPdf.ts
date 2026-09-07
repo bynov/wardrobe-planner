@@ -1,9 +1,9 @@
 import { jsPDF } from 'jspdf';
 import type { Project, Wall } from '../model/types';
-import { WALLS } from '../geometry/frames';
+import { WALLS, cornerLShelf } from '../geometry/frames';
 import { buildParts } from '../geometry/parts';
-import { buildCutList, type CutRow } from '../cutlist/cutlist';
-import { planView, unitTag, wallElevation, wallName } from '../drawing/views';
+import { buildCutList, locationTag, type CutRow } from '../cutlist/cutlist';
+import { planView, wallElevation, wallName } from '../drawing/views';
 import type { Drawing } from '../drawing/ir';
 import { drawingToPdf, type PdfBox } from '../render/pdf';
 import { t, tm, type Lang, type MessageKey } from '../i18n';
@@ -91,7 +91,10 @@ export function summaryRows(p: Project, lang: Lang, date: Date): [string, string
   return [
     [t(lang, 'pdf.date'), date.toISOString().slice(0, 10)],
     [t(lang, 'pdf.room'), `${room.width} × ${room.depth} × ${room.height}`],
-    [t(lang, 'pdf.door'), t(lang, 'pdf.doorValue', { wall: wallName(lang, door.wall), offset: door.offset, w: door.width, h: door.height })],
+    [t(lang, 'pdf.door'), t(lang, 'pdf.doorValue', {
+      wall: wallName(lang, door.wall), offset: door.offset, w: door.width, h: door.height,
+      dir: t(lang, `ui.swingOpt.${door.swing}`), hinge: t(lang, `ui.hinge.${door.hinge}`),
+    })],
     [t(lang, 'pdf.thickness'), `${wardrobe.panelThickness} / ${wardrobe.backThickness}`],
     [t(lang, 'pdf.plinthHeight'), `${wardrobe.plinthHeight}`],
     [t(lang, 'pdf.topGap'), `${wardrobe.topGap}`],
@@ -99,6 +102,15 @@ export function summaryRows(p: Project, lang: Lang, date: Date): [string, string
       t(lang, 'pdf.wallSummary', { wall: wallName(lang, wall), depth: wardrobe.walls[wall].depth }),
       wallSummaryValue(p, wall, lang),
     ]),
+    // One row per corner that actually gets built; a "none" corner has nothing to report.
+    ...WALLS.flatMap((anchor): [string, string][] => {
+      const plan = cornerLShelf(p, anchor);
+      if (!plan) return [];
+      return [[
+        t(lang, `corner.${anchor}` as MessageKey),
+        t(lang, 'pdf.cornerSummary', { mode: t(lang, `corner.mode.${plan.mode}` as MessageKey), w: plan.width, n: plan.shelves }),
+      ]];
+    }),
   ];
 }
 
@@ -124,9 +136,14 @@ function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions, lang: Lang): void
   }
 }
 
-/** "B = Back wall, R = Right wall, …" — what the location codes in the table stand for. */
-function locationLegend(lang: Lang): string {
-  const list = WALLS.map((w) => `${t(lang, `wall.abbr.${w}` as MessageKey)} = ${wallName(lang, w)}`).join(', ');
+/** "B = Back wall, R = Right wall, …" — what the location codes in the table stand for. Corner
+ * codes ("BL = Back-left corner") join in only when a corner unit actually appears in the rows. */
+function locationLegend(lang: Lang, rows: CutRow[]): string {
+  const corners = new Set(rows.flatMap((r) => r.locations.map((l) => l.corner).filter((c): c is Wall => !!c)));
+  const list = [
+    ...WALLS.map((w) => `${t(lang, `wall.abbr.${w}` as MessageKey)} = ${wallName(lang, w)}`),
+    ...WALLS.filter((w) => corners.has(w)).map((w) => `${t(lang, `corner.tag.${w}` as MessageKey)} = ${t(lang, `corner.${w}` as MessageKey)}`),
+  ].join(', ');
   return t(lang, 'pdf.legend', { list });
 }
 
@@ -149,13 +166,13 @@ function cutListPages(doc: jsPDF, rows: CutRow[], lang: Lang): void {
     doc.setFontSize(CUT_FONT_SIZE);
     // The location cells hold codes, so the first page spells them out once. It rides on the header
     // line, right of the title, where it costs the table none of its ROWS_PER_PAGE rows.
-    if (page === 0) doc.text(locationLegend(lang), W - M, M + 4, { align: 'right' });
+    if (page === 0) doc.text(locationLegend(lang, rows), W - M, M + 4, { align: 'right' });
     let y = M + 14;
     for (const [name, x] of cols) doc.text(name, x, y);
     y += ROW_H;
     const start = page * ROWS_PER_PAGE;
     rows.slice(start, start + ROWS_PER_PAGE).forEach((r, j) => {
-      const location = r.locations.map((l) => unitTag(lang, l.wall, l.columnIndex)).join(', ');
+      const location = r.locations.map((l) => locationTag(lang, l)).join(', ');
       const notes = r.notes.map((n) => tm(lang, n)).join('; ').slice(0, 40);
       const vals = [
         String(start + j + 1),

@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/store';
 import { buildParts } from '../geometry/parts';
-import { buildCutList } from '../cutlist/cutlist';
+import { buildCutList, locationTag } from '../cutlist/cutlist';
 import { type MessageKey } from '../i18n';
-import { unitTag, wallName } from '../drawing/views';
+import { wallName } from '../drawing/views';
 import { useT } from './useT';
 
 export function CutListTable() {
@@ -25,8 +25,8 @@ export function CutListTable() {
             <td>{i + 1}</td>
             <td>{t(`part.${r.nameKey}` as MessageKey)}</td>
             {/* the tags printed on the drawings ("B1, B2"); the full names stay a hover away */}
-            <td title={r.locations.map((l) => t('location.unit', { wall: wallName(lang, l.wall), n: l.columnIndex + 1 })).join(', ')}>
-              {r.locations.map((l) => unitTag(lang, l.wall, l.columnIndex)).join(', ')}
+            <td title={r.locations.map((l) => (l.corner ? t(`corner.${l.corner}`) : t('location.unit', { wall: wallName(lang, l.wall), n: l.columnIndex + 1 }))).join(', ')}>
+              {r.locations.map((l) => locationTag(lang, l)).join(', ')}
             </td>
             <td>{r.qty}</td>
             <td>{r.length}</td><td>{r.width}</td><td>{r.thickness}</td><td>{t(`material.${r.material}` as MessageKey)}</td>

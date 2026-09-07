@@ -1,5 +1,5 @@
 import { WALLS } from '../geometry/frames';
-import type { Wall } from '../model/types';
+import { DOOR_HINGES, DOOR_SWINGS, type DoorHinge, type DoorSwing, type Wall } from '../model/types';
 import { useStore } from '../store/store';
 import { NumberField, Section, SelectField } from './fields';
 import { useT } from './useT';
@@ -14,6 +14,10 @@ export function RoomForm() {
   const { t } = useT();
 
   const wallOptions = WALLS.map((w) => ({ value: w, label: t(`wall.${w}`) }));
+  const swingOptions: { value: DoorSwing; label: string }[] =
+    DOOR_SWINGS.map((v) => ({ value: v, label: t(`ui.swingOpt.${v}`) }));
+  const hingeOptions: { value: DoorHinge; label: string }[] =
+    DOOR_HINGES.map((v) => ({ value: v, label: t(`ui.hinge.${v}`) }));
 
   return (
     <div className="forms">
@@ -28,6 +32,8 @@ export function RoomForm() {
         <NumberField label={t('ui.doorOffset')} value={door.offset} min={0} step={10} onChange={(offset) => setDoor({ offset })} />
         <NumberField label={t('ui.doorWidth')} value={door.width} min={1} step={10} onChange={(width) => setDoor({ width })} />
         <NumberField label={t('ui.doorHeight')} value={door.height} min={1} step={10} onChange={(height) => setDoor({ height })} />
+        <SelectField<DoorSwing> label={t('ui.doorSwing')} value={door.swing} options={swingOptions} onChange={(swing) => setDoor({ swing })} />
+        <SelectField<DoorHinge> label={t('ui.doorHinge')} value={door.hinge} options={hingeOptions} onChange={(hinge) => setDoor({ hinge })} />
         <NumberField
           label={t('ui.doorMargin')}
           value={wardrobe.doorMargin}

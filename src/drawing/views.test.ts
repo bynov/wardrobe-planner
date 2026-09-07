@@ -3,6 +3,7 @@ import { planView, wallElevation, wallName } from './views';
 import { defaultProject } from '../model/defaults';
 import { cornerClaim, doorSpan, wallSegments } from '../geometry/frames';
 import { layoutWall, type UnitLayout } from '../geometry/layout';
+import type { Unit } from '../model/types';
 import type { Drawing, Prim } from './ir';
 
 type P<K extends Prim['t']> = Extract<Prim, { t: K }>;
@@ -67,6 +68,47 @@ describe('planView', () => {
     expect(a.pts[12].x).toBeCloseTo(800, 6); // back at the wall at the far side of the opening
     expect(a.pts[12].y).toBeCloseTo(-2000, 6);
   });
+
+  it('names the swing direction next to the opening', () => {
+    expect(hasText(d, 'opens inwards')).toBe(true);
+  });
+});
+
+describe('planView — hinge side and swing direction', () => {
+  const swingArc = (dr: Drawing) => of(dr, 'poly').filter((q) => !q.closed && q.pts.length === 13)[0];
+  const leaf = (dr: Drawing, hinge: { x: number; y: number }) =>
+    of(dr, 'line').find((q) => Math.hypot(q.a.x - hinge.x, q.a.y - hinge.y) < 0.01 && Math.hypot(q.b.x - q.a.x, q.b.y - q.a.y) > 700);
+
+  it('a right hinge opening outwards mirrors the leaf and swings out of the room', () => {
+    const p = defaultProject();
+    p.door = { wall: 'front', offset: 800, width: 800, height: 2100, swing: 'out', hinge: 'right' };
+    const dr = planView(p, 'en');
+    const a = swingArc(dr);
+    expect(a.pts[0].x).toBeCloseTo(800, 6); // tip, 800 mm outside the room from the hinge at x = 800
+    expect(a.pts[0].y).toBeCloseTo(-2800, 6);
+    expect(a.pts[12].x).toBeCloseTo(1600, 6); // closed leaf runs back to the other jamb
+    expect(a.pts[12].y).toBeCloseTo(-2000, 6);
+    expect(leaf(dr, { x: 800, y: -2000 })).toBeTruthy();
+    expect(hasText(dr, 'opens outwards')).toBe(true);
+  });
+
+  it('a right hinge opening inwards keeps the leaf inside the room', () => {
+    const p = defaultProject();
+    p.door = { wall: 'front', offset: 800, width: 800, height: 2100, swing: 'in', hinge: 'right' };
+    const a = swingArc(planView(p, 'en'));
+    expect(a.pts[0].x).toBeCloseTo(800, 6);
+    expect(a.pts[0].y).toBeCloseTo(-1200, 6);
+    expect(a.pts[12].x).toBeCloseTo(1600, 6);
+    expect(a.pts[12].y).toBeCloseTo(-2000, 6);
+  });
+
+  it('the elevation label keeps the plain door text', () => {
+    const p = defaultProject();
+    p.door = { wall: 'back', offset: 600, width: 800, height: 2100, swing: 'out', hinge: 'right' };
+    const dr = wallElevation(p, 'back', 'en');
+    expect(hasText(dr, 'Door 800 × 2100')).toBe(true);
+    expect(hasText(dr, 'opens')).toBe(false);
+  });
 });
 
 describe('planView — door offset dimension', () => {
@@ -76,7 +118,7 @@ describe('planView — door offset dimension', () => {
 
   it('measures a front-wall door from the x = 0 corner, not from s = 0', () => {
     const p = defaultProject();
-    p.door = { wall: 'front', offset: 600, width: 800, height: 2100 };
+    p.door = { wall: 'front', offset: 600, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     const d = planView(p, 'en');
     expect(near(doorDims(d), 600)).toBe(1); // the offset
     expect(near(doorDims(d), 800)).toBe(1); // the opening
@@ -85,7 +127,7 @@ describe('planView — door offset dimension', () => {
 
   it('measures a left-wall door from the z = 0 corner, not from s = 0', () => {
     const p = defaultProject();
-    p.door = { wall: 'left', offset: 500, width: 800, height: 2100 };
+    p.door = { wall: 'left', offset: 500, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     const d = planView(p, 'en');
     expect(near(doorDims(d), 500)).toBe(1);
     expect(near(doorDims(d), 800)).toBe(1);
@@ -94,7 +136,7 @@ describe('planView — door offset dimension', () => {
 
   it('measures a back-wall door from s = 0, which is the x = 0 corner there', () => {
     const p = defaultProject();
-    p.door = { wall: 'back', offset: 600, width: 800, height: 2100 };
+    p.door = { wall: 'back', offset: 600, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     const d = planView(p, 'en');
     expect(near(doorDims(d), 600)).toBe(1);
     expect(near(doorDims(d), 800)).toBe(1);
@@ -103,7 +145,7 @@ describe('planView — door offset dimension', () => {
 
   it('omits the offset dimension when the door sits in the corner', () => {
     const p = defaultProject();
-    p.door = { wall: 'front', offset: 0, width: 800, height: 2100 };
+    p.door = { wall: 'front', offset: 0, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     expect(doorDims(planView(p, 'en'))).toHaveLength(1);
   });
 });
@@ -130,6 +172,17 @@ describe('wallElevation — back wall', () => {
     expect(hasText(d, 'Hanging rail')).toBe(true);
     expect(hasText(d, 'Drawers 600')).toBe(true);
     expect(hasText(d, 'Shelves')).toBe(true);
+  });
+
+  it('moves the rail and its label when a hanging zone pins one', () => {
+    const q = defaultProject();
+    // unit 1 = drawers + hanging, and its rail is the one the wall's rail dimension picks up
+    const u = q.wardrobe.walls.back.segments[0][0] as Unit;
+    u.zones[1] = { ...u.zones[1], rod: { from: 'bottom', offset: 900 } };
+    const e = wallElevation(q, 'back', 'en');
+    expect(hasText(e, 'rail at 1636')).toBe(true); // the zone starts above the divider, at 736
+    expect(near(dimsDy(e), 1636)).toBe(1);
+    expect(hasText(d, 'rail at 1636')).toBe(false); // the auto rail sits elsewhere
   });
 
   it('draws filled carcasses, shelves, drawer fronts and rods', () => {
@@ -242,7 +295,7 @@ describe('russian', () => {
 
 describe('wallElevation — left wall carrying the door', () => {
   const p = defaultProject();
-  p.door = { wall: 'left', offset: 1000, width: 800, height: 2100 };
+  p.door = { wall: 'left', offset: 1000, width: 800, height: 2100, swing: 'in', hinge: 'left' };
   const d = wallElevation(p, 'left', 'en');
   const segs = wallSegments(p, 'left');
 
@@ -267,5 +320,72 @@ describe('wallElevation — left wall carrying the door', () => {
       Math.abs(Math.max(...q.pts.map((v) => v.y)) - 2100) < 0.01);
     expect(opening).toBeTruthy();
     expect(hasText(d, 'Door 800 × 2100')).toBe(true);
+  });
+});
+
+describe('corners in the drawings', () => {
+  const bl = (() => {
+    const q = structuredClone(defaultProject());
+    q.wardrobe.corners.back = { mode: 'lshelf', width: 1000, shelves: 5 };
+    return q;
+  })();
+  const t = 18;
+
+  it('plan: the L footprint is drawn filled and tagged', () => {
+    const d = planView(bl, 'en');
+    const l = of(d, 'poly').find((q) => q.pts.length === 6 && q.fill === 'panel')!;
+    expect(l).toBeDefined();
+    // back-left corner: the back wall's frame is the identity and plan IR y = -world z
+    expect(l.pts).toEqual([
+      { x: 0, y: -0 }, { x: 1000, y: -0 }, { x: 1000, y: -600 }, { x: 600, y: -600 }, { x: 600, y: -1000 }, { x: 0, y: -1000 },
+    ]);
+    expect(hasText(d, 'BL')).toBe(true);
+    expect(hasText(planView(defaultProject(), 'en'), 'BL')).toBe(false);
+  });
+
+  it('elevation of wall A: the solid end-panel face, then the open face with shelf lines', () => {
+    const d = wallElevation(bl, 'back', 'en');
+    const filled = of(d, 'poly').filter((q) => q.fill === 'panel');
+    // the end panel of leg B closes s in [0, dB] = [0, 600]
+    const face = filled.find((q) => q.pts[0].x === 0 && Math.max(...q.pts.map((v) => v.x)) === 600)!;
+    expect(face).toBeDefined();
+    expect(hasText(d, 'Left wall')).toBe(true); // the face belongs to wall B
+    expect(hasText(d, 'BL')).toBe(true);
+    // five shelf slabs across the open face s in [600, 1000 - t]
+    const shelves = filled.filter((q) => q.pts[0].x === 600 && Math.max(...q.pts.map((v) => v.x)) === 1000 - t);
+    expect(shelves).toHaveLength(4); // 5 compartments = 4 boards
+    expect(near(dimsDx(d), 1000)).toBeGreaterThanOrEqual(1); // the leg length is dimensioned
+  });
+
+  it('elevation of wall B: mirrored — open face first, panel face at the far end', () => {
+    const d = wallElevation(bl, 'left', 'en');
+    const L = 2000;
+    const filled = of(d, 'poly').filter((q) => q.fill === 'panel');
+    const face = filled.find((q) => Math.min(...q.pts.map((v) => v.x)) === L - 600 && Math.max(...q.pts.map((v) => v.x)) === L)!;
+    expect(face).toBeDefined(); // leg A's end panel over [L - dA, L]
+    expect(hasText(d, 'Back wall')).toBe(true);
+    const shelves = filled.filter((q) =>
+      Math.min(...q.pts.map((v) => v.x)) === L - 1000 + t && Math.max(...q.pts.map((v) => v.x)) === L - 600);
+    expect(shelves).toHaveLength(4);
+  });
+
+  it('a "none" corner still draws the v1 dashed wall section and no tag', () => {
+    const d = wallElevation(defaultProject(), 'left', 'en');
+    expect(of(d, 'poly').some((q) => q.stroke === 'dashed' && q.pts[0].x === 1400)).toBe(true);
+    expect(hasText(d, 'BL')).toBe(false);
+  });
+
+  it('an lshelf corner with a disabled wall draws nothing', () => {
+    const q = structuredClone(defaultProject());
+    q.wardrobe.corners.front = { mode: 'lshelf', width: 1000, shelves: 5 }; // front wall is off
+    expect(hasText(planView(q, 'en'), 'FR')).toBe(false);
+    expect(hasText(wallElevation(q, 'right', 'en'), 'FR')).toBe(false);
+  });
+
+  it('russian keeps the geometry and the latin tag', () => {
+    const en = wallElevation(bl, 'back', 'en');
+    const ru = wallElevation(bl, 'back', 'ru');
+    expect(dimsDx(ru)).toEqual(dimsDx(en));
+    expect(hasText(ru, 'BL')).toBe(true);
   });
 });

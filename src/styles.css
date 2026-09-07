@@ -65,6 +65,9 @@ table.cutlist tfoot td { font-weight: 600; }
 /* plan editor */
 .plan { flex: none; position: sticky; top: 0; z-index: 1; background: #fff; }
 .wallhit.off { fill: rgba(120,120,120,0.06); stroke: #b0b0b0; }
+.cornerhit { fill: transparent; stroke: none; cursor: pointer; }
+.cornerhit:hover { fill: rgba(214,158,46,0.22); }
+.cornerhit.on { fill: rgba(214,158,46,0.22); stroke: #b7791f; stroke-width: 3; vector-effect: non-scaling-stroke; }
 .wallhit.off:hover { fill: rgba(43,108,176,0.12); }
 
 /* elevation editor */
@@ -110,6 +113,11 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .zone-fields label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
 .zone-fields input[type="number"] { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
 .zone-fields label.chk { cursor: pointer; }
+/* the rail line of a hanging zone: an inline select, so it must not take the full row like the
+   zone-type one above it */
+.zone-fields.rail select { width: auto; min-width: 0; padding: 2px 4px; font: inherit; font-size: 12px; }
+.zone-fields .rail-label { font-size: 12px; color: #555; }
+.zone-fields .rail-eff { font-size: 11px; color: #777; }
 .zone-eff { grid-column: 1 / -1; font-size: 11px; color: #777; }
 
 /* free-tail drop zone in the elevation + the "+" hint on a disabled plan band */

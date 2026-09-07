@@ -1,6 +1,7 @@
 import type { Project, Wall } from '../model/types';
 import { msg, type Msg } from '../i18n';
-import { frameTransform, wallFrame } from './frames';
+import { WALLS, frameTransform, wallFrame } from './frames';
+import { buildCornerParts } from './corner';
 import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, type UnitLayout } from './layout';
 import { bounds3, FLAT_ROT, NO_ROT, ROD_ROT, SIDE_ROT, toWorld, v2, v3, type Box3, type Transform, type Vec2, type Vec3 } from './vec';
 
@@ -13,6 +14,9 @@ export type Material = (typeof MATERIALS)[number];
 export interface Part {
   id: string;
   wall: Wall;
+  /** Set on the parts of an L-shaped corner unit, keyed by its anchor wall; `columnIndex` is -1
+   * for those, since a corner unit belongs to no wall run. */
+  corner?: Wall;
   columnIndex: number;
   unitId: string;
   nameKey: PartNameKey;
@@ -77,5 +81,7 @@ export function buildParts(p: Project): Part[] {
     const frame = wallFrame(p.room, L.wall);
     for (const part of buildUnitParts(L, p)) out.push({ ...part, transform: frameTransform(frame, part.transform) });
   }
+  // Corner units come last; `buildCornerParts` maps them into world coordinates itself.
+  for (const anchor of WALLS) out.push(...buildCornerParts(p, anchor));
   return out;
 }

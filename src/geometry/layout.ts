@@ -11,6 +11,8 @@ export const ROD_DROP = 80;
  */
 export const MAX_ROD_HEIGHT = 2000;
 export const ROD_DIAMETER = 25;
+/** Free space a rail keeps from either end of its zone, so a garment can be lifted off it. */
+export const ROD_CLEARANCE = 40;
 export const PLINTH_SETBACK = 40;
 export const MIN_ZONE_HEIGHT = 100;
 export const MIN_DRAWER_FRONT = 80;
@@ -65,6 +67,8 @@ export interface ZoneLayout {
   frontW: number;
   frontH: number;
   rodY: number | null;
+  /** True when `rodY` came from the automatic rule rather than the zone's own `rod`. */
+  rodAuto: boolean;
 }
 
 export interface UnitLayout {
@@ -127,10 +131,13 @@ export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: 
       frontW: interiorWidth - 2 * REVEAL,
       frontH: 0,
       rodY: null,
+      rodAuto: zone.rod === undefined,
     };
     if (zone.type === 'shelves' && zone.count >= 1) {
-      const opening = (height - zone.count * t) / (zone.count + 1);
-      for (let k = 1; k <= zone.count; k++) zl.shelfYs.push(yBot + k * opening + (k - 1) * t);
+      // `count` counts COMPARTMENTS, as it does for drawers: n bays are separated by n - 1
+      // boards, so a count of 1 is a single open bay with no shelf in it.
+      const opening = (height - (zone.count - 1) * t) / zone.count;
+      for (let k = 1; k < zone.count; k++) zl.shelfYs.push(yBot + k * opening + (k - 1) * t);
     } else if (zone.type === 'drawers' && zone.count >= 1) {
       // Whole millimetres: a fitter cuts fronts to a round size, and the remainder (< 1 mm per
       // front) is absorbed by the reveal above the top one.
@@ -140,7 +147,11 @@ export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: 
         zl.drawerFronts.push({ y0, y1: y0 + zl.frontH });
       }
     } else if (zone.type === 'hanging') {
-      zl.rodY = Math.min(yTop - ROD_DROP, MAX_ROD_HEIGHT);
+      // An explicit rail is taken as given — validate() reports one that falls outside its zone,
+      // so a clamp here would only hide the mistake from the drawings.
+      zl.rodY = zone.rod
+        ? zone.rod.from === 'top' ? yTop - zone.rod.offset : yBot + zone.rod.offset
+        : Math.min(yTop - ROD_DROP, MAX_ROD_HEIGHT);
     }
     zones.push(zl);
     if (index < unit.zones.length - 1) {

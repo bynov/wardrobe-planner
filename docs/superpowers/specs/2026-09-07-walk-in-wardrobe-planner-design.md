@@ -161,9 +161,11 @@ Zone `k` clear range `[yBot_k, yTop_k]` measured from the floor; `yBot_0 = plint
 
 Content (all in the unit's local coordinates; `iw` interior width, `id` interior depth):
 - `open`: nothing.
-- `shelves` (count `n ≥ 1`): `opening = (zoneH − n·t) / (n + 1)`; shelf `k` (1..n) has its
-  underside at `yBot + k·opening + (k − 1)·t`. Shelf outline `iw × (id − 20)`, set back 20 mm
-  from the front.
+- `shelves` (count `n ≥ 1`): **`count` is the number of COMPARTMENTS (openings)**, the same way
+  `drawers.count` is the number of drawers — so `n` bays are separated by `n − 1` boards and
+  `count = 1` is a single open bay with no board in it. `opening = (zoneH − (n − 1)·t) / n`;
+  board `k` (1..n−1) has its underside at `yBot + k·opening + (k − 1)·t`. Shelf outline
+  `iw × (id − 20)`, set back 20 mm from the front.
 - `drawers` (count `n ≥ 1`): inset fronts within the zone, 2 mm reveal at every edge and 3 mm
   between fronts: `frontH = (zoneH − 4 − 3(n − 1)) / n`, `frontW = iw − 4`, front `k` from
   `yBot + 2 + (k−1)(frontH + 3)`; fronts occupy `z ∈ [depth − t, depth]`. Boxes are not modelled.
@@ -197,9 +199,9 @@ segment's free width when smaller, disabled when free width < `minUnitWidth`):
 |------------------|-------------------------------------------------------|
 | `hanging`        | hanging (auto)                                        |
 | `doubleHanging`  | hanging (auto), hanging (auto)                        |
-| `shelves`        | shelves ×5 (auto)                                     |
+| `shelves`        | shelves ×6 compartments (auto)                        |
 | `drawersHanging` | drawers ×3 (600), hanging (auto)                      |
-| `drawersShelves` | drawers ×4 (800), shelves ×3 (auto)                   |
+| `drawersShelves` | drawers ×4 (800), shelves ×4 compartments (auto)      |
 | `open`           | open (auto)                                           |
 | `gap`            | — (a `Gap` column; default 300, clamped to free width)|
 
@@ -333,8 +335,11 @@ actions: setProject(updater, {history?: true}), undo, redo,
 
 History: `setProject` pushes the previous project onto `past` (cap 100) and clears `future`;
 `undo/redo` swap. Selection is cleaned when its column/zone disappears. Autosave `project` to
-`localStorage` `wardrobe-planner:project` (debounced 300 ms); JSON files `{ version: 1, project }`
-validated by shape on load and by `validate()` on import. Defaults from §2.7 when nothing is stored.
+`localStorage` `wardrobe-planner:project` (debounced 300 ms); JSON files
+`{ version: FILE_VERSION, project }` validated by shape on load and by `validate()` on import.
+`FILE_VERSION` is **2**; a version-1 file (shelf counts meaning boards) is migrated on read by
+`migrateProject`, which adds one to every `shelves` zone `count` and every corner's `shelves`,
+reproducing exactly the geometry it was saved with. Autosaved v1 projects take the same path. Defaults from §2.7 when nothing is stored.
 
 ## 4. UI layout
 
@@ -386,3 +391,87 @@ The UI is verified in the browser (Playwright-driven review agent).
 Vite, TypeScript strict, React 18, three + @react-three/fiber + @react-three/drei, zustand,
 jsPDF, vitest; pnpm; scripts `dev`, `build`, `test`, `typecheck`. Same pinned versions and
 `pnpm-workspace.yaml` overrides as the sibling.
+
+## 8. Amendment 2026-09-07: corners
+
+The v1 rule ("side walls butt against back/front runs") leaves the back/front run's corner unit
+blocked by the side run's first unit. A corner can now instead carry an explicit L-shaped open
+shelf unit. Scope note: an earlier draft of this amendment also defined `rail`, `void` and
+`blind` modes, a `warnings()` API and a new default project; those were cut. What is
+implemented, and what this section describes, is the two-mode version below — the runs are not
+re-flowed automatically, so making room for a corner unit stays the user's job.
+
+### 8.1 Model
+
+```ts
+export const CORNER_MODES = ['none', 'lshelf'] as const;
+type CornerMode = (typeof CORNER_MODES)[number];
+interface CornerPlan { mode: CornerMode; width: number; shelves: number }  // width = leg length along both walls; shelves = compartments >= 1
+Wardrobe.corners: Record<Wall, CornerPlan>   // keyed by the ANCHOR wall: the wall whose s = 0 end is that corner
+```
+
+Corner ids: `back` = back-left corner (back wall's s=0 end = left wall's s=L end), `right` =
+back-right, `front` = front-right, `left` = front-left. For a corner with anchor wall `A`, the
+other wall is `B = leftOf(A)`; the corner lies at `A: s = 0` and `B: s = wallLength(B)`.
+
+`none` is exactly the pre-amendment behaviour: nothing is built and the v1 claim rule applies.
+Defaults for new projects: `{ mode: 'none', width: 1000, shelves: 6 }` at every corner (`shelves`
+counts compartments, see §8.3), so the default project of §2.7 is unchanged. `wardrobe.corners`
+is **optional** in the file shape check, and a file without it loads with four `none` plans —
+i.e. the behaviour it was saved with.
+
+### 8.2 Claims (extends the v1 corner rule)
+
+A corner is *active* when both of its walls are enabled. Per corner (`dA`, `dB` = wall depths):
+
+| mode     | claim on A's start | claim on B's end | corner parts            |
+|----------|--------------------|------------------|-------------------------|
+| `none`   | v1 rule: the side wall yields the back/front wall's depth (if that wall's corner segment is >= minUnitWidth); back/front claim 0 | | none |
+| `lshelf` | `width`            | `width`          | one L-shaped open shelf unit |
+
+An `lshelf` corner with a disabled wall is inactive: it claims nothing and produces nothing.
+A `none` corner keeps the v1 asymmetry on purpose (only the side wall yields).
+
+### 8.3 L-shaped corner unit
+
+Built in the anchor wall's frame (u = s along A, v = local z into the room), then mapped
+through `wallFrame(A)`. Footprint: `u ∈ [0, width] × v ∈ [0, dA]` ∪ `u ∈ [0, dB] × v ∈ [0, width]`.
+The end panels are full height, so the horizontal slabs stop `t` short of each leg's end:
+the **slab** outline is `(0,0) (w−t,0) (w−t,dA) (dB,dA) (dB,w−t) (0,w−t)`, while the full
+footprint above is the outer outline used for the plan drawing and the hit shape. No two of
+the unit's parts share volume (pinned by a test).
+
+Parts (`Part.wall = A`, `Part.columnIndex = -1`, `Part.corner = A`, cut-list tag `BL/BR/FR/FL`):
+- bottom / top: the slab polygon, FLAT_ROT, at `y = floorY` / `plinth + carcassHeight`, note `note.lShape`.
+- end panel on leg A at `u ∈ [w−t, w]`: `rect(dA, carcassHeight)` SIDE_ROT at `(w, plinth, 0)`.
+- end panel on leg B at `v ∈ [w−t, w]`: `rect(dB, carcassHeight)` NO_ROT at `(0, plinth, w−t)`.
+- backs: along A `rect(w−t, ih)` NO_ROT thickness `bt` at `(0, floorY, 0)`; along B `rect(w−t−bt, ih)` SIDE_ROT thickness `bt` at `(bt, floorY, bt)` — B starts where A ends, so the two do not overlap in the corner.
+- shelves: `CornerPlan.shelves` counts **compartments**, as a shelves zone's `count` does (§2.4), so `n` compartments give `n − 1` boards at `opening = (ih − (n−1)·t)/n`; L polygon inset `(bt,bt) (w−t,bt) (w−t,dA−20) (dB−20,dA−20) (dB−20,w−t) (bt,w−t)`, FLAT_ROT, note `note.lShape`.
+- plinth boards: along A's open face `rect(w−dB, plinth)` NO_ROT at `(dB, 0, dA−40−t)`; along B's open face `rect(w−dA, plinth)` SIDE_ROT at `(dB−40, 0, dA)`.
+
+Validation (`lshelf` only, whether or not the corner is active): `width` between
+`ceil(max(dA, dB) + 100)` and `floor(min(wallLength(A), wallLength(B)) / 2)` — both bounds
+rounded inwards so the range the inspector prints is exactly the range that is accepted
+(`error.cornerWidth`, path `corners.<anchor>`) — and `shelves >= 1` (`error.cornerShelves`).
+`validate()` keeps returning a single `ValidationError[]`; there is no separate warnings channel.
+
+### 8.4 Drawings and UI
+
+- Plan: the L polygon with panel fill plus the corner tag in the corner square; `none` unchanged.
+- Elevation of A: `lshelf` → the corner unit spans `[0, width]`: solid end-panel face over `[0, dB]`
+  (panel fill, labelled with wall B), open face with shelf lines over `[dB, width−t]`, tag text
+  above and a width dimension below. Elevation of B mirrored at `[L − width, L]` (open
+  `[L−width+t, L−dA]`, panel `[L−dA, L]`). `none` → the v1 dashed wall section.
+- `Selection` gains `corner: Wall | null` (exclusive with column/zone; touching `columnId`
+  clears it and vice versa). Corners are clickable in the plan — the L polygon where one is
+  fitted, otherwise a square tab of `min(200, dA, dB)` mm in the corner (the `dB × dA` overlap of
+  the two runs is far too big a target: it swallowed most of a short wall's band) — and in the
+  elevation over whatever wall length the corner claims. Inspector for a corner: title
+  `corner.<A>` ("Back-left corner"), mode select, leg length, compartment count, the allowed leg
+  range, and — for `lshelf` only — the hint that both runs stop short of the corner.
+  `Delete` does nothing on a corner.
+- PDF: one summary row per built corner; the cut-list legend gains the corner codes it uses.
+  Cut list: corner parts are located by the corner tag. Rows are grouped by the part's *outline*
+  (rounded to 0.1 mm) rather than by which corner it came from, so a corner panel that is the
+  same board as a run panel shares its row while two mirrored L slabs of equal bounding size
+  stay apart.

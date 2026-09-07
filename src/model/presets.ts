@@ -25,11 +25,11 @@ export function makePreset(key: PresetKey, width: number): Column {
     case 'doubleHanging':
       return makeUnit(width, [Z('hanging'), Z('hanging')]);
     case 'shelves':
-      return makeUnit(width, [Z('shelves', null, 5)]);
+      return makeUnit(width, [Z('shelves', null, 6)]); // 6 compartments = 5 boards
     case 'drawersHanging':
       return makeUnit(width, [Z('drawers', 600, 3), Z('hanging')]);
     case 'drawersShelves':
-      return makeUnit(width, [Z('drawers', 800, 4), Z('shelves', null, 3)]);
+      return makeUnit(width, [Z('drawers', 800, 4), Z('shelves', null, 4)]); // 4 compartments = 3 boards
     case 'open':
       return makeUnit(width, [Z('open')]);
     case 'gap':

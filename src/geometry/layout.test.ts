@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
+import type { Zone } from '../model/types';
 import { MAX_ROD_HEIGHT, ROD_DROP, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
 
 const p = defaultProject(); // t 18, plinth 100, topGap 150, height 2500 → carcass 2250, interior 2214
@@ -48,9 +49,27 @@ describe('layoutUnit', () => {
     expect(d.drawerFronts[0].y0).toBe(120);
     expect(d.drawerFronts[2].y1).toBe(120 + 3 * 196 + 2 * 3);
     expect(d.frontW).toBe(560);
-    // shelves: 2 shelves, 3 equal openings
-    const opening = (s.height - 36) / 3;
-    expect(s.shelfYs).toEqual([s.yBot + opening, s.yBot + 2 * opening + 18]);
+    // shelves: count = COMPARTMENTS, so 2 compartments = 1 board splitting the zone in two
+    const opening = (s.height - 18) / 2;
+    expect(s.shelfYs).toEqual([s.yBot + opening]);
+  });
+
+  it('a shelves zone of 1 compartment is a single open bay with no board at all', () => {
+    const u = makeUnit(600, [makeZone('shelves', null, 1)]);
+    const [z] = layoutUnit(p, 'back', 0, 0, u, 0).zones;
+    expect(z.shelfYs).toEqual([]);
+  });
+
+  it('n compartments produce n - 1 evenly spaced boards that fill the zone exactly', () => {
+    // an auto zone on top, so the fixed 1000 mm zone is not the one that absorbs the leftover
+    const u = makeUnit(600, [makeZone('shelves', 1000, 5), makeZone('open')]);
+    const [z] = layoutUnit(p, 'back', 0, 0, u, 0).zones;
+    expect(z.height).toBe(1000);
+    expect(z.shelfYs).toHaveLength(4);
+    const opening = (1000 - 4 * 18) / 5;
+    expect(z.shelfYs[0]).toBeCloseTo(z.yBot + opening);
+    // the last board's top leaves exactly one more opening under the zone top
+    expect(z.shelfYs[3] + 18 + opening).toBeCloseTo(z.yTop);
   });
   it('a hanging zone below the reach limit keeps the full rod drop', () => {
     const u = makeUnit(600, [makeZone('hanging', 1000), makeZone('open')]);
@@ -70,8 +89,45 @@ describe('layoutWall / layoutAll', () => {
   });
   it('counts columnIndex across both segments of a door wall', () => {
     const q = structuredClone(p);
-    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100 };
+    q.door = { wall: 'back', offset: 1000, width: 800, height: 2100, swing: 'in', hinge: 'left' };
     q.wardrobe.walls.back.segments = [[makeUnit(500, [makeZone('open')])], [makeUnit(500, [makeZone('open')])]];
     expect(layoutWall(q, 'back').map((c) => [c.segment, c.columnIndex, c.s0])).toEqual([[0, 0, 0], [1, 1, 1880]]);
+  });
+});
+
+describe('layoutUnit: explicit rail height', () => {
+  const hang = (rod: Zone['rod']) => {
+    const u = makeUnit(600, [{ ...makeZone('hanging', 1000), rod }, makeZone('open')]);
+    return layoutUnit(p, 'back', 0, 0, u, 0).zones[0];
+  };
+
+  it('auto is flagged and keeps the derived rail height', () => {
+    const h = hang(undefined);
+    expect(h.rodAuto).toBe(true);
+    expect(h.rodY).toBeCloseTo(1118 - ROD_DROP);
+  });
+
+  it('measures an offset from the top of the zone', () => {
+    const h = hang({ from: 'top', offset: 200 });
+    expect(h.rodAuto).toBe(false);
+    expect(h.rodY).toBeCloseTo(1118 - 200);
+  });
+
+  it('measures an offset from the bottom of the zone', () => {
+    const h = hang({ from: 'bottom', offset: 300 });
+    expect(h.rodAuto).toBe(false);
+    expect(h.rodY).toBeCloseTo(118 + 300);
+  });
+
+  // An explicit height is the fitter's call: it is checked by validate(), not silently clamped,
+  // so the drawings show exactly what was asked for (here: above the reach limit).
+  it('does not clamp an explicit rail to MAX_ROD_HEIGHT', () => {
+    const u = makeUnit(600, [{ ...makeZone('hanging'), rod: { from: 'bottom' as const, offset: 2100 } }]);
+    expect(layoutUnit(p, 'back', 0, 0, u, 0).zones[0].rodY).toBeCloseTo(118 + 2100);
+  });
+
+  it('a non-hanging zone with a stray rod still has no rail', () => {
+    const u = makeUnit(600, [{ ...makeZone('shelves', 1000, 2), rod: { from: 'top' as const, offset: 200 } }]);
+    expect(layoutUnit(p, 'back', 0, 0, u, 0).zones[0].rodY).toBeNull();
   });
 });

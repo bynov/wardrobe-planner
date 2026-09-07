@@ -4,7 +4,7 @@ import { detectLang, msg, type Lang, type Msg } from '../i18n';
 import { defaultProject } from '../model/defaults';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
-import type { Column, Door, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
+import type { Column, CornerPlan, Door, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
 import { validate } from '../model/validate';
 import { loadFromStorage, loadLang, saveLang, saveToStorage, type StorageLike } from './persist';
 
@@ -14,6 +14,8 @@ export interface Selection {
   wall: Wall;
   columnId: string | null;
   zoneId: string | null;
+  /** The anchor wall of the selected corner. Exclusive with `columnId`/`zoneId`. */
+  corner: Wall | null;
 }
 
 export interface UiState {
@@ -43,6 +45,7 @@ export interface PlannerState {
   setDoor: (patch: Partial<Door>) => void;
   setWardrobe: (patch: Partial<Omit<Wardrobe, 'walls'>>) => void;
   setWall: (wall: Wall, patch: Partial<Omit<WallPlan, 'segments'>>) => void;
+  setCorner: (anchor: Wall, patch: Partial<CornerPlan>) => void;
 
   insertColumn: (wall: Wall, segment: 0 | 1, index: number, column: Column) => void;
   insertPreset: (wall: Wall, segment: 0 | 1, index: number, key: PresetKey) => void;
@@ -67,7 +70,7 @@ export interface PlannerState {
 export const HISTORY_LIMIT = 100;
 
 const SEGMENTS: [0, 1] = [0, 1];
-const NO_SELECTION: Selection = { wall: 'back', columnId: null, zoneId: null };
+const NO_SELECTION: Selection = { wall: 'back', columnId: null, zoneId: null, corner: null };
 
 export interface ColumnRef {
   wall: Wall;
@@ -184,6 +187,11 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
           ...p,
           wardrobe: { ...p.wardrobe, walls: { ...p.wardrobe.walls, [wall]: { ...p.wardrobe.walls[wall], ...patch } } },
         })),
+      setCorner: (anchor, patch) =>
+        get().setProject((p) => ({
+          ...p,
+          wardrobe: { ...p.wardrobe, corners: { ...p.wardrobe.corners, [anchor]: { ...p.wardrobe.corners[anchor], ...patch } } },
+        })),
 
       insertColumn: (wall, segment, index, column) => {
         get().setProject((p) =>
@@ -236,7 +244,18 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
       addZone: (columnId, zone) => get().setProject((p) => replaceZones(p, columnId, (zones) => [...zones, zone])),
 
       updateZone: (columnId, zoneId, patch) =>
-        get().setProject((p) => replaceZones(p, columnId, (zones) => zones.map((z) => (z.id === zoneId ? { ...z, ...patch } : z)))),
+        get().setProject((p) =>
+          replaceZones(p, columnId, (zones) =>
+            zones.map((z) => {
+              if (z.id !== zoneId) return z;
+              const next = { ...z, ...patch };
+              // `{ rod: undefined }` means "back to the automatic rail height": drop the key
+              // instead of leaving an explicit undefined behind for the file and the shape check.
+              if ('rod' in patch && patch.rod === undefined) delete next.rod;
+              return next;
+            }),
+          ),
+        ),
 
       // A unit always keeps at least one zone: an empty unit is a validation error with no way
       // back from the keyboard, so the last zone is simply not removable (the ✕ is disabled too).
@@ -251,7 +270,16 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
           }),
         ),
 
-      select: (patch) => set((s) => ({ ui: { ...s.ui, selection: { ...s.ui.selection, ...patch } } })),
+      // A corner and a column are two different things to edit, so selecting either drops the
+      // other: picking a corner clears the column/zone, and touching `columnId` at all (a unit
+      // click, or a plan click that clears it) drops the corner.
+      select: (patch) =>
+        set((s) => {
+          let selection: Selection = { ...s.ui.selection, ...patch };
+          if (patch.corner != null) selection = { ...selection, columnId: null, zoneId: null };
+          else if ('columnId' in patch) selection = { ...selection, corner: null };
+          return { ui: { ...s.ui, selection } };
+        }),
 
       newProject: () => get().loadProject(defaultProject()),
 
