@@ -1,21 +1,8 @@
 import { makePreset } from './presets';
-import type { CornerMode, CornerPlan, Project, Wall, WallPlan } from './types';
+import type { Project, WallPlan } from './types';
 
 export function emptyWall(depth: number, enabled: boolean): WallPlan {
   return { enabled, depth, segments: [[], []] };
-}
-
-export const CORNER_DEFAULT_WIDTH = 1000;
-/** Compartments, not boards: 6 bays are split by 5 shelves. */
-export const CORNER_DEFAULT_SHELVES = 6;
-
-export function defaultCorner(mode: CornerMode = 'none'): CornerPlan {
-  return { mode, width: CORNER_DEFAULT_WIDTH, shelves: CORNER_DEFAULT_SHELVES };
-}
-
-/** One plan per anchor wall. Corners start at `none`, i.e. exactly the pre-corners behaviour. */
-export function defaultCorners(mode: CornerMode = 'none'): Record<Wall, CornerPlan> {
-  return { back: defaultCorner(mode), right: defaultCorner(mode), front: defaultCorner(mode), left: defaultCorner(mode) };
 }
 
 export function defaultProject(): Project {
@@ -46,7 +33,6 @@ export function defaultProject(): Project {
       topGap: 150,
       doorMargin: 80,
       walls: { back, right, front, left },
-      corners: defaultCorners(),
     },
   };
 }

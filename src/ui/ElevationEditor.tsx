@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cornerAnchor, cornerClaim, leftOf, minUnitWidth, rightOf, segmentFree, segmentUsed, wallLength, wallSegments, type Segment } from '../geometry/frames';
+import { leftOf, minUnitWidth, rightOf, segmentFree, segmentUsed, wallLength, wallSegments, type Segment } from '../geometry/frames';
 import { heights, layoutWall } from '../geometry/layout';
 import { wallElevation, wallName } from '../drawing/views';
 import { msg } from '../i18n';
@@ -149,29 +149,6 @@ export function ElevationEditor() {
           <g style={{ pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: drawn.inner }} />
           {enabled && drawnEnabled && (
             <g>
-              {/* corner hit rectangles: the stretch of this wall the corner owns, at either end.
-                  A corner that takes no wall length has nothing to click here — it is still
-                  reachable through its square on the plan. */}
-              {(['start', 'end'] as const).map((side) => {
-                const claim = cornerClaim(view.p, wall, side);
-                if (!(claim > 0) || topY <= 0) return null;
-                const anchor = cornerAnchor(wall, side);
-                const x = side === 'start' ? 0 : wallLen - claim;
-                return (
-                  <rect
-                    key={`c${side}`}
-                    className={`hit cornerhit${anchor === selection.corner ? ' on' : ''}`}
-                    x={x}
-                    y={-topY}
-                    width={claim}
-                    height={topY}
-                    onClick={() => select({ corner: anchor })}
-                  >
-                    <title>{t(`corner.${anchor}`)}</title>
-                  </rect>
-                );
-              })}
-
               {/* column hit rectangles */}
               {layout.map((c) => {
                 const id = c.kind === 'unit' ? c.unit.id : c.gap.id;

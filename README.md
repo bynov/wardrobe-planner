@@ -15,22 +15,16 @@ Languages: English and Russian (switch in the top bar; the PDF embeds PT Sans, S
    elevation to insert a unit preset (long hanging, double hanging, shelves, drawers +
    hanging, drawers + shelves, open compartment, or an empty gap) at that position.
 2. Click a unit to edit its width and zones (bottom→top stack) in the inspector; click a
-   zone *inside the already-selected unit* to drill down to that zone. A shelves zone (and a
-   corner unit) is sized in **compartments**, not boards: *n* compartments are split by *n* − 1
+   zone *inside the already-selected unit* to drill down to that zone. A shelves zone is sized
+   in **compartments**, not boards: *n* compartments are split by *n* − 1
    shelves, so `1` is a single open bay. Older project files are migrated on load. `Delete` removes the
    selected zone when one is selected (never a unit's last zone) and the whole unit otherwise,
    `Esc` clears the selection, `Cmd/Ctrl+D` duplicates the unit, `Cmd/Ctrl+Z` undoes.
-3. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in the
+3. A hanging zone's rail runs **along the wall** by default; switch its *Direction* to
+   **front to back (corner)** for a unit boxed into a corner, where a wall-parallel rail
+   cannot be reached. The plan shows every rail as a dashed line, so the two read apart.
+4. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in the
    left panel.
-4. **Corners.** Click a corner in the plan (or the corner region of an elevation) to open it
-   in the inspector. `None` is the default and keeps the old behaviour — back and front walls
-   own their corners and side walls butt against them. `L-shaped shelves` puts an open
-   L-shaped corner unit there instead: both runs stop short of the corner by the *leg length*,
-   and the corner gets its own carcass with L-shaped shelves, tagged `BL`/`BR`/`FR`/`FL` in
-   the drawings and the cut list. A corner is only built when both of its walls carry
-   wardrobe, and the leg must clear the deeper of the two runs by 100 mm without taking more
-   than half of either wall. Shortening the runs to make room is left to you — the planner
-   reports an overflow but does not move units.
 5. **3D** tab to orbit around the room; **Cut list** tab for the parts; Export PDF for the
    scheme (open the 3D tab first for the snapshot page).
 
@@ -54,7 +48,7 @@ plans an open, walk-in wardrobe.
 ## Layout
 
 - `src/model` types, factory, presets, defaults, validation
-- `src/geometry` wall frames + segments + corners, unit/zone/corner layout, `Part[]` builder
+- `src/geometry` wall frames + segments, unit/zone layout, `Part[]` builder
 - `src/cutlist`, `src/drawing`, `src/render`, `src/pdf` pure outputs derived from the model / `Part[]`
 - `src/store` zustand store (history, selection), persistence
 - `src/ui` React components (Design tab editors, 3D viewport under `src/ui/three`)

@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { Project, Wall } from '../model/types';
-import { WALLS, cornerLShelf } from '../geometry/frames';
+import { WALLS } from '../geometry/frames';
 import { buildParts } from '../geometry/parts';
 import { buildCutList, locationTag, type CutRow } from '../cutlist/cutlist';
 import { planView, wallElevation, wallName } from '../drawing/views';
@@ -102,15 +102,6 @@ export function summaryRows(p: Project, lang: Lang, date: Date): [string, string
       t(lang, 'pdf.wallSummary', { wall: wallName(lang, wall), depth: wardrobe.walls[wall].depth }),
       wallSummaryValue(p, wall, lang),
     ]),
-    // One row per corner that actually gets built; a "none" corner has nothing to report.
-    ...WALLS.flatMap((anchor): [string, string][] => {
-      const plan = cornerLShelf(p, anchor);
-      if (!plan) return [];
-      return [[
-        t(lang, `corner.${anchor}` as MessageKey),
-        t(lang, 'pdf.cornerSummary', { mode: t(lang, `corner.mode.${plan.mode}` as MessageKey), w: plan.width, n: plan.shelves }),
-      ]];
-    }),
   ];
 }
 
@@ -136,14 +127,9 @@ function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions, lang: Lang): void
   }
 }
 
-/** "B = Back wall, R = Right wall, …" — what the location codes in the table stand for. Corner
- * codes ("BL = Back-left corner") join in only when a corner unit actually appears in the rows. */
-function locationLegend(lang: Lang, rows: CutRow[]): string {
-  const corners = new Set(rows.flatMap((r) => r.locations.map((l) => l.corner).filter((c): c is Wall => !!c)));
-  const list = [
-    ...WALLS.map((w) => `${t(lang, `wall.abbr.${w}` as MessageKey)} = ${wallName(lang, w)}`),
-    ...WALLS.filter((w) => corners.has(w)).map((w) => `${t(lang, `corner.tag.${w}` as MessageKey)} = ${t(lang, `corner.${w}` as MessageKey)}`),
-  ].join(', ');
+/** "B = Back wall, R = Right wall, …" — what the location codes in the table stand for. */
+function locationLegend(lang: Lang): string {
+  const list = WALLS.map((w) => `${t(lang, `wall.abbr.${w}` as MessageKey)} = ${wallName(lang, w)}`).join(', ');
   return t(lang, 'pdf.legend', { list });
 }
 
@@ -166,7 +152,7 @@ function cutListPages(doc: jsPDF, rows: CutRow[], lang: Lang): void {
     doc.setFontSize(CUT_FONT_SIZE);
     // The location cells hold codes, so the first page spells them out once. It rides on the header
     // line, right of the title, where it costs the table none of its ROWS_PER_PAGE rows.
-    if (page === 0) doc.text(locationLegend(lang, rows), W - M, M + 4, { align: 'right' });
+    if (page === 0) doc.text(locationLegend(lang), W - M, M + 4, { align: 'right' });
     let y = M + 14;
     for (const [name, x] of cols) doc.text(name, x, y);
     y += ROW_H;

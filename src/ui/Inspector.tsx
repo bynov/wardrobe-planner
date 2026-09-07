@@ -1,30 +1,23 @@
 import { useState } from 'react';
-import { cornerActive, cornerWalls, segmentFree, wallSegments } from '../geometry/frames';
+import { segmentFree, wallSegments } from '../geometry/frames';
 import { layoutUnit, type ZoneLayout } from '../geometry/layout';
 import { wallName } from '../drawing/views';
 import { tmDeep, type Lang } from '../i18n';
 import { makeZone } from '../model/factory';
-import { CORNER_MODES, ROD_REFS, ZONE_TYPES, type CornerMode, type Project, type RodRef, type Unit, type ValidationError, type Wall, type Zone, type ZoneType } from '../model/types';
-import { cornerLegRange } from '../model/validate';
+import { ROD_DIRS, ROD_REFS, ZONE_TYPES, type Project, type RodDir, type RodRef, type Unit, type ValidationError, type Wall, type Zone, type ZoneType } from '../model/types';
 import { findColumn, useStore, type Selection } from '../store/store';
-import { NumberField, NumberInput, SelectField } from './fields';
+import { NumberField, NumberInput } from './fields';
 import { useT } from './useT';
 
 const COUNTED: ZoneType[] = ['shelves', 'drawers'];
 /** Both zone kinds count openings, but a shelves zone's openings are compartments, not boards. */
 const countKey = (type: ZoneType) => (type === 'shelves' ? 'ui.compartments' : 'ui.count');
 
-// `walls.<wall>[.segments.<segment>.<index>][...]` and `corners.<wall>` — the paths validate() emits.
+// `walls.<wall>[.segments.<segment>.<index>][...]` — the paths validate() emits.
 const WALL_PATH = /^walls\.(back|right|front|left)(?:\.segments\.([01])\.(\d+))?/;
-const CORNER_PATH = /^corners\.(back|right|front|left)$/;
 
 /** What an error's path points at, so clicking it can take the user there. */
 function errorTarget(p: Project, path: string): Partial<Selection> | null {
-  const c = CORNER_PATH.exec(path);
-  if (c) {
-    const anchor = c[1] as Wall;
-    return { wall: cornerWalls(anchor).a, corner: anchor };
-  }
   const m = WALL_PATH.exec(path);
   if (!m) return null;
   const wall = m[1] as Wall;
@@ -88,9 +81,20 @@ function RailFields({ unit, zone, zl }: { unit: Unit; zone: Zone; zl: ZoneLayout
   /** The offset that keeps the rail exactly where it is now, measured from `from`. */
   const offsetFrom = (from: RodRef) => Math.max(0, Math.round(from === 'top' ? zl.yTop - rodY : rodY - zl.yBot));
   const setRod = (next: Zone['rod']) => updateZone(unit.id, zone.id, { rod: next });
+  // 'along' is the absence of the field, so picking it drops the key rather than writing a default.
+  const setRodDir = (next: RodDir) => updateZone(unit.id, zone.id, { rodDir: next === 'along' ? undefined : next });
 
   return (
     <div className="zone-fields rail">
+      <select
+        value={zl.rodDir}
+        title={t('ui.rodDir')}
+        onChange={(e) => setRodDir(e.target.value as RodDir)}
+      >
+        {ROD_DIRS.map((d) => (
+          <option key={d} value={d}>{t(`ui.rodDir.${d}`)}</option>
+        ))}
+      </select>
       <span className="rail-label">{t('ui.rail')}</span>
       <label className="chk">
         <input
@@ -104,6 +108,7 @@ function RailFields({ unit, zone, zl }: { unit: Unit; zone: Zone; zl: ZoneLayout
       </label>
       {rod && (
         <>
+          <NumberInput min={0} step={10} value={rod.offset} title={t('ui.rail')} onChange={(offset) => setRod({ from: rod.from, offset })} />
           <select
             value={rod.from}
             title={t('ui.rail')}
@@ -114,7 +119,6 @@ function RailFields({ unit, zone, zl }: { unit: Unit; zone: Zone; zl: ZoneLayout
               <option key={r} value={r}>{t(`ui.rodFrom.${r}`)}</option>
             ))}
           </select>
-          <NumberInput min={0} step={10} value={rod.offset} title={t('ui.rail')} onChange={(offset) => setRod({ from: rod.from, offset })} />
           <span className="rail-eff">{t('ui.railHeight', { n: Math.round(rodY) })}</span>
         </>
       )}
@@ -188,56 +192,6 @@ function ZoneRow({ unit, zone, zl, count, active }: { unit: Unit; zone: Zone; zl
   );
 }
 
-/** Everything about one corner: which of the two shapes sits there, and how big it is. */
-function CornerPanel({ anchor }: { anchor: Wall }) {
-  const project = useStore((s) => s.project);
-  const setCorner = useStore((s) => s.setCorner);
-  const { lang, t } = useT();
-  const plan = project.wardrobe.corners[anchor];
-  const { a, b } = cornerWalls(anchor);
-  const active = cornerActive(project, anchor);
-  const { min, max } = cornerLegRange(project, anchor);
-  const modeOptions = CORNER_MODES.map((m) => ({ value: m, label: t(`corner.mode.${m}`) }));
-
-  return (
-    <>
-      <h3>
-        {t(`corner.${anchor}`)}{' '}
-        <span className="sub">{`${wallName(lang, a)} · ${wallName(lang, b)}`}</span>
-      </h3>
-      <SelectField<CornerMode>
-        label={t('ui.cornerMode')}
-        value={plan.mode}
-        options={modeOptions}
-        onChange={(mode) => setCorner(anchor, { mode })}
-      />
-      {plan.mode === 'lshelf' && (
-        <>
-          <NumberField
-            label={t('ui.cornerWidth')}
-            value={plan.width}
-            min={1}
-            step={10}
-            onChange={(width) => setCorner(anchor, { width })}
-          />
-          <NumberField
-            label={t('ui.cornerShelves')}
-            value={plan.shelves}
-            min={1}
-            step={1}
-            onChange={(shelves) => setCorner(anchor, { shelves })}
-          />
-          <div className="derived">{t('ui.cornerRange', { min, max })}</div>
-        </>
-      )}
-      {/* An L-shaped corner needs both runs; say so instead of silently drawing nothing. */}
-      {plan.mode === 'lshelf' && !active && <div className="zonehint">{t('ui.cornerInactive')}</div>}
-      {/* Only an lshelf corner shortens the runs — saying so under "None" would be a lie. */}
-      {plan.mode === 'lshelf' && <div className="zonehint">{t('ui.cornerHint')}</div>}
-    </>
-  );
-}
-
 export function Inspector() {
   const project = useStore((s) => s.project);
   const selection = useStore((s) => s.ui.selection);
@@ -247,15 +201,6 @@ export function Inspector() {
   const duplicateColumn = useStore((s) => s.duplicateColumn);
   const addZone = useStore((s) => s.addZone);
   const { lang, t } = useT();
-
-  if (selection.corner) {
-    return (
-      <aside className="inspector">
-        <ErrorList />
-        <CornerPanel anchor={selection.corner} />
-      </aside>
-    );
-  }
 
   const ref = selection.columnId ? findColumn(project, selection.columnId) : null;
 

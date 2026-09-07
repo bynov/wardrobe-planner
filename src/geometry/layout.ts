@@ -1,5 +1,5 @@
 import { WALLS, wallSegments } from './frames';
-import type { Gap, Project, Unit, Wall, Zone } from '../model/types';
+import type { Gap, Project, RodDir, Unit, Wall, Zone } from '../model/types';
 
 export const SHELF_SETBACK = 20;
 export const REVEAL = 2;
@@ -69,6 +69,8 @@ export interface ZoneLayout {
   rodY: number | null;
   /** True when `rodY` came from the automatic rule rather than the zone's own `rod`. */
   rodAuto: boolean;
+  /** Which way the rail runs; `along` unless the zone says otherwise. */
+  rodDir: RodDir;
 }
 
 export interface UnitLayout {
@@ -132,6 +134,7 @@ export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: 
       frontH: 0,
       rodY: null,
       rodAuto: zone.rod === undefined,
+      rodDir: zone.rodDir ?? 'along',
     };
     if (zone.type === 'shelves' && zone.count >= 1) {
       // `count` counts COMPARTMENTS, as it does for drawers: n bays are separated by n - 1

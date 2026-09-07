@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { planView, wallElevation, wallName } from './views';
 import { defaultProject } from '../model/defaults';
 import { cornerClaim, doorSpan, wallSegments } from '../geometry/frames';
-import { layoutWall, type UnitLayout } from '../geometry/layout';
+import { layoutAll, layoutWall, type UnitLayout } from '../geometry/layout';
 import type { Unit } from '../model/types';
 import type { Drawing, Prim } from './ir';
 
@@ -324,68 +324,83 @@ describe('wallElevation — left wall carrying the door', () => {
 });
 
 describe('corners in the drawings', () => {
-  const bl = (() => {
-    const q = structuredClone(defaultProject());
-    q.wardrobe.corners.back = { mode: 'lshelf', width: 1000, shelves: 5 };
-    return q;
-  })();
-  const t = 18;
-
-  it('plan: the L footprint is drawn filled and tagged', () => {
-    const d = planView(bl, 'en');
-    const l = of(d, 'poly').find((q) => q.pts.length === 6 && q.fill === 'panel')!;
-    expect(l).toBeDefined();
-    // back-left corner: the back wall's frame is the identity and plan IR y = -world z
-    expect(l.pts).toEqual([
-      { x: 0, y: -0 }, { x: 1000, y: -0 }, { x: 1000, y: -600 }, { x: 600, y: -600 }, { x: 600, y: -1000 }, { x: 0, y: -1000 },
-    ]);
-    expect(hasText(d, 'BL')).toBe(true);
-    expect(hasText(planView(defaultProject(), 'en'), 'BL')).toBe(false);
-  });
-
-  it('elevation of wall A: the solid end-panel face, then the open face with shelf lines', () => {
-    const d = wallElevation(bl, 'back', 'en');
-    const filled = of(d, 'poly').filter((q) => q.fill === 'panel');
-    // the end panel of leg B closes s in [0, dB] = [0, 600]
-    const face = filled.find((q) => q.pts[0].x === 0 && Math.max(...q.pts.map((v) => v.x)) === 600)!;
-    expect(face).toBeDefined();
-    expect(hasText(d, 'Left wall')).toBe(true); // the face belongs to wall B
-    expect(hasText(d, 'BL')).toBe(true);
-    // five shelf slabs across the open face s in [600, 1000 - t]
-    const shelves = filled.filter((q) => q.pts[0].x === 600 && Math.max(...q.pts.map((v) => v.x)) === 1000 - t);
-    expect(shelves).toHaveLength(4); // 5 compartments = 4 boards
-    expect(near(dimsDx(d), 1000)).toBeGreaterThanOrEqual(1); // the leg length is dimensioned
-  });
-
-  it('elevation of wall B: mirrored — open face first, panel face at the far end', () => {
-    const d = wallElevation(bl, 'left', 'en');
-    const L = 2000;
-    const filled = of(d, 'poly').filter((q) => q.fill === 'panel');
-    const face = filled.find((q) => Math.min(...q.pts.map((v) => v.x)) === L - 600 && Math.max(...q.pts.map((v) => v.x)) === L)!;
-    expect(face).toBeDefined(); // leg A's end panel over [L - dA, L]
-    expect(hasText(d, 'Back wall')).toBe(true);
-    const shelves = filled.filter((q) =>
-      Math.min(...q.pts.map((v) => v.x)) === L - 1000 + t && Math.max(...q.pts.map((v) => v.x)) === L - 600);
-    expect(shelves).toHaveLength(4);
-  });
-
-  it('a "none" corner still draws the v1 dashed wall section and no tag', () => {
+  it('a side wall draws the v1 dashed section for the neighbouring run it yields to', () => {
     const d = wallElevation(defaultProject(), 'left', 'en');
     expect(of(d, 'poly').some((q) => q.stroke === 'dashed' && q.pts[0].x === 1400)).toBe(true);
+    expect(hasText(d, 'Back wall')).toBe(true);
+  });
+
+  it('a back/front wall yields nothing, so it draws no dashed corner section', () => {
+    const p = defaultProject();
+    const d = wallElevation(p, 'back', 'en');
+    const L = 2400;
+    const corners = of(d, 'poly').filter((q) =>
+      q.stroke === 'dashed' && (Math.min(...q.pts.map((v) => v.x)) === 0 || Math.max(...q.pts.map((v) => v.x)) === L) &&
+      Math.abs(Math.min(...q.pts.map((v) => v.y)) - p.wardrobe.plinthHeight) < 0.01);
+    expect(corners).toHaveLength(0);
+    expect(cornerClaim(p, 'back', 'start')).toBe(0);
+  });
+
+  it('the plan draws no corner unit and carries no corner tag', () => {
+    const d = planView(defaultProject(), 'en');
+    expect(of(d, 'poly').some((q) => q.pts.length === 6)).toBe(false);
     expect(hasText(d, 'BL')).toBe(false);
   });
+});
 
-  it('an lshelf corner with a disabled wall draws nothing', () => {
+describe('rail direction in the drawings', () => {
+  const D = 25; // ROD_DIAMETER
+  /** The back wall with a single unit whose only zone is a hanging one in `dir`. */
+  const oneRail = (rodDir?: 'along' | 'across') => {
     const q = structuredClone(defaultProject());
-    q.wardrobe.corners.front = { mode: 'lshelf', width: 1000, shelves: 5 }; // front wall is off
-    expect(hasText(planView(q, 'en'), 'FR')).toBe(false);
-    expect(hasText(wallElevation(q, 'right', 'en'), 'FR')).toBe(false);
+    q.wardrobe.walls.left.enabled = false;
+    q.wardrobe.walls.right.enabled = false;
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'c1', kind: 'unit', width: 600, zones: [{ id: 'z1', type: 'hanging', height: null, count: 1, ...(rodDir ? { rodDir } : {}) }] },
+    ];
+    return q;
+  };
+
+  it('elevation: an along rail keeps its dashed axis; an across one is drawn end-on only', () => {
+    const along = wallElevation(oneRail('along'), 'back', 'en');
+    const across = wallElevation(oneRail('across'), 'back', 'en');
+    const dashedAt = (d: Drawing, y: number) => of(d, 'line').filter((l) => l.stroke === 'dashed' && Math.abs(l.a.y - y) < 0.01 && Math.abs(l.b.y - y) < 0.01);
+    const rodY = 2000; // auto rail parks at MAX_ROD_HEIGHT in a full-height hanging zone
+    expect(dashedAt(along, rodY)).toHaveLength(1);
+    expect(dashedAt(across, rodY)).toHaveLength(0);
+    // both still draw the Ø25 circle, centred on the unit
+    const circleOf = (d: Drawing) => of(d, 'poly').find((q) => q.pts.length === 16 && Math.abs(Math.max(...q.pts.map((v) => v.x)) - Math.min(...q.pts.map((v) => v.x)) - D) < 0.5)!;
+    expect(circleOf(along)).toBeDefined();
+    expect(circleOf(across)).toBeDefined();
+    expect(hasText(along, 'rail at 2000')).toBe(true);
+    expect(hasText(across, 'rail at 2000')).toBe(true);
   });
 
-  it('russian keeps the geometry and the latin tag', () => {
-    const en = wallElevation(bl, 'back', 'en');
-    const ru = wallElevation(bl, 'back', 'ru');
-    expect(dimsDx(ru)).toEqual(dimsDx(en));
-    expect(hasText(ru, 'BL')).toBe(true);
+  it('elevation: an across rail is labelled, an along one is not', () => {
+    expect(hasText(wallElevation(oneRail('across'), 'back', 'en'), '⟂ rail')).toBe(true);
+    expect(hasText(wallElevation(oneRail('along'), 'back', 'en'), '⟂ rail')).toBe(false);
+    expect(hasText(wallElevation(oneRail('across'), 'back', 'ru'), '⟂ штанга')).toBe(true);
+  });
+
+  it('plan: every rail is drawn as a dashed line, one per rod', () => {
+    const p = defaultProject();
+    const rods = layoutAll(p).flatMap((c) => (c.kind === 'unit' ? c.zones : [])).filter((z) => z.rodY !== null).length;
+    expect(rods).toBeGreaterThan(0);
+    const d = planView(p, 'en');
+    expect(of(d, 'line').filter((l) => l.stroke === 'dashed')).toHaveLength(rods);
+  });
+
+  it('plan: an along rail runs parallel to its wall, an across one perpendicular to it', () => {
+    // back wall: wall-local u -> world x, wall-local v -> world z (plan IR y = -z)
+    const along = of(planView(oneRail('along'), 'en'), 'line').find((l) => l.stroke === 'dashed')!;
+    expect(along.a.y).toBeCloseTo(along.b.y); // constant depth -> parallel to the wall
+    expect(along.a.x).toBeCloseTo(18); // s0 + t
+    expect(along.b.x).toBeCloseTo(600 - 18); // s1 - t
+
+    const across = of(planView(oneRail('across'), 'en'), 'line').find((l) => l.stroke === 'dashed')!;
+    expect(across.a.x).toBeCloseTo(300); // s0 + w/2
+    expect(across.b.x).toBeCloseTo(300);
+    expect(across.a.y).toBeCloseTo(-(4 + 20)); // backThickness + SHELF_SETBACK
+    expect(across.b.y).toBeCloseTo(-(600 - 20)); // depth - SHELF_SETBACK
   });
 });

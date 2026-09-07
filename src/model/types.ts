@@ -17,21 +17,18 @@ export const ROD_REFS = ['top', 'bottom'] as const;
 export type RodRef = (typeof ROD_REFS)[number];
 /** An explicit rail placement: `offset` mm below the zone's top, or above its bottom. */
 export interface RodPlacement { from: RodRef; offset: number }
-/** `rod` only means anything on a hanging zone; absent = the automatic rail height. */
-export interface Zone { id: string; type: ZoneType; height: number | null; count: number; rod?: RodPlacement }
+/** Which way a hanging rail runs: `along` the wall (the usual one) or `across` it, front to back —
+ * the arrangement a unit boxed into a corner needs. */
+export const ROD_DIRS = ['along', 'across'] as const;
+export type RodDir = (typeof ROD_DIRS)[number];
+/** `rod` and `rodDir` only mean anything on a hanging zone; absent = the automatic rail height and
+ * the `along` direction respectively. */
+export interface Zone { id: string; type: ZoneType; height: number | null; count: number; rod?: RodPlacement; rodDir?: RodDir }
 export interface Unit { id: string; kind: 'unit'; width: number; zones: Zone[] }
 export interface Gap { id: string; kind: 'gap'; width: number }
 export type Column = Unit | Gap;
 export interface WallPlan { enabled: boolean; depth: number; segments: [Column[], Column[]] }
 
-/** `none` keeps the v1 behaviour (the side wall butts against the back/front run, nothing is
- * built in the corner); `lshelf` puts an L-shaped open corner shelf unit there and makes both
- * runs stop short of it by `width`. */
-export const CORNER_MODES = ['none', 'lshelf'] as const;
-export type CornerMode = (typeof CORNER_MODES)[number];
-/** `width` = the leg length along BOTH walls; `shelves` = COMPARTMENTS >= 1 (lshelf only), so
- * `n` compartments are split by `n - 1` boards and 1 is a single open bay. */
-export interface CornerPlan { mode: CornerMode; width: number; shelves: number }
 export interface Wardrobe {
   panelThickness: number;
   backThickness: number;
@@ -39,9 +36,6 @@ export interface Wardrobe {
   topGap: number;
   doorMargin: number;
   walls: Record<Wall, WallPlan>;
-  /** Keyed by the ANCHOR wall: the wall whose `s = 0` end is that corner. `back` is the back-left
-   * corner, `right` the back-right, `front` the front-right, `left` the front-left. */
-  corners: Record<Wall, CornerPlan>;
 }
 export interface Project { name: string; room: Room; door: Door; wardrobe: Wardrobe }
 export interface ValidationError { path: string; message: Msg }

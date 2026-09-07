@@ -216,46 +216,6 @@ describe('validate', () => {
   });
 });
 
-describe('validate: corners', () => {
-  const lshelf = (width: number, shelves = 6) => {
-    const q = clone(defaultProject());
-    q.wardrobe.corners.back = { mode: 'lshelf', width, shelves };
-    return q;
-  };
-
-  it('a "none" corner is never checked', () => {
-    const q = clone(defaultProject());
-    q.wardrobe.corners.back = { mode: 'none', width: 10, shelves: -3 };
-    expect(validate(q).some((e) => e.message.key.startsWith('error.corner'))).toBe(false);
-  });
-
-  it('the default 1000 mm leg fits the default room', () => {
-    expect(validate(lshelf(1000)).some((e) => e.message.key === 'error.cornerWidth')).toBe(false);
-  });
-
-  it('error.cornerWidth: a leg shorter than the deeper run + 100', () => {
-    const err = validate(lshelf(650)).find((e) => e.message.key === 'error.cornerWidth');
-    expect(err).toBeTruthy();
-    expect(err!.path).toBe('corners.back');
-    expect(err!.message.params).toMatchObject({ corner: 'corner.back', min: 700, max: 1000 });
-    expect(tmDeep('en', err!.message)).toBe('Back-left corner: leg length must be between 700 and 1000 mm');
-  });
-
-  it('error.cornerWidth: a leg longer than half of either wall', () => {
-    // the left wall is 2000 long, so 1100 > 1000 is too long even though the back wall is 2400
-    expect(validate(lshelf(1100)).some((e) => e.message.key === 'error.cornerWidth')).toBe(true);
-  });
-
-  it('error.cornerShelves: fewer than one compartment', () => {
-    const err = validate(lshelf(1000, 0)).find((e) => e.message.key === 'error.cornerShelves');
-    expect(err).toBeTruthy();
-    expect(err!.path).toBe('corners.back');
-    expect(validate(lshelf(1000, -1)).some((e) => e.message.key === 'error.cornerShelves')).toBe(true);
-    // one compartment is legal: an open corner bay with no board in it
-    expect(validate(lshelf(1000, 1)).some((e) => e.message.key === 'error.cornerShelves')).toBe(false);
-  });
-});
-
 describe('validate: rail height', () => {
   // Back wall, unit 1: a 600 mm drawers zone under a hanging zone that takes the rest.
   const withRod = (rod: Zone['rod'] | undefined) => {

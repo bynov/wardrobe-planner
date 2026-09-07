@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { makePreset, PRESET_KEYS } from './presets';
 
 import { cloneColumn, makeUnit, makeZone } from './factory';
-import { CORNER_DEFAULT_SHELVES, CORNER_DEFAULT_WIDTH, defaultCorner, defaultProject } from './defaults';
-import { CORNER_MODES } from './types';
-import { WALLS } from '../geometry/frames';
+import { defaultProject } from './defaults';
+import { ROD_DIRS } from './types';
 
 describe('presets', () => {
   it('every preset builds a column of the requested width', () => {
@@ -59,18 +58,16 @@ describe('factory', () => {
     const c = cloneColumn(u);
     expect(c.kind === 'unit' && c.zones[0].rod).toEqual({ from: 'bottom', offset: 1200 });
   });
+
+  it('cloneColumn carries the rail direction over', () => {
+    const u = makeUnit(500, [{ ...makeZone('hanging'), rodDir: 'across' as const }]);
+    const c = cloneColumn(u);
+    expect(c.kind === 'unit' && c.zones[0].rodDir).toBe('across');
+  });
 });
 
-describe('corners', () => {
-  it('CORNER_MODES lists the two modes and defaultCorner builds a plan', () => {
-    expect([...CORNER_MODES]).toEqual(['none', 'lshelf']);
-    expect(defaultCorner()).toEqual({ mode: 'none', width: CORNER_DEFAULT_WIDTH, shelves: CORNER_DEFAULT_SHELVES });
-    expect(CORNER_DEFAULT_SHELVES).toBe(6); // compartments, i.e. 5 boards — the pre-change geometry
-    expect(defaultCorner('lshelf').mode).toBe('lshelf');
-  });
-  it('the default project carries a "none" corner on every wall', () => {
-    const p = defaultProject();
-    expect(WALLS.map((w) => p.wardrobe.corners[w].mode)).toEqual(['none', 'none', 'none', 'none']);
-    expect(p.wardrobe.corners.back).toEqual({ mode: 'none', width: 1000, shelves: 6 });
+describe('rail direction', () => {
+  it('ROD_DIRS lists the two directions, "along" first (the default)', () => {
+    expect([...ROD_DIRS]).toEqual(['along', 'across']);
   });
 });

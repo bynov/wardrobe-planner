@@ -4,6 +4,7 @@ import { makeUnit, makeZone } from '../model/factory';
 import { ROD_DIAMETER, layoutUnit } from './layout';
 import type { Zone } from '../model/types';
 import { buildParts, buildUnitParts, partBounds } from './parts';
+import { frameTransform, wallFrame } from './frames';
 
 const p = defaultProject();
 
@@ -99,5 +100,52 @@ describe('buildParts', () => {
       expect(b.min.z).toBeGreaterThanOrEqual(-1e-6); expect(b.max.z).toBeLessThanOrEqual(2000 + 1e-6);
       expect(b.max.y).toBeLessThanOrEqual(2350 + 1e-6);
     }
+  });
+});
+
+describe('buildUnitParts: a front-to-back rail', () => {
+  const t = 18, bt = 4, K = 20; // panel/back thickness and SHELF_SETBACK
+  const rodOf = (rodDir: 'along' | 'across', wall: 'back' | 'left' = 'back') => {
+    const u = makeUnit(600, [{ ...makeZone('hanging', 1000), rodDir }, makeZone('open')]);
+    const L = layoutUnit(p, wall, 0, 0, u, 0);
+    const local = buildUnitParts(L, p).find((x) => x.kind === 'rod')!;
+    return { part: local, L };
+  };
+
+  it('an across rod runs front to back: centred in the unit, spanning the interior depth', () => {
+    const { part, L } = rodOf('across'); // back wall: the frame is the identity
+    const b = partBounds({ ...part, transform: frameTransform(wallFrame(p.room, 'back'), part.transform) });
+    const cx = L.s0 + t + L.interiorWidth / 2; // 300
+    expect(b.min.x).toBeCloseTo(cx - ROD_DIAMETER / 2);
+    expect(b.max.x).toBeCloseTo(cx + ROD_DIAMETER / 2);
+    expect(b.min.z).toBeCloseTo(bt + K); // 24
+    expect(b.max.z).toBeCloseTo(L.depth - K); // 580
+    expect(part.material).toBe('rod');
+    expect(part.notes?.some((n) => n.key === 'note.rodAcross')).toBe(true);
+  });
+
+  it('the across rod is as long as the interior depth less both setbacks', () => {
+    const { part, L } = rodOf('across');
+    expect(part.thickness).toBeCloseTo(L.interiorDepth - 2 * K); // 596 - 40 = 556
+  });
+
+  it('an along rod is unchanged: it spans the interior width at mid-depth', () => {
+    const { part, L } = rodOf('along');
+    const b = partBounds({ ...part, transform: frameTransform(wallFrame(p.room, 'back'), part.transform) });
+    expect(b.min.x).toBeCloseTo(L.s0 + t);
+    expect(b.max.x).toBeCloseTo(L.s0 + L.width - t);
+    expect(b.min.z).toBeCloseTo(L.interiorDepth / 2 - ROD_DIAMETER / 2);
+    expect(part.notes?.some((n) => n.key === 'note.rodAcross')).toBe(false);
+  });
+
+  it('maps through the wall frame: on the left wall an across rod runs along world +X', () => {
+    const { part, L } = rodOf('across', 'left');
+    const b = partBounds({ ...part, transform: frameTransform(wallFrame(p.room, 'left'), part.transform) });
+    // left wall: local (s, y, z) -> world (z, y, D - s)
+    expect(b.min.x).toBeCloseTo(bt + K);
+    expect(b.max.x).toBeCloseTo(L.depth - K);
+    const cs = L.s0 + t + L.interiorWidth / 2;
+    expect(b.min.z).toBeCloseTo(p.room.depth - cs - ROD_DIAMETER / 2);
+    expect(b.max.z).toBeCloseTo(p.room.depth - cs + ROD_DIAMETER / 2);
   });
 });

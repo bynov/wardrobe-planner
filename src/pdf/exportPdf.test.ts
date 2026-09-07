@@ -46,16 +46,6 @@ describe('buildPdf', () => {
     expect(row![1]).toContain('hinge Right');
   });
 
-  it('adds a summary row per built corner, and the legend explains its code', () => {
-    const p = defaultProject();
-    expect(summaryRows(p, 'en', new Date('2026-09-07')).some(([k]) => k.includes('corner'))).toBe(false);
-    p.wardrobe.corners.back = { mode: 'lshelf', width: 1000, shelves: 5 };
-    const row = summaryRows(p, 'en', new Date('2026-09-07')).find(([k]) => k === 'Back-left corner');
-    expect(row).toBeTruthy();
-    expect(row![1]).toBe('L-shaped shelves, leg 1000 mm, 5 shelves');
-    expect(buildCutList(buildParts(p)).some((r) => r.locations.some((l) => l.corner === 'back'))).toBe(true);
-  });
-
   it('wraps every summary value clear of the 3D snapshot', () => {
     // The snapshot occupies the top-right block; a value line that reached it used to print
     // straight through the picture.

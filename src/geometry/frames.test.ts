@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { v3 } from './vec';
-import { WALLS, cornerActive, cornerAt, leftOf, cornerClaim, doorArc, doorHingeS, doorSpan, doorSwingSign, frameTransform, localToWorld, wallFrame, wallLength, wallSegments, segmentFree } from './frames';
-import type { CornerPlan, Project, Wall } from '../model/types';
+import { cornerClaim, doorArc, doorHingeS, doorSpan, doorSwingSign, frameTransform, localToWorld, wallFrame, wallLength, wallSegments, segmentFree } from './frames';
+import type { Project } from '../model/types';
 
 const room = { width: 2400, depth: 2000, height: 2500 };
 const near = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) => {
@@ -148,69 +148,39 @@ describe('door swing + hinge', () => {
   });
 });
 
-describe('corners', () => {
-  const base = defaultProject();
-  const withCorner = (anchor: Wall, patch: Partial<CornerPlan>): Project => ({
-    ...base,
-    wardrobe: { ...base.wardrobe, corners: { ...base.wardrobe.corners, [anchor]: { ...base.wardrobe.corners[anchor], ...patch } } },
-  });
+describe('corner claim', () => {
+  const base = defaultProject(); // back+left+right enabled, front disabled, door on front
   const enableFront = (p: Project): Project => ({
     ...p,
     wardrobe: { ...p.wardrobe, walls: { ...p.wardrobe.walls, front: { ...p.wardrobe.walls.front, enabled: true } } },
   });
 
-  it('a wall start corner is anchored on that wall, its end corner on the next wall clockwise', () => {
-    expect(cornerAt(base, 'back', 'start').anchor).toBe('back');
-    expect(cornerAt(base, 'back', 'end').anchor).toBe('right');
-    expect(cornerAt(base, 'left', 'end').anchor).toBe('back'); // left's far end = the back-left corner
-    expect(cornerAt(base, 'back', 'start').b).toBe('left');
-    expect(cornerAt(base, 'right', 'start').b).toBe('back');
-  });
-
-  it('a corner is active only when both of its walls are enabled', () => {
-    expect(cornerActive(base, 'back')).toBe(true); // back + left
-    expect(cornerActive(base, 'front')).toBe(false); // front is disabled
-    expect(cornerActive(enableFront(base), 'front')).toBe(true);
-  });
-
-  it('mode "none" keeps the v1 rule: the side wall yields the back wall depth', () => {
-    expect(cornerClaim(base, 'left', 'end')).toBe(600);
+  it('only a side wall yields, and only the neighbouring run\'s depth', () => {
+    expect(cornerClaim(base, 'left', 'end')).toBe(600); // the back wall's depth
     expect(cornerClaim(base, 'right', 'start')).toBe(600);
-    expect(cornerClaim(base, 'back', 'start')).toBe(0);
+    expect(cornerClaim(base, 'back', 'start')).toBe(0); // a back/front wall never yields
     expect(cornerClaim(base, 'back', 'end')).toBe(0);
   });
 
-  it('mode "lshelf" makes BOTH walls give way by the leg length', () => {
-    const p = withCorner('back', { mode: 'lshelf', width: 900 });
-    expect(cornerClaim(p, 'back', 'start')).toBe(900); // anchor wall A
-    expect(cornerClaim(p, 'left', 'end')).toBe(900); // wall B
-    expect(wallSegments(p, 'back')[0]).toEqual({ wall: 'back', index: 0, s0: 900, s1: 2400 });
-    expect(wallSegments(p, 'left')[0]).toEqual({ wall: 'left', index: 0, s0: 0, s1: 2000 - 900 });
+  it('a disabled neighbour claims nothing; enabling it claims its depth', () => {
+    expect(cornerClaim(base, 'left', 'start')).toBe(0); // front wall is disabled
+    expect(cornerClaim(base, 'right', 'end')).toBe(0);
+    const q = enableFront(base);
+    expect(cornerClaim(q, 'left', 'start')).toBe(400);
+    expect(cornerClaim(q, 'right', 'end')).toBe(400);
   });
 
-  it('an lshelf corner with a disabled wall claims nothing', () => {
-    const p = withCorner('front', { mode: 'lshelf', width: 900 }); // front wall is disabled
-    expect(cornerClaim(p, 'front', 'start')).toBe(0);
-    expect(cornerClaim(p, 'right', 'end')).toBe(0);
-    expect(cornerClaim(enableFront(p), 'right', 'end')).toBe(900);
+  it('a neighbour whose touching segment is shorter than a unit claims nothing', () => {
+    // A door hard in the back-left corner leaves the back wall's first segment empty there.
+    const q: Project = { ...base, door: { ...base.door, wall: 'back', offset: 0 } };
+    expect(cornerClaim(q, 'left', 'end')).toBe(0);
+    expect(cornerClaim(q, 'right', 'start')).toBe(600); // the far corner is untouched
   });
 
-  it('every corner of every wall resolves to the same plan from both sides', () => {
-    const p = enableFront(withCorner('right', { mode: 'lshelf', width: 800 }));
-    for (const wall of WALLS) {
-      const start = cornerAt(p, wall, 'start');
-      const end = cornerAt(p, leftOf(wall), 'end');
-      expect(start.anchor).toBe(end.anchor);
-      expect(start.plan).toEqual(end.plan);
-      // An lshelf corner is symmetric; a "none" corner keeps the v1 asymmetry on purpose
-      // (only the side wall yields), so symmetry is asserted for the lshelf one only.
-      if (start.plan.mode === 'lshelf') {
-        expect(cornerClaim(p, wall, 'start')).toBe(cornerClaim(p, leftOf(wall), 'end'));
-      }
-    }
-    expect(cornerClaim(p, 'right', 'start')).toBe(800); // back-right, lshelf, from wall A
-    expect(cornerClaim(p, 'back', 'end')).toBe(800); //    back-right, lshelf, from wall B
-    expect(cornerClaim(p, 'front', 'start')).toBe(0); //   front-right "none": a back/front wall never yields
-    expect(cornerClaim(p, 'right', 'end')).toBe(400); //   ...while the side wall does
+  it('the claim is exactly what wallSegments takes off each end', () => {
+    const q = enableFront(base);
+    expect(wallSegments(q, 'left')[0]).toEqual({ wall: 'left', index: 0, s0: 400, s1: 2000 - 600 });
+    expect(wallSegments(q, 'right')[0]).toEqual({ wall: 'right', index: 0, s0: 600, s1: 2000 - 400 });
+    expect(wallSegments(q, 'back')[0]).toEqual({ wall: 'back', index: 0, s0: 0, s1: 2400 });
   });
 });

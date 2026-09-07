@@ -131,3 +131,65 @@ describe('layoutUnit: explicit rail height', () => {
     expect(layoutUnit(p, 'back', 0, 0, u, 0).zones[0].rodY).toBeNull();
   });
 });
+
+/**
+ * The rail offset is measured against the HANGING COMPARTMENT's own ends, not the unit's — so a
+ * compartment sitting on top of a shelves block measures from the divider above the shelves, not
+ * from the bottom panel. This pins that per-compartment semantics.
+ */
+describe('layoutUnit: the rail offset is per-compartment', () => {
+  const t = p.wardrobe.panelThickness; // 18
+  const { floorY, interiorHeight } = heights(p); // 118, 2214
+  // Zones run bottom -> top: a fixed 1000 mm shelves block, then the hanging zone taking the rest.
+  const unit = (rod: Zone['rod']) =>
+    makeUnit(600, [makeZone('shelves', 1000, 3), { ...makeZone('hanging'), rod }]);
+  const hanging = (rod: Zone['rod']) => layoutUnit(p, 'back', 0, 0, unit(rod), 0).zones[1];
+
+  it('the hanging compartment starts at the top surface of the divider above the shelves', () => {
+    const h = hanging(undefined);
+    expect(h.yBot).toBeCloseTo(floorY + 1000 + t); // 1136, not floorY
+    expect(h.yTop).toBeCloseTo(floorY + interiorHeight); // 2332 — the last zone takes the leftover
+  });
+
+  it('from: bottom measures from the compartment bottom, not from the unit floor', () => {
+    const h = hanging({ from: 'bottom', offset: 1000 });
+    expect(h.rodY).toBeCloseTo(h.yBot + 1000);
+    expect(h.rodY).toBeCloseTo(floorY + 1000 + t + 1000); // 2136
+    expect(h.rodY).not.toBeCloseTo(floorY + 1000); // what a unit-relative reading would give
+  });
+
+  it('from: top measures from the compartment top', () => {
+    const h = hanging({ from: 'top', offset: 300 });
+    expect(h.rodY).toBeCloseTo(h.yTop - 300);
+    expect(h.rodY).toBeCloseTo(floorY + interiorHeight - 300); // 2032
+  });
+});
+
+describe('layoutUnit: rail direction', () => {
+  const hang = (rodDir?: 'along' | 'across', rod?: Zone['rod']) => {
+    const u = makeUnit(600, [{ ...makeZone('hanging', 1000), rodDir, rod }, makeZone('open')]);
+    return layoutUnit(p, 'back', 0, 0, u, 0).zones[0];
+  };
+
+  it('defaults to "along" when the zone says nothing', () => {
+    expect(hang(undefined).rodDir).toBe('along');
+  });
+
+  it('carries an explicit direction through', () => {
+    expect(hang('along').rodDir).toBe('along');
+    expect(hang('across').rodDir).toBe('across');
+  });
+
+  it('the direction does not change the rail height, auto or explicit', () => {
+    expect(hang('across').rodY).toBeCloseTo(hang('along').rodY!);
+    expect(hang('across', { from: 'bottom', offset: 300 }).rodY).toBeCloseTo(118 + 300);
+    expect(hang('across', { from: 'top', offset: 200 }).rodY).toBeCloseTo(1118 - 200);
+  });
+
+  it('a non-hanging zone reports the default direction and no rail', () => {
+    const u = makeUnit(600, [{ ...makeZone('shelves', 1000, 2), rodDir: 'across' as const }]);
+    const z = layoutUnit(p, 'back', 0, 0, u, 0).zones[0];
+    expect(z.rodY).toBeNull();
+    expect(z.rodDir).toBe('across'); // the zone's own field, whether or not a rail uses it
+  });
+});

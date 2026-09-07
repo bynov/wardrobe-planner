@@ -1,7 +1,6 @@
 import type { Project, Wall } from '../model/types';
 import { msg, type Msg } from '../i18n';
-import { WALLS, frameTransform, wallFrame } from './frames';
-import { buildCornerParts } from './corner';
+import { frameTransform, wallFrame } from './frames';
 import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, type UnitLayout } from './layout';
 import { bounds3, FLAT_ROT, NO_ROT, ROD_ROT, SIDE_ROT, toWorld, v2, v3, type Box3, type Transform, type Vec2, type Vec3 } from './vec';
 
@@ -14,9 +13,6 @@ export type Material = (typeof MATERIALS)[number];
 export interface Part {
   id: string;
   wall: Wall;
-  /** Set on the parts of an L-shaped corner unit, keyed by its anchor wall; `columnIndex` is -1
-   * for those, since a corner unit belongs to no wall run. */
-  corner?: Wall;
   columnIndex: number;
   unitId: string;
   nameKey: PartNameKey;
@@ -68,7 +64,18 @@ export function buildUnitParts(L: UnitLayout, p: Project): Part[] {
   for (const z of L.zones) {
     for (const y of z.shelfYs) add(`shelf${++shelfN}`, 'shelf', 'shelf', rect(iw, id - SHELF_SETBACK), t, v3(s0 + t, y + t, w.backThickness), FLAT_ROT, 'panel', undefined, shelfN);
     for (const d of z.drawerFronts) add(`drawer${++drawerN}`, 'drawerFront', 'drawerFront', rect(z.frontW, d.y1 - d.y0), t, v3(s0 + t + REVEAL, d.y0, depth - t), NO_ROT, 'panel', undefined, drawerN);
-    if (z.rodY !== null) add(`rod${z.index}`, 'rod', 'rod', circle(ROD_DIAMETER / 2, 24), iw, v3(s0 + t, z.rodY, id / 2), ROD_ROT, 'rod', [msg('note.rodDia', { d: ROD_DIAMETER })]);
+    if (z.rodY !== null) {
+      const dia = msg('note.rodDia', { d: ROD_DIAMETER });
+      if (z.rodDir === 'across') {
+        // Front to back: the circle is already in the local XY plane, so NO_ROT extrudes it along
+        // local +z — into the room. It is held clear of the back and of the front edge by the same
+        // setback a shelf keeps, so it never fouls the back panel or a door.
+        add(`rod${z.index}`, 'rod', 'rod', circle(ROD_DIAMETER / 2, 24), id - 2 * SHELF_SETBACK,
+          v3(s0 + t + iw / 2, z.rodY, w.backThickness + SHELF_SETBACK), NO_ROT, 'rod', [dia, msg('note.rodAcross')]);
+      } else {
+        add(`rod${z.index}`, 'rod', 'rod', circle(ROD_DIAMETER / 2, 24), iw, v3(s0 + t, z.rodY, id / 2), ROD_ROT, 'rod', [dia]);
+      }
+    }
   }
   add('plinth', 'plinth', 'plinth', rect(cw, plinth), t, v3(s0, 0, depth - PLINTH_SETBACK - t), NO_ROT);
   return parts;
@@ -81,7 +88,5 @@ export function buildParts(p: Project): Part[] {
     const frame = wallFrame(p.room, L.wall);
     for (const part of buildUnitParts(L, p)) out.push({ ...part, transform: frameTransform(frame, part.transform) });
   }
-  // Corner units come last; `buildCornerParts` maps them into world coordinates itself.
-  for (const anchor of WALLS) out.push(...buildCornerParts(p, anchor));
   return out;
 }

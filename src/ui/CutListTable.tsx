@@ -25,7 +25,7 @@ export function CutListTable() {
             <td>{i + 1}</td>
             <td>{t(`part.${r.nameKey}` as MessageKey)}</td>
             {/* the tags printed on the drawings ("B1, B2"); the full names stay a hover away */}
-            <td title={r.locations.map((l) => (l.corner ? t(`corner.${l.corner}`) : t('location.unit', { wall: wallName(lang, l.wall), n: l.columnIndex + 1 }))).join(', ')}>
+            <td title={r.locations.map((l) => t('location.unit', { wall: wallName(lang, l.wall), n: l.columnIndex + 1 })).join(', ')}>
               {r.locations.map((l) => locationTag(lang, l)).join(', ')}
             </td>
             <td>{r.qty}</td>

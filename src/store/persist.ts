@@ -1,8 +1,8 @@
 import { isLang, msg, t, tmDeep, type Lang, type Msg } from '../i18n';
 import { WALLS } from '../geometry/frames';
-import { defaultCorners, defaultProject } from '../model/defaults';
+import { defaultProject } from '../model/defaults';
 import { validate } from '../model/validate';
-import { CORNER_MODES, DOOR_HINGES, DOOR_SWINGS, ROD_REFS, type Column, type Project } from '../model/types';
+import { DOOR_HINGES, DOOR_SWINGS, ROD_DIRS, ROD_REFS, type Column, type Project } from '../model/types';
 
 export const STORAGE_KEY = 'wardrobe-planner:project';
 export const LANG_KEY = 'wardrobe-planner:lang';
@@ -32,6 +32,9 @@ function isZoneShape(v: unknown): boolean {
   if (typeof v.id !== 'string' || !isNum(v.count)) return false;
   if (!(v.height === null || isNum(v.height))) return false;
   if (v.rod !== undefined && !isRodShape(v.rod)) return false;
+  // Optional too: a file written before the rail-direction feature pins no direction, which reads
+  // back as `along` — the behaviour that file was saved with.
+  if (v.rodDir !== undefined && !ROD_DIRS.some((d) => d === v.rodDir)) return false;
   return v.type === 'open' || v.type === 'shelves' || v.type === 'drawers' || v.type === 'hanging';
 }
 
@@ -40,16 +43,6 @@ function isColumnShape(v: unknown): boolean {
   if (v.kind === 'gap') return true;
   if (v.kind !== 'unit') return false;
   return Array.isArray(v.zones) && v.zones.every(isZoneShape);
-}
-
-/** Corner plans are optional in a file: anything written before the corners feature has none,
- * and `parseProjectShape` fills those in with `none` (i.e. the behaviour that file was saved with). */
-function isCornersShape(v: unknown): boolean {
-  if (!isObj(v) || Object.keys(v).length !== 4) return false;
-  return WALLS.every((w) => {
-    const c = v[w];
-    return isObj(c) && nums(c, ['width', 'shelves']) && CORNER_MODES.some((m) => m === c.mode);
-  });
 }
 
 function isWallPlanShape(v: unknown): boolean {
@@ -69,16 +62,14 @@ function isProjectShape(v: unknown): v is Project {
   if (door.swing !== undefined && !DOOR_SWINGS.some((v) => v === door.swing)) return false;
   if (door.hinge !== undefined && !DOOR_HINGES.some((v) => v === door.hinge)) return false;
   if (!isObj(wardrobe) || !nums(wardrobe, ['panelThickness', 'backThickness', 'plinthHeight', 'topGap', 'doorMargin'])) return false;
-  if (wardrobe.corners !== undefined && !isCornersShape(wardrobe.corners)) return false;
   const walls = wardrobe.walls;
   if (!isObj(walls) || Object.keys(walls).length !== 4) return false;
   return WALLS.every((w) => isWallPlanShape(walls[w]));
 }
 
 /**
- * v1 -> v2: a `shelves` count used to mean BOARDS and now means COMPARTMENTS, and a corner's
- * `shelves` likewise. Adding one to every count reproduces exactly the geometry the file was
- * saved with (n boards = n + 1 compartments).
+ * v1 -> v2: a `shelves` count used to mean BOARDS and now means COMPARTMENTS. Adding one to every
+ * count reproduces exactly the geometry the file was saved with (n boards = n + 1 compartments).
  */
 export function migrateProject(project: Project, from: number): Project {
   if (from >= 2) return project;
@@ -94,9 +85,7 @@ export function migrateProject(project: Project, from: number): Project {
       ) as [Column[], Column[]],
     };
   }
-  const corners = { ...project.wardrobe.corners };
-  for (const w of WALLS) corners[w] = { ...corners[w], shelves: corners[w].shelves + 1 };
-  return { ...project, wardrobe: { ...project.wardrobe, walls, corners } };
+  return { ...project, wardrobe: { ...project.wardrobe, walls } };
 }
 
 /** Accepts anything shape-valid, without the `validate()` gate. Used for autosave restore, where
@@ -113,23 +102,18 @@ export function parseProjectShape(text: string): ParseResult {
     return { ok: false, error: msg('error.badVersion', { version: FILE_VERSION }) };
   }
   if (!isProjectShape(data.project)) return { ok: false, error: msg('error.badShape') };
-  // Pre-swing files carry neither door field, and pre-corners files carry no corner map; fill
-  // both from the defaults (`none` corners = the behaviour the file was saved with).
+  // Pre-swing files carry neither door field; fill both from the defaults. A file written while
+  // the corners feature existed carries a `corners` map — it has no meaning any more, so it is
+  // dropped rather than carried along.
   const d = defaultProject().door;
   const { door, wardrobe } = data.project;
-  const hadCorners = wardrobe.corners !== undefined;
+  const { corners: _corners, ...wardrobeRest } = wardrobe as typeof wardrobe & { corners?: unknown };
   const filled: Project = {
     ...data.project,
     door: { ...door, swing: door.swing ?? d.swing, hinge: door.hinge ?? d.hinge },
-    wardrobe: { ...wardrobe, corners: wardrobe.corners ?? defaultCorners() },
+    wardrobe: wardrobeRest,
   };
-  const migrated = migrateProject(filled, data.version as number);
-  // A file with no corner map never carried corner shelf counts to migrate, so the defaults
-  // invented above are restored afterwards rather than being bumped along with the real data.
-  const project = hadCorners
-    ? migrated
-    : { ...migrated, wardrobe: { ...migrated.wardrobe, corners: defaultCorners() } };
-  return { ok: true, project };
+  return { ok: true, project: migrateProject(filled, data.version as number) };
 }
 
 /** Shape-valid AND passes `validate()`. Used for file import, where an invalid project is rejected. */

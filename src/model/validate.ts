@@ -1,9 +1,9 @@
-import { WALLS, cornerWalls, doorArc, doorSpan, localToWorld, minUnitWidth, segmentUsed, wallFrame, wallLength, wallSegments } from '../geometry/frames';
+import { WALLS, doorArc, doorSpan, localToWorld, minUnitWidth, segmentUsed, wallFrame, wallLength, wallSegments } from '../geometry/frames';
 import { MAX_DRAWER_FRONT, MIN_DRAWER_FRONT, MIN_ZONE_HEIGHT, ROD_CLEARANCE, drawerFrontHeight, heights, layoutAll, layoutUnit, zoneHeights } from '../geometry/layout';
 import type { MessageKey, Params } from '../i18n';
 import { msg } from '../i18n';
 import { v3 } from '../geometry/vec';
-import type { Project, ValidationError, Wall } from './types';
+import type { Project, ValidationError } from './types';
 
 export const MAX_ROOM_DIM = 20000;
 
@@ -42,38 +42,6 @@ function doorSwingErrors(p: Project, push: (path: string, key: MessageKey, param
       push(`walls.${c.wall}.segments.${c.segment}.${ci}`, 'error.doorSwingBlocked', { wall: `wall.${c.wall}`, unit: c.columnIndex + 1 });
       return; // one clash is enough: the fix is the same for all of them
     }
-  }
-}
-
-/** How much usable shelf a corner leg must keep past the deeper of the two runs. */
-export const CORNER_LEG_CLEARANCE = 100;
-
-/**
- * An L-shaped corner unit has to clear both runs (so its legs reach past the deeper of the two)
- * and still leave half of each wall for that wall's own run. `none` corners carry no geometry,
- * so their numbers are never checked.
- *
- * Both bounds are rounded *inwards* to whole millimetres, so the range the inspector prints is
- * exactly the range `validate()` accepts.
- */
-export const cornerLegRange = (p: Project, anchor: Wall): { min: number; max: number } => {
-  const { a, b } = cornerWalls(anchor);
-  const w = p.wardrobe;
-  return {
-    min: Math.ceil(Math.max(w.walls[a].depth, w.walls[b].depth) + CORNER_LEG_CLEARANCE),
-    max: Math.floor(Math.min(wallLength(p.room, a), wallLength(p.room, b)) / 2),
-  };
-};
-
-function cornerErrors(p: Project, push: (path: string, key: MessageKey, params?: Params) => void): void {
-  for (const anchor of WALLS) {
-    const plan = p.wardrobe.corners[anchor];
-    if (plan.mode !== 'lshelf') continue;
-    const path = `corners.${anchor}`;
-    const corner = `corner.${anchor}`;
-    const { min, max } = cornerLegRange(p, anchor);
-    if (!(plan.width >= min && plan.width <= max)) push(path, 'error.cornerWidth', { corner, min, max });
-    if (plan.shelves < 1) push(path, 'error.cornerShelves', { corner });
   }
 }
 
@@ -136,7 +104,6 @@ export function validate(p: Project): ValidationError[] {
       });
     }));
   }
-  cornerErrors(p, push);
   doorSwingErrors(p, push);
   return errs;
 }

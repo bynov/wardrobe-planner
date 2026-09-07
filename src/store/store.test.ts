@@ -40,7 +40,7 @@ describe('store: insertPreset', () => {
     expect(cols).toHaveLength(4);
     expect(cols[1].width).toBe(600);
     expect((cols[1] as Unit).zones[0].type).toBe('shelves');
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: cols[1].id, zoneId: null, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: cols[1].id, zoneId: null });
   });
 
   it('clamps the width to the free space', () => {
@@ -127,15 +127,15 @@ describe('store: columns', () => {
     s.getState().select({ wall: 'back', columnId: col.id, zoneId: col.zones[0].id });
     s.getState().removeColumn(col.id);
     expect(backCols(s).find((c) => c.id === col.id)).toBeUndefined();
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
   });
 
   it('removeColumn keeps a selection that pointed elsewhere', () => {
     const s = createPlannerStore();
     const keep = unitAt(s, 2);
-    s.getState().select({ wall: 'back', columnId: keep.id, zoneId: keep.zones[0].id, corner: null });
+    s.getState().select({ wall: 'back', columnId: keep.id, zoneId: keep.zones[0].id });
     s.getState().removeColumn(backCols(s)[0].id);
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: keep.id, zoneId: keep.zones[0].id, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: keep.id, zoneId: keep.zones[0].id });
   });
 });
 
@@ -200,7 +200,7 @@ describe('store: zones', () => {
     s.getState().select({ wall: 'back', columnId: col.id, zoneId: col.zones[0].id });
     s.getState().removeZone(col.id, col.zones[0].id);
     expect(unitAt(s, 0).zones.map((z) => z.id)).toEqual([col.zones[1].id]);
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: col.id, zoneId: null, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: col.id, zoneId: null });
   });
 });
 
@@ -254,7 +254,7 @@ describe('store: history', () => {
     s.getState().insertPreset('back', 0, 0, 'shelves');
     expect(s.getState().ui.selection.columnId).not.toBeNull();
     s.getState().undo();
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
   });
 
   it('newProject and loadProject clear history and reset the selection', () => {
@@ -265,7 +265,7 @@ describe('store: history', () => {
     expect(s.getState().project.name).toBe(defaultProject().name);
     expect(s.getState().past).toEqual([]);
     expect(s.getState().future).toEqual([]);
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null, corner: null });
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
 
     const p = defaultProject();
     p.name = 'Loaded';
@@ -328,7 +328,7 @@ describe('store: ui and settings', () => {
     const s = createPlannerStore();
     expect(s.getState().ui).toMatchObject({
       tab: 'design',
-      selection: { wall: 'back', columnId: null, zoneId: null, corner: null },
+      selection: { wall: 'back', columnId: null, zoneId: null },
       showDims: true,
       showRoom: true,
       explode: 0,
@@ -356,42 +356,5 @@ describe('store: autosave', () => {
     vi.advanceTimersByTime(150);
     expect(loadFromStorage(storage)?.name).toBe('B');
     vi.useRealTimers();
-  });
-});
-
-describe('corner selection and editing', () => {
-  it('setCorner patches one corner plan and keeps the others', () => {
-    const s = createPlannerStore();
-    s.getState().setCorner('back', { mode: 'lshelf' });
-    s.getState().setCorner('back', { width: 900, shelves: 3 });
-    expect(s.getState().project.wardrobe.corners.back).toEqual({ mode: 'lshelf', width: 900, shelves: 3 });
-    expect(s.getState().project.wardrobe.corners.right).toEqual({ mode: 'none', width: 1000, shelves: 6 });
-    expect(s.getState().past).toHaveLength(2); // both edits are undoable
-    s.getState().undo();
-    expect(s.getState().project.wardrobe.corners.back.width).toBe(1000);
-  });
-
-  it('selecting a corner clears the column/zone selection, and vice versa', () => {
-    const s = createPlannerStore();
-    const col = s.getState().project.wardrobe.walls.back.segments[0][0];
-    s.getState().select({ wall: 'back', columnId: col.id, zoneId: null });
-    s.getState().select({ corner: 'back' });
-    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null, corner: 'back' });
-    s.getState().select({ wall: 'back', columnId: col.id, zoneId: null });
-    expect(s.getState().ui.selection.corner).toBeNull();
-  });
-
-  it('picking a wall in the plan drops a corner selection', () => {
-    const s = createPlannerStore();
-    s.getState().select({ corner: 'right' });
-    s.getState().select({ wall: 'left', columnId: null, zoneId: null });
-    expect(s.getState().ui.selection).toEqual({ wall: 'left', columnId: null, zoneId: null, corner: null });
-  });
-
-  it('newProject resets the corner selection', () => {
-    const s = createPlannerStore();
-    s.getState().select({ corner: 'back' });
-    s.getState().newProject();
-    expect(s.getState().ui.selection.corner).toBeNull();
   });
 });

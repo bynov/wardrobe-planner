@@ -65,9 +65,6 @@ table.cutlist tfoot td { font-weight: 600; }
 /* plan editor */
 .plan { flex: none; position: sticky; top: 0; z-index: 1; background: #fff; }
 .wallhit.off { fill: rgba(120,120,120,0.06); stroke: #b0b0b0; }
-.cornerhit { fill: transparent; stroke: none; cursor: pointer; }
-.cornerhit:hover { fill: rgba(214,158,46,0.22); }
-.cornerhit.on { fill: rgba(214,158,46,0.22); stroke: #b7791f; stroke-width: 3; vector-effect: non-scaling-stroke; }
 .wallhit.off:hover { fill: rgba(43,108,176,0.12); }
 
 /* elevation editor */

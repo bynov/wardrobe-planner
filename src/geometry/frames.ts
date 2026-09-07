@@ -1,4 +1,4 @@
-import type { CornerPlan, Project, Room, Wall, Wardrobe } from '../model/types';
+import type { Project, Room, Wall, Wardrobe } from '../model/types';
 import { rotY, v3, type Transform, type Vec3 } from './vec';
 
 export const WALLS: Wall[] = ['back', 'right', 'front', 'left'];
@@ -81,50 +81,11 @@ function rawSegments(p: Project, wall: Wall, claimStart: number, claimEnd: numbe
 }
 
 /**
- * A corner of the room, resolved from either of its two walls. It is keyed by its ANCHOR wall
- * `a` — the wall whose `s = 0` end is that corner; the other wall is `b = leftOf(a)`, and the
- * corner sits at `b`'s `s = wallLength(b)` end. So a wall's *start* corner is anchored on the
- * wall itself, and its *end* corner on the next wall clockwise.
- */
-export interface CornerRef {
-  anchor: Wall;
-  a: Wall;
-  b: Wall;
-  plan: CornerPlan;
-  /** Both walls carry wardrobe — nothing is built in a corner that only one run reaches. */
-  active: boolean;
-}
-
-export const cornerAnchor = (wall: Wall, side: 'start' | 'end'): Wall => (side === 'start' ? wall : rightOf(wall));
-/** The two walls that meet at the corner anchored on `anchor`, in (anchor, other) order. */
-export const cornerWalls = (anchor: Wall): { a: Wall; b: Wall } => ({ a: anchor, b: leftOf(anchor) });
-
-export function cornerActive(p: Project, anchor: Wall): boolean {
-  const { a, b } = cornerWalls(anchor);
-  return p.wardrobe.walls[a].enabled && p.wardrobe.walls[b].enabled;
-}
-
-export function cornerAt(p: Project, wall: Wall, side: 'start' | 'end'): CornerRef {
-  const anchor = cornerAnchor(wall, side);
-  const { a, b } = cornerWalls(anchor);
-  return { anchor, a, b, plan: p.wardrobe.corners[anchor], active: cornerActive(p, anchor) };
-}
-
-/** An active `lshelf` corner — the only mode that builds parts and owns wall length on both runs. */
-export function cornerLShelf(p: Project, anchor: Wall): CornerPlan | null {
-  const plan = p.wardrobe.corners[anchor];
-  return plan.mode === 'lshelf' && cornerActive(p, anchor) ? plan : null;
-}
-
-/**
- * How much of `wall` the corner at its `side` end takes away.
- * `lshelf`: both walls give way by the leg length. `none`: the v1 rule — a side wall yields the
- * neighbouring back/front wall's depth when that neighbour's touching segment is usable, and a
- * back/front wall yields nothing.
+ * How much of `wall` the corner at its `side` end takes away: a side wall yields the neighbouring
+ * back/front wall's depth when that neighbour is enabled and its touching segment is usable, and a
+ * back/front wall yields nothing. The corner itself is left to the user to arrange.
  */
 export function cornerClaim(p: Project, wall: Wall, side: 'start' | 'end'): number {
-  const c = cornerAt(p, wall, side);
-  if (c.plan.mode === 'lshelf') return c.active ? c.plan.width : 0;
   if (!isSideWall(wall)) return 0;
   const n = side === 'start' ? leftOf(wall) : rightOf(wall);
   const plan = p.wardrobe.walls[n];

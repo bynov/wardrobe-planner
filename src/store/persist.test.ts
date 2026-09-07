@@ -225,49 +225,63 @@ describe('storage', () => {
   });
 });
 
-describe('corners in files', () => {
-  it('fills missing corners with "none" plans, so pre-corners files load unchanged', () => {
-    const p = defaultProject() as unknown as { wardrobe: Record<string, unknown> };
-    delete p.wardrobe.corners;
-    const r = parseProjectShape(JSON.stringify({ version: FILE_VERSION, project: p }));
+describe('rail direction in files', () => {
+  const withZone = (zone: Record<string, unknown>) => {
+    const base = defaultProject();
+    const raw = base as unknown as { wardrobe: { walls: Record<string, { segments: unknown[][] }> } };
+    raw.wardrobe.walls.back.segments[0] = [{ id: 'c1', kind: 'unit', width: 600, zones: [zone] }];
+    return JSON.stringify({ version: FILE_VERSION, project: base });
+  };
+  const hanging = (extra: Record<string, unknown> = {}) => ({ id: 'z1', type: 'hanging', height: null, count: 1, ...extra });
+
+  it('accepts a zone with no rodDir (every pre-feature file)', () => {
+    const r = parseProjectShape(withZone(hanging()));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect((r.project.wardrobe.walls.back.segments[0][0] as Unit).zones[0].rodDir).toBeUndefined();
+  });
+
+  it('round-trips rodDir "across"', () => {
+    const r = parseProjectShape(withZone(hanging({ rodDir: 'across' })));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.project.wardrobe.corners).toEqual({
-      back: { mode: 'none', width: 1000, shelves: 6 },
+    expect((r.project.wardrobe.walls.back.segments[0][0] as Unit).zones[0].rodDir).toBe('across');
+    const again = parseProjectShape(serializeProject(r.project));
+    expect(again.ok).toBe(true);
+    if (again.ok) expect((again.project.wardrobe.walls.back.segments[0][0] as Unit).zones[0].rodDir).toBe('across');
+  });
+
+  it('rejects a rodDir that is not one of the two', () => {
+    expect(parseProjectShape(withZone(hanging({ rodDir: 'diagonal' }))).ok).toBe(false);
+    expect(parseProjectShape(withZone(hanging({ rodDir: 7 }))).ok).toBe(false);
+  });
+});
+
+describe('corners in files', () => {
+  it('ignores and strips a `corners` map left over from the corner-shelves feature', () => {
+    const base = defaultProject();
+    const p = base as unknown as { wardrobe: Record<string, unknown> };
+    p.wardrobe.corners = {
+      back: { mode: 'lshelf', width: 900, shelves: 4 },
       right: { mode: 'none', width: 1000, shelves: 6 },
       front: { mode: 'none', width: 1000, shelves: 6 },
       left: { mode: 'none', width: 1000, shelves: 6 },
-    });
-    expect(parseProjectJson(JSON.stringify({ version: FILE_VERSION, project: p })).ok).toBe(true);
-  });
-
-  it('round-trips explicit corner plans', () => {
-    const p = defaultProject();
-    p.wardrobe.corners.back = { mode: 'lshelf', width: 900, shelves: 4 };
-    const r = parseProjectShape(serializeProject(p));
+    };
+    const text = JSON.stringify({ version: FILE_VERSION, project: p });
+    const r = parseProjectShape(text);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.project.wardrobe.corners.back).toEqual({ mode: 'lshelf', width: 900, shelves: 4 });
-  });
-
-  it('rejects a corner mode that is not one of the two, and a malformed corner map', () => {
-    const bad = defaultProject() as unknown as { wardrobe: { corners: Record<string, unknown> } };
-    bad.wardrobe.corners.back = { mode: 'carousel', width: 900, shelves: 4 };
-    expect(parseProjectShape(JSON.stringify({ version: FILE_VERSION, project: bad })).ok).toBe(false);
-
-    const bad2 = defaultProject() as unknown as { wardrobe: { corners: unknown } };
-    bad2.wardrobe.corners = { back: { mode: 'none', width: 900, shelves: 1 } }; // only one corner
-    expect(parseProjectShape(JSON.stringify({ version: FILE_VERSION, project: bad2 })).ok).toBe(false);
+    if (!r.ok) return;
+    expect('corners' in r.project.wardrobe).toBe(false);
+    expect(r.project.wardrobe.walls).toEqual(base.wardrobe.walls);
+    expect(parseProjectJson(text).ok).toBe(true);
+    expect(serializeProject(r.project)).not.toContain('corners');
   });
 });
 
 describe('v1 -> v2 migration (shelves count = compartments)', () => {
-  /** A v1 file: version 1, shelf counts meaning BOARDS, corner shelves meaning boards. */
+  /** A v1 file: version 1, shelf counts meaning BOARDS. */
   const v1File = () => {
     const p = defaultProject();
     p.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shelves', null, 5), makeZone('drawers', 600, 3)])];
-    // a real v1 file counted BOARDS everywhere, corners included
-    for (const w of WALLS) p.wardrobe.corners[w] = { mode: 'none', width: 1000, shelves: 5 };
-    p.wardrobe.corners.back = { mode: 'lshelf', width: 1000, shelves: 5 };
     return JSON.stringify({ version: 1, project: p });
   };
 
@@ -276,15 +290,12 @@ describe('v1 -> v2 migration (shelves count = compartments)', () => {
     expect(JSON.parse(serializeProject(defaultProject())).version).toBe(2);
   });
 
-  it('bumps every shelves count and every corner shelf count by one', () => {
+  it('bumps every shelves count by one and leaves other zone counts alone', () => {
     const r = parseProjectShape(v1File());
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const unit = r.project.wardrobe.walls.back.segments[0][0];
     expect(unit.kind === 'unit' && unit.zones.map((z) => [z.type, z.count])).toEqual([['shelves', 6], ['drawers', 3]]);
-    expect(r.project.wardrobe.corners.back.shelves).toBe(6);
-    // untouched corners are bumped too, so a v1 file keeps the geometry it was saved with
-    expect(r.project.wardrobe.corners.right.shelves).toBe(6);
   });
 
   it('keeps the drawn geometry identical across the migration', () => {
@@ -296,7 +307,6 @@ describe('v1 -> v2 migration (shelves count = compartments)', () => {
 
   it('leaves a v2 file alone', () => {
     const p = defaultProject();
-    p.wardrobe.corners.back = { mode: 'lshelf', width: 1000, shelves: 6 };
     const r = parseProjectShape(serializeProject(p));
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.project).toEqual(p);
@@ -306,22 +316,12 @@ describe('v1 -> v2 migration (shelves count = compartments)', () => {
     expect(parseProjectShape(JSON.stringify({ version: 3, project: defaultProject() })).ok).toBe(false);
   });
 
-  it('does not migrate corner defaults invented for a pre-corners v1 file', () => {
-    // Such a file never counted corner shelves at all, so the back-filled default must land at
-    // the current default (6 compartments), not at the migrated 7.
-    const p = defaultProject() as unknown as { wardrobe: Record<string, unknown> };
-    delete p.wardrobe.corners;
-    const r = parseProjectShape(JSON.stringify({ version: 1, project: p }));
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    for (const w of WALLS) expect(r.project.wardrobe.corners[w]).toEqual({ mode: 'none', width: 1000, shelves: 6 });
-  });
-
   it('migrates an autosaved v1 project out of localStorage too', () => {
     const s = memStorage();
     s.mem.set(STORAGE_KEY, v1File());
     const p = loadFromStorage(s);
     expect(p).not.toBeNull();
-    expect(p!.wardrobe.corners.back.shelves).toBe(6);
+    const unit = p!.wardrobe.walls.back.segments[0][0];
+    expect(unit.kind === 'unit' && unit.zones[0].count).toBe(6);
   });
 });
