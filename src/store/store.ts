@@ -4,7 +4,7 @@ import { detectLang, msg, type Lang, type Msg } from '../i18n';
 import { defaultProject } from '../model/defaults';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
-import type { Column, Door, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
+import type { Column, Door, Gap, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
 import { validate } from '../model/validate';
 import { loadFromStorage, loadLang, saveLang, saveToStorage, type StorageLike } from './persist';
 
@@ -46,7 +46,7 @@ export interface PlannerState {
 
   insertColumn: (wall: Wall, segment: 0 | 1, index: number, column: Column) => void;
   insertPreset: (wall: Wall, segment: 0 | 1, index: number, key: PresetKey) => void;
-  updateColumn: (id: string, patch: { width?: number }) => void;
+  updateColumn: (id: string, patch: { width?: number; rail?: Gap['rail'] }) => void;
   removeColumn: (id: string) => void;
   moveColumn: (id: string, dir: -1 | 1) => void;
   duplicateColumn: (id: string) => void;
@@ -210,7 +210,23 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
       },
 
       updateColumn: (id, patch) =>
-        get().setProject((p) => (patch.width === undefined ? p : replaceColumn(p, id, (c) => ({ ...c, width: patch.width as number })))),
+        get().setProject((p) => {
+          const width = patch.width !== undefined;
+          const rail = 'rail' in patch;
+          if (!width && !rail) return p; // a no-op edit must not create a history entry
+          return replaceColumn(p, id, (c) => {
+            const next: Column = { ...c };
+            if (width) next.width = patch.width as number;
+            // A rail only means anything on a gap. `{ rail: undefined }` is the checkbox being
+            // unticked: drop the key instead of leaving an explicit undefined behind for the file
+            // and the shape check, exactly as a zone's `rod` does.
+            if (rail && next.kind === 'gap') {
+              if (patch.rail === undefined) delete next.rail;
+              else next.rail = patch.rail;
+            }
+            return next;
+          });
+        }),
 
       removeColumn: (id) =>
         get().setProject((p) => {

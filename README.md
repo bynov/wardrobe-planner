@@ -20,12 +20,15 @@ Languages: English and Russian (switch in the top bar; the PDF embeds PT Sans, S
    shelves, so `1` is a single open bay. Older project files are migrated on load. `Delete` removes the
    selected zone when one is selected (never a unit's last zone) and the whole unit otherwise,
    `Esc` clears the selection, `Cmd/Ctrl+D` duplicates the unit, `Cmd/Ctrl+Z` undoes.
-3. A hanging zone's rail runs **along the wall** by default; switch its *Direction* to
+3. A **gap** can carry a *hanging rail (wall-mounted)* — the usual answer for the stretch a run
+   has to leave free in a corner: tick it on the gap, pick a direction and a height above the
+   floor, and the rod (but not its brackets) joins the cut list. No carcass is built.
+4. A hanging zone's rail runs **along the wall** by default; switch its *Direction* to
    **front to back (corner)** for a unit boxed into a corner, where a wall-parallel rail
    cannot be reached. The plan shows every rail as a dashed line, so the two read apart.
-4. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in the
+5. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in the
    left panel.
-5. **3D** tab to orbit around the room; **Cut list** tab for the parts; Export PDF for the
+6. **3D** tab to orbit around the room; **Cut list** tab for the parts; Export PDF for the
    scheme (open the 3D tab first for the snapshot page).
 
 ## Scope

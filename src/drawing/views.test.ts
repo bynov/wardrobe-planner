@@ -404,3 +404,60 @@ describe('rail direction in the drawings', () => {
     expect(across.b.y).toBeCloseTo(-(600 - 20)); // depth - SHELF_SETBACK
   });
 });
+
+describe('a gap\'s wall-mounted rail in the drawings', () => {
+  const D = 25, K = 20;
+  /** Back wall: one 800 mm gap, optionally with a rail; every other wall off. */
+  const gapWall = (rail?: { dir: 'along' | 'across'; height: number }) => {
+    const q = structuredClone(defaultProject());
+    q.wardrobe.walls.left.enabled = false;
+    q.wardrobe.walls.right.enabled = false;
+    q.wardrobe.walls.back.segments[0] = [{ id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) }];
+    return q;
+  };
+  const circleOf = (d: Drawing) => of(d, 'poly').find((q) =>
+    q.pts.length === 16 && Math.abs(Math.max(...q.pts.map((v) => v.x)) - Math.min(...q.pts.map((v) => v.x)) - D) < 0.5);
+
+  it('elevation: the gap still reads as a gap, with no rail drawn', () => {
+    const d = wallElevation(gapWall(), 'back', 'en');
+    expect(hasText(d, 'gap')).toBe(true);
+    expect(circleOf(d)).toBeUndefined();
+    expect(hasText(d, 'rail at')).toBe(false);
+  });
+
+  it('elevation: an along rail gets a dashed axis across the gap, a circle and its height', () => {
+    const d = wallElevation(gapWall({ dir: 'along', height: 1800 }), 'back', 'en');
+    const axis = of(d, 'line').filter((l) => l.stroke === 'dashed' && Math.abs(l.a.y - 1800) < 0.01 && Math.abs(l.b.y - 1800) < 0.01);
+    expect(axis).toHaveLength(1);
+    expect(axis[0].a.x).toBeCloseTo(K);
+    expect(axis[0].b.x).toBeCloseTo(800 - K);
+    expect(circleOf(d)).toBeDefined();
+    expect(hasText(d, 'rail at 1800')).toBe(true);
+    expect(hasText(d, '⟂ rail')).toBe(false);
+    expect(hasText(d, 'gap')).toBe(true); // the gap caption survives
+  });
+
+  it('elevation: an across rail is drawn end-on, labelled, with no axis', () => {
+    const d = wallElevation(gapWall({ dir: 'across', height: 1800 }), 'back', 'en');
+    expect(of(d, 'line').filter((l) => l.stroke === 'dashed' && Math.abs(l.a.y - 1800) < 0.01)).toHaveLength(0);
+    expect(circleOf(d)).toBeDefined();
+    expect(hasText(d, '⟂ rail')).toBe(true);
+    expect(hasText(d, 'rail at 1800')).toBe(true);
+    expect(hasText(wallElevation(gapWall({ dir: 'across', height: 1800 }), 'back', 'ru'), '⟂ штанга')).toBe(true);
+  });
+
+  it('plan: a gap rail is dashed like a unit rail, along or across the wall', () => {
+    expect(of(planView(gapWall(), 'en'), 'line').filter((l) => l.stroke === 'dashed')).toHaveLength(0);
+
+    const along = of(planView(gapWall({ dir: 'along', height: 1800 }), 'en'), 'line').find((l) => l.stroke === 'dashed')!;
+    expect(along.a.y).toBeCloseTo(along.b.y);
+    expect(along.a.x).toBeCloseTo(K);
+    expect(along.b.x).toBeCloseTo(800 - K);
+
+    const across = of(planView(gapWall({ dir: 'across', height: 1800 }), 'en'), 'line').find((l) => l.stroke === 'dashed')!;
+    expect(across.a.x).toBeCloseTo(400);
+    expect(across.b.x).toBeCloseTo(400);
+    expect(across.a.y).toBeCloseTo(-K); // no back panel to clear in a gap
+    expect(across.b.y).toBeCloseTo(-(600 - K));
+  });
+});

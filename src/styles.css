@@ -110,6 +110,11 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .zone-fields label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
 .zone-fields input[type="number"] { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
 .zone-fields label.chk { cursor: pointer; }
+/* a full-width checkbox row in the inspector (the gap's wall-mounted rail) */
+.inspector label.chk.wide { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 13px; cursor: pointer; }
+/* the direction option labels are long ("front to back (corner)"), so the control column takes
+   whatever the label leaves rather than the panel's fixed 110px */
+.inspector .gap-rail .field { grid-template-columns: auto minmax(120px, 1fr); }
 /* the rail line of a hanging zone: an inline select, so it must not take the full row like the
    zone-type one above it */
 .zone-fields.rail select { width: auto; min-width: 0; padding: 2px 4px; font: inherit; font-size: 12px; }

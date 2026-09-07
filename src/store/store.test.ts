@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createPlannerStore, findColumn, startAutosave } from './store';
 import { loadFromStorage, loadLang } from './persist';
 import { defaultProject } from '../model/defaults';
-import { makeZone } from '../model/factory';
+import { makeGap, makeZone } from '../model/factory';
 import type { Unit } from '../model/types';
 
 const memStorage = () => {
@@ -356,5 +356,44 @@ describe('store: autosave', () => {
     vi.advanceTimersByTime(150);
     expect(loadFromStorage(storage)?.name).toBe('B');
     vi.useRealTimers();
+  });
+});
+
+describe('store: a gap\'s wall-mounted rail', () => {
+  const gapStore = () => {
+    const s = createPlannerStore();
+    s.getState().insertColumn('right', 0, 0, makeGap(600));
+    return s;
+  };
+
+  it('updateColumn sets and clears the rail, and unticking drops the key', () => {
+    const s = gapStore();
+    const id = s.getState().project.wardrobe.walls.right.segments[0][0].id;
+    s.getState().updateColumn(id, { rail: { dir: 'along', height: 2000 } });
+    const gap = () => s.getState().project.wardrobe.walls.right.segments[0][0] as { kind: 'gap'; rail?: unknown };
+    expect(gap().rail).toEqual({ dir: 'along', height: 2000 });
+    s.getState().updateColumn(id, { rail: { dir: 'across', height: 1800 } });
+    expect(gap().rail).toEqual({ dir: 'across', height: 1800 });
+    s.getState().updateColumn(id, { rail: undefined });
+    expect('rail' in gap()).toBe(false);
+  });
+
+  it('an empty patch is still a no-op, so it makes no history entry', () => {
+    const s = gapStore();
+    const id = s.getState().project.wardrobe.walls.right.segments[0][0].id;
+    const before = s.getState().past.length;
+    s.getState().updateColumn(id, {});
+    expect(s.getState().past).toHaveLength(before);
+  });
+
+  it('width and rail edits are both undoable', () => {
+    const s = gapStore();
+    const id = s.getState().project.wardrobe.walls.right.segments[0][0].id;
+    s.getState().updateColumn(id, { rail: { dir: 'along', height: 2000 } });
+    s.getState().updateColumn(id, { width: 700 });
+    s.getState().undo();
+    const gap = s.getState().project.wardrobe.walls.right.segments[0][0] as { width: number; rail?: unknown };
+    expect(gap.width).toBe(600);
+    expect(gap.rail).toEqual({ dir: 'along', height: 2000 });
   });
 });

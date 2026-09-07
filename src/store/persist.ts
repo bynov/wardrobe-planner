@@ -38,9 +38,15 @@ function isZoneShape(v: unknown): boolean {
   return v.type === 'open' || v.type === 'shelves' || v.type === 'drawers' || v.type === 'hanging';
 }
 
+/** Optional: a gap written before the wall-mounted-rail feature carries none, which reads back as
+ * the plain empty gap that file was saved with. */
+function isGapRailShape(v: unknown): boolean {
+  return isObj(v) && isNum(v.height) && ROD_DIRS.some((d) => d === v.dir);
+}
+
 function isColumnShape(v: unknown): boolean {
   if (!isObj(v) || typeof v.id !== 'string' || !isNum(v.width)) return false;
-  if (v.kind === 'gap') return true;
+  if (v.kind === 'gap') return v.rail === undefined || isGapRailShape(v.rail);
   if (v.kind !== 'unit') return false;
   return Array.isArray(v.zones) && v.zones.every(isZoneShape);
 }

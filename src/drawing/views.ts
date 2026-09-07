@@ -77,20 +77,28 @@ function drawDoorPlan(prims: Prim[], p: Project, lang: Lang, s: number): void {
 }
 
 /**
- * Every rail of a unit, as a dashed line on the plan — the view that actually shows which way a
- * rail runs. An `along` rail spans the interior width at mid-depth; an `across` one runs down the
- * middle of the unit from the back setback to the front one, so the two are told apart at a glance.
+ * Every rail of a column, as a dashed line on the plan — the view that actually shows which way a
+ * rail runs. An `along` rail spans the column at mid-depth; an `across` one runs down the middle
+ * of it into the room, so the two are told apart at a glance. A gap's wall-mounted rail is drawn
+ * the same way; it just has no carcass to clear, so it starts at the wall itself.
  */
-function drawRodsPlan(prims: Prim[], u: UnitLayout, f: Frame, t: number, bt: number): void {
+function drawRodsPlan(prims: Prim[], c: ColumnLayout, f: Frame, t: number, bt: number): void {
   const k = SHELF_SETBACK;
-  for (const z of u.zones) {
+  if (c.kind === 'gap') {
+    const r = c.rail;
+    if (!r) return;
+    if (r.dir === 'across') prims.push(line(toIR(f, r.s0, k), toIR(f, r.s0, c.depth - k), 'dashed'));
+    else prims.push(line(toIR(f, r.s0, c.depth / 2), toIR(f, r.s1, c.depth / 2), 'dashed'));
+    return;
+  }
+  for (const z of c.zones) {
     if (z.rodY === null) continue;
     if (z.rodDir === 'across') {
-      const cs = u.s0 + u.width / 2;
-      prims.push(line(toIR(f, cs, bt + k), toIR(f, cs, u.depth - k), 'dashed'));
+      const cs = c.s0 + c.width / 2;
+      prims.push(line(toIR(f, cs, bt + k), toIR(f, cs, c.depth - k), 'dashed'));
     } else {
-      const v = u.interiorDepth / 2;
-      prims.push(line(toIR(f, u.s0 + t, v), toIR(f, u.s1 - t, v), 'dashed'));
+      const v = c.interiorDepth / 2;
+      prims.push(line(toIR(f, c.s0 + t, v), toIR(f, c.s1 - t, v), 'dashed'));
     }
   }
 }
@@ -129,13 +137,13 @@ export function planView(p: Project, lang: Lang = 'en'): Drawing {
       if (c.kind === 'unit') {
         prims.push(poly(quad, 'thin', 'panel'));
         prims.push(line(quad[3], quad[2], 'thick')); // front edge
-        drawRodsPlan(prims, c, f, p.wardrobe.panelThickness, p.wardrobe.backThickness);
         // the same tag the cut list uses, so a row can be traced back to a unit on the plan
         labels.push(text(mid, unitTag(lang, wall, c.columnIndex), s * 0.8, 'middle', rotate));
       } else {
         prims.push(poly(quad, 'dashed'));
         labels.push(text(mid, t(lang, 'drawing.gap'), s * 0.8, 'middle', rotate));
       }
+      drawRodsPlan(prims, c, f, p.wardrobe.panelThickness, p.wardrobe.backThickness);
     }
     labels.push(dim(toIR(f, 0, 0), toIR(f, 0, depth), -1.5 * s)); // unit depth at the start corner
   }
@@ -208,6 +216,18 @@ function drawUnit(prims: Prim[], u: UnitLayout, p: Project, lang: Lang, s: numbe
 function drawGap(prims: Prim[], g: GapLayout, topY: number, lang: Lang, s: number): void {
   prims.push(rectPrim(g.s0, 0, g.width, topY, 'dashed'));
   prims.push(text(v2((g.s0 + g.s1) / 2, topY / 2), t(lang, 'drawing.gap'), s * 0.8, 'middle', 90));
+  const r = g.rail;
+  if (!r) return;
+  const cx = (g.s0 + g.s1) / 2;
+  // Same reading as a unit's rail: an `along` one shows its dashed axis, an `across` one is seen
+  // end-on and is captioned instead, so the lone circle is not read as a hole.
+  if (r.dir === 'along') prims.push(line(v2(r.s0, r.y), v2(r.s1, r.y), 'dashed'));
+  prims.push(circle(v2(cx, r.y), ROD_DIAMETER / 2));
+  if (r.dir === 'across') {
+    prims.push(text(v2(cx + ROD_DIAMETER, r.y - 0.3 * s), t(lang, 'drawing.rodAcrossShort'), s * 0.7, 'start'));
+  }
+  // The height above the finished floor is the number a fitter sets the brackets out from.
+  prims.push(text(v2(g.s1, r.y + 0.9 * s), t(lang, 'drawing.rodHeight', { n: Math.round(r.y) }), s * 0.7, 'end'));
 }
 
 /** The door opening on this wall: dashed hole in the elevation plus its size label. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makePreset, PRESET_KEYS } from './presets';
 
-import { cloneColumn, makeUnit, makeZone } from './factory';
+import { cloneColumn, makeGap, makeUnit, makeZone } from './factory';
 import { defaultProject } from './defaults';
 import { ROD_DIRS } from './types';
 
@@ -57,6 +57,13 @@ describe('factory', () => {
     const u = makeUnit(500, [{ ...makeZone('hanging'), rod: { from: 'bottom' as const, offset: 1200 } }]);
     const c = cloneColumn(u);
     expect(c.kind === 'unit' && c.zones[0].rod).toEqual({ from: 'bottom', offset: 1200 });
+  });
+
+  it('cloneColumn carries a gap\'s wall-mounted rail over', () => {
+    const g = { ...makeGap(600), rail: { dir: 'across' as const, height: 1800 } };
+    const c = cloneColumn(g);
+    expect(c.id).not.toBe(g.id);
+    expect(c.kind === 'gap' && c.rail).toEqual({ dir: 'across', height: 1800 });
   });
 
   it('cloneColumn carries the rail direction over', () => {

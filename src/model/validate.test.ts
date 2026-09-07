@@ -259,3 +259,34 @@ describe('validate: rail height', () => {
     expect(validate(q).some((e) => e.message.key === 'error.rodOutOfZone')).toBe(false);
   });
 });
+
+describe('validate: a gap\'s wall-mounted rail', () => {
+  // default project: plinth 100 -> min 400; topY 2350 -> max 2320
+  const withRail = (height: number) => {
+    const q = clone(defaultProject());
+    q.wardrobe.walls.back.segments[0] = [{ id: 'g1', kind: 'gap', width: 800, rail: { dir: 'along', height } }];
+    return q;
+  };
+  const err = (height: number) => validate(withRail(height)).find((e) => e.message.key === 'error.gapRailHeight');
+
+  it('a gap with no rail is never checked for one', () => {
+    const q = clone(defaultProject());
+    q.wardrobe.walls.back.segments[0] = [{ id: 'g1', kind: 'gap', width: 800 }];
+    expect(validate(q).some((e) => e.message.key === 'error.gapRailHeight')).toBe(false);
+  });
+
+  it('accepts a rail between plinth + 300 and topY - 30', () => {
+    expect(err(400)).toBeUndefined();
+    expect(err(2000)).toBeUndefined();
+    expect(err(2320)).toBeUndefined();
+  });
+
+  it('error.gapRailHeight: too low, and too high', () => {
+    const low = err(399);
+    expect(low).toBeTruthy();
+    expect(low!.path).toBe('walls.back.segments.0.0');
+    expect(low!.message.params).toMatchObject({ wall: 'wall.back', unit: 1, min: 400, max: 2320 });
+    expect(tmDeep('en', low!.message)).toBe('Back wall, gap 1: rail height must be between 400 and 2320 mm');
+    expect(err(2321)).toBeTruthy();
+  });
+});

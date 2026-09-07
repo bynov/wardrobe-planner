@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
 import type { Zone } from '../model/types';
-import { MAX_ROD_HEIGHT, ROD_DROP, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
+import { MAX_ROD_HEIGHT, ROD_DROP, defaultGapRailHeight, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
 
 const p = defaultProject(); // t 18, plinth 100, topGap 150, height 2500 → carcass 2250, interior 2214
 
@@ -191,5 +191,46 @@ describe('layoutUnit: rail direction', () => {
     const z = layoutUnit(p, 'back', 0, 0, u, 0).zones[0];
     expect(z.rodY).toBeNull();
     expect(z.rodDir).toBe('across'); // the zone's own field, whether or not a rail uses it
+  });
+});
+
+describe('layoutWall: a gap\'s wall-mounted rail', () => {
+  const K = 20; // SHELF_SETBACK, the clearance the rail keeps at either end
+  /** The back wall as a single 800 mm gap, optionally carrying a rail. */
+  const wallWith = (rail?: { dir: 'along' | 'across'; height: number }) => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [{ id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) }];
+    const c = layoutWall(q, 'back')[0];
+    if (c.kind !== 'gap') throw new Error('expected a gap');
+    return c;
+  };
+
+  it('no rail on a plain gap', () => {
+    expect(wallWith().rail).toBeNull();
+  });
+
+  it('the gap knows the wall\'s unit depth, so a rail can reach into the room', () => {
+    expect(wallWith().depth).toBe(600);
+  });
+
+  it('an along rail spans the gap, held clear of both ends', () => {
+    const g = wallWith({ dir: 'along', height: 1800 });
+    expect(g.rail).toEqual({ dir: 'along', y: 1800, s0: 0 + K, s1: 800 - K, length: 800 - 2 * K });
+  });
+
+  it('an across rail stands at the gap centre and reaches the wall\'s depth', () => {
+    const g = wallWith({ dir: 'across', height: 1800 });
+    expect(g.rail).toEqual({ dir: 'across', y: 1800, s0: 400, s1: 400, length: 600 - 2 * K });
+  });
+
+  it('the rail height is taken as given, not derived', () => {
+    expect(wallWith({ dir: 'along', height: 900 }).rail!.y).toBe(900);
+  });
+
+  it('defaultGapRailHeight parks a new rail at the usual reach limit', () => {
+    expect(defaultGapRailHeight(p)).toBe(Math.min(MAX_ROD_HEIGHT, heights(p).topY - ROD_DROP));
+    expect(defaultGapRailHeight(p)).toBe(2000);
+    const low = { ...p, room: { ...p.room, height: 1800 } }; // topY 1650 -> 1650 - 80
+    expect(defaultGapRailHeight(low)).toBe(1570);
   });
 });

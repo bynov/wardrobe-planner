@@ -149,3 +149,61 @@ describe('buildUnitParts: a front-to-back rail', () => {
     expect(b.max.z).toBeCloseTo(p.room.depth - cs + ROD_DIAMETER / 2);
   });
 });
+
+describe('buildParts: a gap\'s wall-mounted rail', () => {
+  const K = 20;
+  /** One wall carrying a single 800 mm gap; every other wall is off. */
+  const only = (wall: 'back' | 'left', rail?: { dir: 'along' | 'across'; height: number }) => {
+    const q = structuredClone(p);
+    for (const w of ['back', 'right', 'front', 'left'] as const) q.wardrobe.walls[w].enabled = w === wall;
+    q.wardrobe.walls[wall].segments[0] = [{ id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) }];
+    q.wardrobe.walls[wall].segments[1] = [];
+    return buildParts(q);
+  };
+
+  it('a plain gap builds nothing at all', () => {
+    expect(only('back')).toHaveLength(0);
+  });
+
+  it('an along rail runs the length of the gap at mid-depth, on the back wall', () => {
+    const parts = only('back', { dir: 'along', height: 1800 });
+    expect(parts).toHaveLength(1);
+    const rod = parts[0];
+    expect(rod.kind).toBe('rod');
+    expect(rod.material).toBe('rod');
+    expect(rod.unitId).toBe('g1');
+    expect(rod.columnIndex).toBe(0);
+    expect(rod.notes?.map((n) => n.key).sort()).toEqual(['note.rodDia', 'note.wallMounted']);
+    const b = partBounds(rod);
+    expect(b.min.x).toBeCloseTo(K); // s0 + 20
+    expect(b.max.x).toBeCloseTo(800 - K);
+    expect(b.min.y).toBeCloseTo(1800 - ROD_DIAMETER / 2);
+    expect(b.max.y).toBeCloseTo(1800 + ROD_DIAMETER / 2);
+    expect(b.min.z).toBeCloseTo(300 - ROD_DIAMETER / 2); // depth / 2
+    expect(rod.thickness).toBeCloseTo(800 - 2 * K);
+  });
+
+  it('an across rail stands at the gap centre and runs into the room, on the back wall', () => {
+    const rod = only('back', { dir: 'across', height: 1800 })[0];
+    const b = partBounds(rod);
+    expect(b.min.x).toBeCloseTo(400 - ROD_DIAMETER / 2);
+    expect(b.max.x).toBeCloseTo(400 + ROD_DIAMETER / 2);
+    expect(b.min.z).toBeCloseTo(K); // no back panel in a gap: 20, not backThickness + 20
+    expect(b.max.z).toBeCloseTo(600 - K);
+    expect(rod.thickness).toBeCloseTo(600 - 2 * K);
+  });
+
+  it('maps through the wall frame: the same two rails on the left wall', () => {
+    const D = p.room.depth; // left wall: local (s, y, z) -> world (z, y, D - s)
+    const along = partBounds(only('left', { dir: 'along', height: 1800 })[0]);
+    expect(along.min.z).toBeCloseTo(D - (800 - K));
+    expect(along.max.z).toBeCloseTo(D - K);
+    expect(along.min.x).toBeCloseTo(300 - ROD_DIAMETER / 2); // depth / 2
+
+    const across = partBounds(only('left', { dir: 'across', height: 1800 })[0]);
+    expect(across.min.x).toBeCloseTo(K);
+    expect(across.max.x).toBeCloseTo(600 - K);
+    expect(across.min.z).toBeCloseTo(D - 400 - ROD_DIAMETER / 2);
+    expect(across.max.z).toBeCloseTo(D - 400 + ROD_DIAMETER / 2);
+  });
+});

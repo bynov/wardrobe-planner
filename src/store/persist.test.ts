@@ -225,6 +225,42 @@ describe('storage', () => {
   });
 });
 
+describe('a gap\'s wall-mounted rail in files', () => {
+  const withGap = (gap: Record<string, unknown>) => {
+    const base = defaultProject();
+    const raw = base as unknown as { wardrobe: { walls: Record<string, { segments: unknown[][] }> } };
+    raw.wardrobe.walls.back.segments[0] = [gap];
+    return JSON.stringify({ version: FILE_VERSION, project: base });
+  };
+  const gapOf = (r: { ok: true; project: ReturnType<typeof defaultProject> }) =>
+    r.project.wardrobe.walls.back.segments[0][0] as { kind: 'gap'; rail?: unknown };
+
+  it('accepts a gap with no rail (every pre-feature file)', () => {
+    const r = parseProjectShape(withGap({ id: 'g1', kind: 'gap', width: 600 }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(gapOf(r).rail).toBeUndefined();
+  });
+
+  it('round-trips a rail through serialize and parse', () => {
+    const r = parseProjectShape(withGap({ id: 'g1', kind: 'gap', width: 600, rail: { dir: 'across', height: 1900 } }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(gapOf(r).rail).toEqual({ dir: 'across', height: 1900 });
+    const again = parseProjectShape(serializeProject(r.project));
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(gapOf(again).rail).toEqual({ dir: 'across', height: 1900 });
+  });
+
+  it('rejects a malformed rail', () => {
+    const bad = (rail: unknown) => parseProjectShape(withGap({ id: 'g1', kind: 'gap', width: 600, rail })).ok;
+    expect(bad({ dir: 'sideways', height: 1900 })).toBe(false);
+    expect(bad({ dir: 'along' })).toBe(false); // no height
+    expect(bad({ dir: 'along', height: 'high' })).toBe(false);
+    expect(bad({ dir: 'along', height: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(bad(null)).toBe(false);
+  });
+});
+
 describe('rail direction in files', () => {
   const withZone = (zone: Record<string, unknown>) => {
     const base = defaultProject();

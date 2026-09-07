@@ -25,7 +25,11 @@ export type RodDir = (typeof ROD_DIRS)[number];
  * the `along` direction respectively. */
 export interface Zone { id: string; type: ZoneType; height: number | null; count: number; rod?: RodPlacement; rodDir?: RodDir }
 export interface Unit { id: string; kind: 'unit'; width: number; zones: Zone[] }
-export interface Gap { id: string; kind: 'gap'; width: number }
+/** A wall-mounted rail hung in the empty space of a gap: no carcass, just the rod and its
+ * brackets. `height` is the rail axis above the finished floor. */
+export interface GapRail { dir: RodDir; height: number }
+/** `rail` is optional: a plain gap is simply left empty, as it always was. */
+export interface Gap { id: string; kind: 'gap'; width: number; rail?: GapRail }
 export type Column = Unit | Gap;
 export interface WallPlan { enabled: boolean; depth: number; segments: [Column[], Column[]] }
 

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { segmentFree, wallSegments } from '../geometry/frames';
-import { layoutUnit, type ZoneLayout } from '../geometry/layout';
+import { defaultGapRailHeight, layoutUnit, type ZoneLayout } from '../geometry/layout';
 import { wallName } from '../drawing/views';
 import { tmDeep, type Lang } from '../i18n';
 import { makeZone } from '../model/factory';
-import { ROD_DIRS, ROD_REFS, ZONE_TYPES, type Project, type RodDir, type RodRef, type Unit, type ValidationError, type Wall, type Zone, type ZoneType } from '../model/types';
+import { ROD_DIRS, ROD_REFS, ZONE_TYPES, type Gap, type Project, type RodDir, type RodRef, type Unit, type ValidationError, type Wall, type Zone, type ZoneType } from '../model/types';
 import { findColumn, useStore, type Selection } from '../store/store';
-import { NumberField, NumberInput } from './fields';
+import { NumberField, NumberInput, SelectField } from './fields';
 import { useT } from './useT';
 
 const COUNTED: ZoneType[] = ['shelves', 'drawers'];
@@ -192,6 +192,49 @@ function ZoneRow({ unit, zone, zl, count, active }: { unit: Unit; zone: Zone; zl
   );
 }
 
+/**
+ * A gap carries no carcass, but the empty space can still hold a wall-mounted rail — the usual
+ * answer for the stretch a run has to leave free in a corner.
+ */
+function GapRailFields({ gap }: { gap: Gap }) {
+  const project = useStore((s) => s.project);
+  const updateColumn = useStore((s) => s.updateColumn);
+  const { t } = useT();
+  const rail = gap.rail;
+  const set = (next: Gap['rail']) => updateColumn(gap.id, { rail: next });
+
+  return (
+    <div className="gap-rail">
+      <label className="chk wide">
+        <input
+          type="checkbox"
+          checked={rail !== undefined}
+          // Ticking hangs a rail at the usual reach height; unticking drops the key entirely.
+          onChange={(e) => set(e.target.checked ? { dir: 'along', height: defaultGapRailHeight(project) } : undefined)}
+        />
+        <span>{t('ui.gapRail')}</span>
+      </label>
+      {rail && (
+        <>
+          <SelectField<RodDir>
+            label={t('ui.rodDir')}
+            value={rail.dir}
+            options={ROD_DIRS.map((d) => ({ value: d, label: t(`ui.rodDir.${d}`) }))}
+            onChange={(dir) => set({ ...rail, dir })}
+          />
+          <NumberField
+            label={t('ui.gapRailHeight')}
+            value={rail.height}
+            min={0}
+            step={10}
+            onChange={(height) => set({ ...rail, height })}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Inspector() {
   const project = useStore((s) => s.project);
   const selection = useStore((s) => s.ui.selection);
@@ -241,6 +284,8 @@ export function Inspector() {
         </button>
         <button className="danger" onClick={() => removeColumn(column.id)}>{t('ui.remove')}</button>
       </div>
+
+      {!unit && <GapRailFields gap={column as Gap} />}
 
       {unit && ul && (
         <>

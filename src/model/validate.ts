@@ -7,6 +7,10 @@ import type { Project, ValidationError } from './types';
 
 export const MAX_ROOM_DIM = 20000;
 
+/** How far a gap's wall-mounted rail must stay above the plinth and below the run's top edge. */
+export const GAP_RAIL_FLOOR_CLEARANCE = 300;
+export const GAP_RAIL_TOP_CLEARANCE = 30;
+
 const ARC_SAMPLES = 32;
 const LEAF_SAMPLES = 8;
 /** Clearance, in mm, a swept point must keep inside a unit before it counts as a clash — so a leaf
@@ -76,7 +80,17 @@ export function validate(p: Project): ValidationError[] {
       const path = `walls.${wall}.segments.${si}.${ci}`;
       // Unit numbers run across both segments of the wall, matching the inspector's heading.
       const U = { ...W, unit: (si === 1 ? plan.segments[0].length : 0) + ci + 1 };
-      if (c.kind === 'gap') { if (!(c.width > 0)) push(path, 'error.gapWidth', U); return; }
+      if (c.kind === 'gap') {
+        if (!(c.width > 0)) push(path, 'error.gapWidth', U);
+        // A wall-mounted rail hangs in thin air, so the only thing to check is that it is
+        // reachable: clear of the plinth below and of the run's top edge above.
+        if (c.rail) {
+          const min = w.plinthHeight + GAP_RAIL_FLOOR_CLEARANCE;
+          const max = H.topY - GAP_RAIL_TOP_CLEARANCE;
+          if (!(c.rail.height >= min && c.rail.height <= max)) push(path, 'error.gapRailHeight', { ...U, min, max });
+        }
+        return;
+      }
       if (c.width < minUnitWidth(w)) push(path, 'error.columnWidth', { ...U, n: minUnitWidth(w) });
       if (c.zones.length === 0) { push(path, 'error.noZones', U); return; }
       const { heights: zh, leftover } = zoneHeights(c, H.interiorHeight, t);

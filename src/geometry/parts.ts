@@ -1,7 +1,7 @@
 import type { Project, Wall } from '../model/types';
 import { msg, type Msg } from '../i18n';
 import { frameTransform, wallFrame } from './frames';
-import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, type UnitLayout } from './layout';
+import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, type GapLayout, type UnitLayout } from './layout';
 import { bounds3, FLAT_ROT, NO_ROT, ROD_ROT, SIDE_ROT, toWorld, v2, v3, type Box3, type Transform, type Vec2, type Vec3 } from './vec';
 
 export type PartKind = 'side' | 'top' | 'bottom' | 'back' | 'divider' | 'shelf' | 'drawerFront' | 'plinth' | 'rod';
@@ -81,12 +81,40 @@ export function buildUnitParts(L: UnitLayout, p: Project): Part[] {
   return parts;
 }
 
+/**
+ * A gap carries no carcass, so the only thing it can build is a wall-mounted rail: the rod itself,
+ * hung on brackets that this model does not carry (see `note.wallMounted`). `along` runs the
+ * length of the gap at mid-depth; `across` stands at its middle and runs out into the room.
+ */
+export function buildGapParts(L: GapLayout): Part[] {
+  const r = L.rail;
+  if (!r) return [];
+  const notes = [msg('note.rodDia', { d: ROD_DIAMETER }), msg('note.wallMounted')];
+  const across = r.dir === 'across';
+  return [{
+    id: `${L.wall}-${L.columnIndex}-gaprail`,
+    wall: L.wall,
+    columnIndex: L.columnIndex,
+    unitId: L.gap.id,
+    nameKey: 'rod',
+    kind: 'rod',
+    outline: circle(ROD_DIAMETER / 2, 24),
+    thickness: r.length,
+    transform: {
+      position: across ? v3(r.s0, r.y, SHELF_SETBACK) : v3(r.s0, r.y, L.depth / 2),
+      rotation: across ? NO_ROT : ROD_ROT,
+    },
+    material: 'rod',
+    notes,
+  }];
+}
+
 export function buildParts(p: Project): Part[] {
   const out: Part[] = [];
   for (const L of layoutAll(p)) {
-    if (L.kind !== 'unit') continue;
     const frame = wallFrame(p.room, L.wall);
-    for (const part of buildUnitParts(L, p)) out.push({ ...part, transform: frameTransform(frame, part.transform) });
+    const local = L.kind === 'unit' ? buildUnitParts(L, p) : buildGapParts(L);
+    for (const part of local) out.push({ ...part, transform: frameTransform(frame, part.transform) });
   }
   return out;
 }
