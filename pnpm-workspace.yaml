@@ -1,0 +1,7 @@
+# pnpm gates postinstall scripts; core-js (transitive) needs approval
+allowBuilds:
+  core-js: true
+
+# a transitive dep pulls @types/react-reconciler that requires @types/react@19; pin the React-18-compatible version
+overrides:
+  "@types/react-reconciler": "0.28.9"

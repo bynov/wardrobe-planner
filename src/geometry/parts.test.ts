@@ -1,0 +1,90 @@
+import { describe, expect, it } from 'vitest';
+import { defaultProject } from '../model/defaults';
+import { makeUnit, makeZone } from '../model/factory';
+import { layoutUnit } from './layout';
+import { buildParts, buildUnitParts, partBounds } from './parts';
+
+const p = defaultProject();
+
+describe('buildUnitParts', () => {
+  it('produces carcass + content for a drawers/shelves/hanging unit', () => {
+    const u = makeUnit(600, [makeZone('drawers', 600, 3), makeZone('shelves', null, 2), makeZone('hanging')]);
+    const parts = buildUnitParts(layoutUnit(p, 'back', 0, 0, u, 0), p);
+    const kinds = parts.map((x) => x.kind);
+    const count = (k: string) => kinds.filter((x) => x === k).length;
+    expect(count('side')).toBe(2); expect(count('top')).toBe(1); expect(count('bottom')).toBe(1);
+    expect(count('back')).toBe(1); expect(count('plinth')).toBe(1);
+    expect(count('divider')).toBe(2); expect(count('shelf')).toBe(2);
+    expect(count('drawerFront')).toBe(3); expect(count('rod')).toBe(1);
+    const side = parts.find((x) => x.nameKey === 'sideL')!;
+    const b = partBounds(side);
+    expect(b.min.x).toBeCloseTo(0); expect(b.max.x).toBeCloseTo(18);
+    expect(b.min.y).toBeCloseTo(100); expect(b.max.y).toBeCloseTo(2350);
+    expect(b.min.z).toBeCloseTo(0); expect(b.max.z).toBeCloseTo(600);
+    const front = parts.find((x) => x.kind === 'drawerFront')!;
+    const fb = partBounds(front);
+    expect(fb.min.z).toBeCloseTo(600 - 18); expect(fb.max.z).toBeCloseTo(600);
+    expect(fb.min.x).toBeCloseTo(20); expect(fb.max.x).toBeCloseTo(580);
+    const rod = parts.find((x) => x.kind === 'rod')!;
+    const rb = partBounds(rod);
+    expect(rb.min.x).toBeCloseTo(18); expect(rb.max.x).toBeCloseTo(582);
+    expect(rb.min.z).toBeCloseTo(298 - 12.5, 0); // interiorDepth/2 = 298
+    const shelf = parts.find((x) => x.kind === 'shelf')!;
+    const sb = partBounds(shelf);
+    expect(sb.min.z).toBeCloseTo(4); expect(sb.max.z).toBeCloseTo(580);
+  });
+});
+
+describe('buildParts', () => {
+  it('keeps every part inside the room and on its wall', () => {
+    const parts = buildParts(p);
+    expect(parts.length).toBeGreaterThan(50);
+    for (const part of parts) {
+      const b = partBounds(part);
+      expect(b.min.x).toBeGreaterThanOrEqual(-1e-6); expect(b.max.x).toBeLessThanOrEqual(2400 + 1e-6);
+      expect(b.min.z).toBeGreaterThanOrEqual(-1e-6); expect(b.max.z).toBeLessThanOrEqual(2000 + 1e-6);
+      expect(b.max.y).toBeLessThanOrEqual(2350 + 1e-6);
+      if (part.wall === 'left') expect(b.max.x).toBeLessThanOrEqual(600 + 1e-6);
+      if (part.wall === 'right') expect(b.min.x).toBeGreaterThanOrEqual(2400 - 600 - 1e-6);
+      if (part.wall === 'back') expect(b.max.z).toBeLessThanOrEqual(600 + 1e-6);
+    }
+    expect(parts.some((x) => x.wall === 'front')).toBe(false);
+  });
+  it('gap columns produce no parts and column indexes are per wall', () => {
+    const right = buildParts(p).filter((x) => x.wall === 'right');
+    expect(new Set(right.map((x) => x.columnIndex))).toEqual(new Set([1, 2]));
+  });
+
+  it('an enabled front wall lands in the room, against z = D', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.front.enabled = true;
+    q.wardrobe.walls.front.depth = 400;
+    q.wardrobe.walls.front.segments[0] = [makeUnit(600, [makeZone('shelves', null, 3)])];
+    const front = buildParts(q).filter((x) => x.wall === 'front');
+    expect(front.length).toBeGreaterThan(5);
+    for (const part of front) {
+      const b = partBounds(part);
+      expect(b.min.x).toBeGreaterThanOrEqual(-1e-6); expect(b.max.x).toBeLessThanOrEqual(2400 + 1e-6);
+      expect(b.min.y).toBeGreaterThanOrEqual(-1e-6); expect(b.max.y).toBeLessThanOrEqual(2350 + 1e-6);
+      // the run hangs off the front wall: z between D - depth and D
+      expect(b.min.z).toBeGreaterThanOrEqual(2000 - 400 - 1e-6);
+      expect(b.max.z).toBeLessThanOrEqual(2000 + 1e-6);
+    }
+  });
+
+  it('a unit in segment 1 of the door wall stays inside the room', () => {
+    const q = structuredClone(p);
+    // offset 1000 puts the opening near the front end, leaving a real segment 1 between it and
+    // the corner the back wall claims
+    q.door = { wall: 'left', offset: 1000, width: 800, height: 2100 };
+    q.wardrobe.walls.left.segments = [[], [makeUnit(300, [makeZone('hanging')])]];
+    const left = buildParts(q).filter((x) => x.wall === 'left');
+    expect(left.length).toBeGreaterThan(5);
+    for (const part of left) {
+      const b = partBounds(part);
+      expect(b.min.x).toBeGreaterThanOrEqual(-1e-6); expect(b.max.x).toBeLessThanOrEqual(600 + 1e-6);
+      expect(b.min.z).toBeGreaterThanOrEqual(-1e-6); expect(b.max.z).toBeLessThanOrEqual(2000 + 1e-6);
+      expect(b.max.y).toBeLessThanOrEqual(2350 + 1e-6);
+    }
+  });
+});

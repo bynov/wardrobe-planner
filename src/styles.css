@@ -1,0 +1,158 @@
+:root { font-family: system-ui, sans-serif; font-size: 14px; color: #222; }
+body { margin: 0; }
+button { font: inherit; padding: 4px 10px; border: 1px solid #bbb; background: #fff; border-radius: 3px; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- app shell ---- */
+.app { display: grid; grid-template-rows: 48px 1fr; height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #ddd; background: #fafafa; }
+.topbar input.name { font-size: 15px; padding: 4px 8px; width: 200px; }
+.tabs { display: flex; gap: 2px; margin-left: 12px; }
+.tabs button.active { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+.tabs.lang { margin-left: 4px; }
+.tabs.lang button { padding: 6px 8px; font-size: 12px; }
+.spacer { flex: 1; }
+.content { position: relative; min-width: 0; min-height: 0; overflow: auto; background: #fff; }
+
+/* ---- shared form bits ---- */
+.panel h3, .inspector h3 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.field { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 6px; margin: 4px 0; }
+.field input, .field select { width: 100%; box-sizing: border-box; padding: 3px 6px; font: inherit; }
+.field input[type="checkbox"] { width: auto; justify-self: start; }
+.errors { background: #fde8e8; color: #9b1c1c; padding: 8px; border-radius: 4px; margin: 8px; }
+.derived { font-size: 12px; color: #666; margin-top: 4px; }
+
+/* ---- design tab (Task 12) ---- */
+.design { display: grid; grid-template-columns: 340px 1fr 320px; min-height: 0; height: 100%; }
+.panel { display: flex; flex-direction: column; overflow: auto; border-right: 1px solid #ddd; background: #f6f6f6; }
+.elevation { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #fff; }
+.elevation .head { display: flex; gap: 12px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #ddd; background: #fafafa; }
+.elevation svg { flex: 1; width: 100%; height: 100%; min-height: 0; }
+.hit { fill: transparent; cursor: pointer; pointer-events: all; }
+.hit:hover { fill: rgba(43,108,176,0.08); }
+.sel { fill: none; stroke: #2b6cb0; stroke-width: 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+.selzone { fill: rgba(43,108,176,0.18); pointer-events: none; }
+.plus circle { fill: #2b6cb0; stroke: #fff; stroke-width: 2; vector-effect: non-scaling-stroke; cursor: pointer; }
+.plus text { fill: #fff; font-weight: 700; pointer-events: none; }
+.plus:hover circle { fill: #1e4e85; }
+.menu { position: absolute; z-index: 5; background: #fff; border: 1px solid #bbb; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 4px; min-width: 200px; }
+.menu button { display: flex; justify-content: space-between; width: 100%; border: 0; text-align: left; padding: 6px 8px; }
+.menu button:hover { background: #eef3fa; }
+.plan svg { width: 100%; height: auto; display: block; background: #fff; border-bottom: 1px solid #ddd; max-height: 42vh; object-fit: contain; }
+.wallhit { fill: rgba(43,108,176,0.05); stroke: #9bb; stroke-dasharray: 8 6; cursor: pointer; vector-effect: non-scaling-stroke; }
+.wallhit:hover { fill: rgba(43,108,176,0.15); }
+.wallhit.on { fill: rgba(43,108,176,0.12); stroke: #2b6cb0; stroke-dasharray: none; stroke-width: 3; }
+.inspector { overflow: auto; border-left: 1px solid #ddd; background: #f6f6f6; padding: 0 10px 12px; }
+.inspector h4 { margin: 10px 0 4px; font-size: 13px; }
+.inspector .hint { color: #666; font-size: 13px; padding: 8px; }
+
+/* ---- 3D viewport ---- */
+.viewport { width: 100%; height: 100%; position: relative; }
+.viewport .controls { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,0.9); padding: 6px 10px; border-radius: 4px; display: flex; gap: 12px; align-items: center; }
+.dim3d { background: rgba(255,255,255,0.85); padding: 1px 4px; border-radius: 3px; font-size: 12px; white-space: nowrap; }
+
+/* ---- cut list ---- */
+table.cutlist { border-collapse: collapse; margin: 12px; }
+table.cutlist th, table.cutlist td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; }
+table.cutlist tfoot td { font-weight: 600; }
+
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 14px; border-radius: 4px; z-index: 10; }
+
+/* ---- design tab: refinements ---- */
+.panel .forms { padding: 0 10px 16px; }
+.panel h3:first-child { margin-top: 8px; }
+
+/* plan editor */
+.plan { flex: none; position: sticky; top: 0; z-index: 1; background: #fff; }
+.wallhit.off { fill: rgba(120,120,120,0.06); stroke: #b0b0b0; }
+.wallhit.off:hover { fill: rgba(43,108,176,0.12); }
+
+/* elevation editor */
+.elevation .head { flex: none; flex-wrap: wrap; row-gap: 4px; }
+.elevation .head strong { font-size: 15px; }
+.elevation .head .spacer { flex: 1; }
+.elevation .head .field { grid-template-columns: auto 78px; margin: 0; gap: 6px; }
+.elevation .head .field > span { color: #555; }
+.check { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer; }
+.seginfo { font-size: 12px; color: #555; padding: 2px 8px; background: #eef1f4; border-radius: 10px; white-space: nowrap; }
+.seginfo b { color: #333; font-weight: 600; }
+.danger { color: #c0392b; }
+button.danger { color: #c0392b; border-color: #e0b4ae; }
+.elevation .body { flex: 1; min-height: 0; display: flex; position: relative; padding: 8px 12px 12px; box-sizing: border-box; }
+.elevation .body svg { flex: 1; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.elevation .body .hint {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  background: #fff8e1; border: 1px solid #e6d9a8; color: #6b5a12;
+  padding: 8px 14px; border-radius: 4px; font-size: 13px;
+}
+.plus text { user-select: none; }
+.menu .title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; padding: 4px 8px 6px; }
+.menu button { align-items: baseline; gap: 12px; border-radius: 3px; }
+.menu button .derived { margin-top: 0; white-space: nowrap; }
+.menu button:disabled:hover { background: transparent; }
+
+/* inspector */
+.inspector h3 .sub { text-transform: none; letter-spacing: 0; color: #777; font-weight: 400; }
+.inspector .row.btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 4px; }
+.inspector .row.btns button { flex: 1 1 auto; padding: 4px 6px; }
+.inspector button.wide { width: 100%; margin-top: 8px; }
+.zone-row {
+  /* minmax(0, 1fr): without the 0 minimum the <select> claims its longest option's width and the
+     RU wording pushes the move/remove buttons out of the inspector */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center;
+  padding: 6px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer;
+}
+.zone-row.active { background: #e3edf8; border-color: #2b6cb0; }
+.zone-row select { width: 100%; min-width: 0; box-sizing: border-box; padding: 3px 4px; font: inherit; }
+.zone-btns { display: flex; gap: 2px; }
+.zone-btns button { padding: 2px 6px; line-height: 1.1; }
+.zone-fields { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.zone-fields label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
+.zone-fields input[type="number"] { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
+.zone-fields label.chk { cursor: pointer; }
+.zone-eff { grid-column: 1 / -1; font-size: 11px; color: #777; }
+
+/* free-tail drop zone in the elevation + the "+" hint on a disabled plan band */
+.placeholder { cursor: pointer; }
+.placeholder rect {
+  fill: rgba(43,108,176,0.06); stroke: #2b6cb0; stroke-width: 2;
+  stroke-dasharray: 8 6; vector-effect: non-scaling-stroke;
+}
+.placeholder:hover rect { fill: rgba(43,108,176,0.16); }
+.placeholder text { fill: #2b6cb0; font-weight: 700; pointer-events: none; user-select: none; }
+.wallplus { fill: #2b6cb0; font-weight: 700; pointer-events: none; user-select: none; }
+
+/* overflow feedback: what spills past a segment end, and the columns that cause it */
+.overflow { fill: rgba(220,38,38,0.12); stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+.overflowcol { fill: none; stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+.overflowlabel {
+  fill: #b91c1c; font-weight: 700; user-select: none;
+  paint-order: stroke; stroke: #fff; stroke-width: 4px; vector-effect: non-scaling-stroke;
+}
+
+/* the large-plan mode of the centre pane */
+.plan.big { flex: 1; position: static; display: flex; min-height: 0; }
+.plan.big svg { max-height: none; height: 100%; flex: 1; border-bottom: 0; }
+.elevation .head button.active { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+
+/* "you are looking at the last valid design" banner on the 3D and cut-list tabs */
+.stale {
+  background: #fff8e1; border-bottom: 1px solid #e6d9a8; color: #6b5a12;
+  padding: 6px 12px; font-size: 13px;
+}
+.tabpane { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: auto; }
+.tabpane > .viewport { flex: 1; min-height: 0; }
+.tabpane > .stale { flex: none; }
+
+/* clickable validation errors in the inspector */
+.errors button {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  color: inherit; font: inherit; padding: 2px 4px; border-radius: 3px;
+}
+.errors button:not(:disabled):hover { background: rgba(155,28,28,0.12); }
+.errors button:disabled { opacity: 1; cursor: default; }
+.errors .times { color: #7a1616; font-weight: 700; }
+.errors button.toggle { margin-top: 4px; font-size: 12px; text-decoration: underline; opacity: 0.9; }
+
+/* "the unit is selected, not a zone" hint under the inspector's unit title */
+.inspector .zonehint { font-size: 12px; color: #666; line-height: 1.35; margin: 0 0 6px; }
