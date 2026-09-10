@@ -36,12 +36,12 @@ export function PlanEditor({ big = false, onPick }: PlanEditorProps = {}) {
   const lastValid = useStore((s) => s.lastValid);
   const selected = useStore((s) => s.ui.selection.wall);
   const select = useStore((s) => s.select);
-  const { lang, t } = useT();
+  const { lang, units, t } = useT();
 
   const view = useMemo(() => {
-    const d = planView(project, lang);
-    return drawable(d, project) ? { p: project, d } : { p: lastValid, d: planView(lastValid, lang) };
-  }, [project, lastValid, lang]);
+    const d = planView(project, lang, units);
+    return drawable(d, project) ? { p: project, d } : { p: lastValid, d: planView(lastValid, lang, units) };
+  }, [project, lastValid, lang, units]);
   const { viewBox, inner } = useMemo(() => drawingToSvgParts(view.d), [view]);
   const { width: W, depth: D } = view.p.room;
   const textSize = view.d.textSize;

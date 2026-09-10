@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store/store';
 import { TopBar } from './ui/TopBar';
+import { HintBar } from './ui/HintBar';
 import { Toast } from './ui/Toast';
 import { DesignTab } from './ui/DesignTab';
 import { CutListTable } from './ui/CutListTable';
@@ -26,6 +27,7 @@ export function App() {
   return (
     <div className="app">
       <TopBar />
+      <HintBar />
       <main className="content">
         {tab === 'design' && <DesignTab />}
         {tab === '3d' && (

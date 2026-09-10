@@ -7,11 +7,13 @@ import type { PresetKey } from '../model/presets';
 import type { Wall } from '../model/types';
 import { drawingToSvgParts } from '../render/svg';
 import { findColumn, useStore } from '../store/store';
+import { formatLen } from '../units';
 import { NumberField } from './fields';
 import { PlanEditor } from './PlanEditor';
 import { SpawnMenu } from './SpawnMenu';
 import { drawable } from './drawable';
 import { useT } from './useT';
+import { NARROW_QUERY, useMediaQuery } from './useMediaQuery';
 
 /** How many `error.segmentOverflow` errors currently name one of `walls`. */
 const overflowsOn = (errors: { message: { key: string; params?: Record<string, string | number> } }[], walls: Wall[]): number =>
@@ -24,8 +26,42 @@ interface MenuState {
   y: number;
 }
 
+/** How big the "+" spawn target is, as a multiple of the drawing's text size. */
+const PLUS_R_FACTOR = 0.9;
+/** ...but never smaller than this radius in real screen pixels once a finger is doing the aiming.
+ *  The drawing is in millimetres, so the same factor is a different target on every screen. */
+const PLUS_TOUCH_R_PX = 20;
+
 const MENU_W = 210;
 const MENU_H = 230;
+
+/**
+ * Screen pixels per drawing millimetre for an `<svg>` that scales its viewBox to fit (the default
+ * `xMidYMid meet`, so the smaller of the two ratios wins). 0 until the element has been measured,
+ * and 0 wherever there is no `ResizeObserver` — callers fall back to a size in drawing units.
+ */
+function useSvgScale(el: SVGSVGElement | null, viewBox: string): number {
+  const [box, setBox] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    if (!el || typeof ResizeObserver === 'undefined') {
+      setBox({ w: 0, h: 0 });
+      return;
+    }
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setBox((b) => (b.w === r.width && b.h === r.height ? b : { w: r.width, h: r.height }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el]);
+
+  const [, , vbW, vbH] = viewBox.split(/\s+/).map(Number);
+  if (!(box.w > 0 && box.h > 0) || !(vbW > 0) || !(vbH > 0)) return 0;
+  return Math.min(box.w / vbW, box.h / vbH);
+}
 
 export function ElevationEditor() {
   const project = useStore((s) => s.project);
@@ -34,11 +70,13 @@ export function ElevationEditor() {
   const select = useStore((s) => s.select);
   const setWall = useStore((s) => s.setWall);
   const insertPreset = useStore((s) => s.insertPreset);
-  const { lang, t } = useT();
+  const { lang, t, u, units } = useT();
 
   const wall = selection.wall;
   const plan = project.wardrobe.walls[wall];
   const boxRef = useRef<HTMLDivElement>(null);
+  const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
+  const narrow = useMediaQuery(NARROW_QUERY);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [bigPlan, setBigPlan] = useState(false);
 
@@ -58,9 +96,9 @@ export function ElevationEditor() {
   }, [menu]);
 
   const view = useMemo(() => {
-    const d = wallElevation(project, wall, lang);
-    return drawable(d, project) ? { p: project, d } : { p: lastValid, d: wallElevation(lastValid, wall, lang) };
-  }, [project, lastValid, wall, lang]);
+    const d = wallElevation(project, wall, lang, units);
+    return drawable(d, project) ? { p: project, d } : { p: lastValid, d: wallElevation(lastValid, wall, lang, units) };
+  }, [project, lastValid, wall, lang, units]);
   const drawn = useMemo(() => drawingToSvgParts(view.d), [view]);
   const textSize = view.d.textSize;
   const layout = useMemo(() => (view.p.wardrobe.walls[wall].enabled ? layoutWall(view.p, wall) : []), [view, wall]);
@@ -101,10 +139,16 @@ export function ElevationEditor() {
     }
   };
 
+  const pxPerMm = useSvgScale(svgEl, drawn.viewBox);
+
   const menuSeg: Segment | undefined = menu ? projSegments[menu.segment] : undefined;
   const menuFree = menuSeg ? segmentFree(project, menuSeg) : 0;
 
-  const r = textSize * 0.9;
+  // The elevation is drawn in millimetres and scaled to fit, so a radius in drawing units says
+  // nothing about how big the target is under a fingertip: convert back through the rendered box.
+  const r = narrow && pxPerMm > 0
+    ? Math.max(textSize * PLUS_R_FACTOR, PLUS_TOUCH_R_PX / pxPerMm)
+    : textSize * PLUS_R_FACTOR;
   // The "+" row rides above the units' top edge, but the drawing's "ceiling gap" label sits
   // mid-gap at the wall end and the gap is often too short for both: lift the row clear of that
   // label when it exists, without pushing it past the drawing's own bounds.
@@ -123,7 +167,7 @@ export function ElevationEditor() {
           <span>{t('ui.wallEnabled')}</span>
         </label>
         {enabled && (
-          <NumberField label={t('ui.wallDepth')} value={plan.depth} min={200} step={10} onChange={(depth) => setWall(wall, { depth })} />
+          <NumberField label={t('ui.wallDepth', { u })} value={plan.depth} min={200} step={10} units={units} onChange={(depth) => setWall(wall, { depth })} />
         )}
         <button className={bigPlan ? 'active' : ''} title={t('ui.bigPlan')} onClick={() => setBigPlan((v) => !v)}>
           ⤢ {t('ui.bigPlan')}
@@ -136,7 +180,7 @@ export function ElevationEditor() {
               {seg.s1 - seg.s0 < minWidth ? (
                 <span className="danger">{t('ui.noRoom')}</span>
               ) : (
-                t('ui.freeWidth', { n: Math.round(segmentFree(project, seg)) })
+                t('ui.freeWidth', { n: formatLen(Math.round(segmentFree(project, seg)), units), u })
               )}
             </span>
           ))}
@@ -145,7 +189,7 @@ export function ElevationEditor() {
       <div className="body">
         {bigPlan && <PlanEditor big onPick={() => setBigPlan(false)} />}
         {!bigPlan && (
-        <svg viewBox={drawn.viewBox} role="img" aria-label={t('drawing.elevation', { wall: wallName(lang, wall) })}>
+        <svg ref={setSvgEl} viewBox={drawn.viewBox} role="img" aria-label={t('drawing.elevation', { wall: wallName(lang, wall) })}>
           <g style={{ pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: drawn.inner }} />
           {enabled && drawnEnabled && (
             <g>
@@ -235,7 +279,7 @@ export function ElevationEditor() {
                     </text>
                     {free > 7 * textSize && (
                       <text x={cx} y={cy + textSize} textAnchor="middle" dominantBaseline="middle" fontSize={textSize * 0.8}>
-                        {t('ui.freeWidth', { n: Math.round(free) })}
+                        {t('ui.freeWidth', { n: formatLen(Math.round(free), units), u })}
                       </text>
                     )}
                     <title>{t('ui.spawnTitle')}</title>
@@ -274,7 +318,7 @@ export function ElevationEditor() {
                       dominantBaseline="middle"
                       fontSize={textSize * 1.1}
                     >
-                      {t('ui.overflowBy', { n: Math.round(over) })}
+                      {t('ui.overflowBy', { n: formatLen(Math.round(over), units), u })}
                     </text>
                   </g>
                 );

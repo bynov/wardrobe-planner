@@ -21,6 +21,12 @@ describe('presets', () => {
     expect(ds.kind === 'unit' && ds.zones.map((z) => [z.type, z.count])).toEqual([['drawers', 4], ['shelves', 4]]);
   });
 
+  it('shoes = a fixed rack of five tilted boards over auto shelves', () => {
+    const c = makePreset('shoes', 600);
+    expect(c.kind === 'unit' && c.zones.map((z) => [z.type, z.height, z.count])).toEqual([['shoes', 900, 5], ['shelves', null, 3]]);
+    expect(PRESET_KEYS.indexOf('shoes')).toBe(PRESET_KEYS.indexOf('open') - 1);
+  });
+
   it('drawersHanging = fixed drawers zone under an auto hanging zone', () => {
     const c = makePreset('drawersHanging', 600);
     expect(c.kind === 'unit' && c.zones.map((z) => [z.type, z.height, z.count])).toEqual([['drawers', 600, 3], ['hanging', null, 1]]);

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, PRESET_KEYS, type PresetKey } from '../model/presets';
+import { formatLen } from '../units';
 import { useT } from './useT';
+import { NARROW_QUERY, useMediaQuery } from './useMediaQuery';
 
 export interface SpawnMenuProps {
   x: number;
@@ -13,7 +15,8 @@ export interface SpawnMenuProps {
 
 export function SpawnMenu({ x, y, free, minWidth, onPick, onClose }: SpawnMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const { t } = useT();
+  const { t, u, units } = useT();
+  const narrow = useMediaQuery(NARROW_QUERY);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -24,7 +27,9 @@ export function SpawnMenu({ x, y, free, minWidth, onPick, onClose }: SpawnMenuPr
   }, [onClose]);
 
   return (
-    <div className="menu" ref={ref} style={{ left: x, top: y }}>
+    // Below the breakpoint the stylesheet turns `.menu` into a bottom sheet, which the point the
+    // user tapped must not fight: the inline offsets would beat the media query.
+    <div className="menu" ref={ref} style={narrow ? undefined : { left: x, top: y }}>
       <div className="title">{t('ui.spawnTitle')}</div>
       {PRESET_KEYS.map((k) => {
         const disabled = k === 'gap' ? free <= 0 : free < minWidth;
@@ -32,7 +37,7 @@ export function SpawnMenu({ x, y, free, minWidth, onPick, onClose }: SpawnMenuPr
         return (
           <button key={k} disabled={disabled} onClick={() => onPick(k)}>
             <span>{t(`preset.${k}`)}</span>
-            <span className="derived">{disabled ? t('ui.noRoom') : t('ui.spawnWidth', { n: Math.round(width) })}</span>
+            <span className="derived">{disabled ? t('ui.noRoom') : t('ui.spawnWidth', { n: formatLen(Math.round(width), units), u })}</span>
           </button>
         );
       })}

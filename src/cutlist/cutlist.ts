@@ -1,12 +1,25 @@
 import type { Material, Part, PartKind, PartNameKey } from '../geometry/parts';
 import type { Wall } from '../model/types';
-import { t, type Lang, type MessageKey, type Msg } from '../i18n';
+import { t, tm, type Lang, type MessageKey, type Msg } from '../i18n';
+import { formatLen, type Units } from '../units';
 import { bounds2, type Vec2 } from '../geometry/vec';
 import { ROD_DIAMETER } from '../geometry/layout';
 import { WALLS } from '../geometry/frames';
 
 /** Where a part belongs: a unit in a wall run. */
 export interface Location { wall: Wall; columnIndex: number }
+
+/**
+ * A cut-list note, in the reader's language and display unit. `note.rodDia` is the one note that
+ * carries a length: the millimetre figure travels in its params, and only here — where the display
+ * unit is known — does it turn into text, so `Ø25 mm` becomes `Ø1 in`.
+ */
+export function noteText(lang: Lang, n: Msg, units: Units = 'mm'): string {
+  if (n.key === 'note.rodDia' && typeof n.params?.d === 'number') {
+    return t(lang, n.key, { d: formatLen(n.params.d, units), u: t(lang, `ui.units.${units}` as MessageKey) });
+  }
+  return tm(lang, n);
+}
 
 /** "B1": the short code printed on the drawings and in the cut list. */
 export const locationTag = (lang: Lang, l: Location): string =>
@@ -24,7 +37,7 @@ export interface CutRow {
   notes: Msg[];
 }
 
-const KIND_ORDER: PartKind[] = ['side', 'top', 'bottom', 'back', 'divider', 'shelf', 'drawerFront', 'plinth', 'rod'];
+const KIND_ORDER: PartKind[] = ['side', 'top', 'bottom', 'back', 'divider', 'shelf', 'lip', 'drawerFront', 'plinth', 'rod'];
 const r1 = (x: number) => Math.round(x * 10) / 10;
 /** A 4-point outline spanning exactly two x and two y values is an axis-aligned rectangle. */
 function rectDims(outline: Vec2[]): [number, number] | null {
