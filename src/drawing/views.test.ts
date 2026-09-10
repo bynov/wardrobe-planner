@@ -4,7 +4,7 @@ import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
 import { cornerClaim, doorSpan, wallSegments } from '../geometry/frames';
 import { layoutAll, layoutWall, type UnitLayout } from '../geometry/layout';
-import type { Unit } from '../model/types';
+import type { Project, Unit } from '../model/types';
 import type { Drawing, Prim } from './ir';
 
 type P<K extends Prim['t']> = Extract<Prim, { t: K }>;
@@ -403,6 +403,64 @@ describe('rail direction in the drawings', () => {
     expect(across.b.x).toBeCloseTo(300);
     expect(across.a.y).toBeCloseTo(-(4 + 20)); // backThickness + SHELF_SETBACK
     expect(across.b.y).toBeCloseTo(-(600 - 20)); // depth - SHELF_SETBACK
+  });
+});
+
+describe('elevation: the clear height of each shelf bay', () => {
+  /** Back wall: one 600 mm unit with a single shelves zone of `count` bays; side walls off. */
+  const shelvesWall = (count: number, width = 600) => {
+    const q = structuredClone(defaultProject());
+    q.wardrobe.walls.left.enabled = false;
+    q.wardrobe.walls.right.enabled = false;
+    q.wardrobe.walls.back.segments[0] = [makeUnit(width, [makeZone('shelves', null, count)])];
+    return { q, d: wallElevation(q, 'back', 'en') };
+  };
+  const th = 18;
+
+  const baysOf = (q: Project, d: Drawing, figure: string) => {
+    const u = layoutWall(q, 'back')[0] as UnitLayout;
+    const z = u.zones[0];
+    const nums = of(d, 'text').filter((x) => x.text === figure);
+    const label = of(d, 'text').find((x) => /^shelves/i.test(x.text))!;
+    const bays = [z.yBot, ...z.shelfYs.map((y) => y + th)].map((y0, i) => [y0, i < z.shelfYs.length ? z.shelfYs[i] : z.yTop]);
+    const bayOf = (y: number) => bays.findIndex(([a, b]) => y > a && y < b);
+    // Right-aligned inside the carcass, each one vertically inside its own bay.
+    const seen = nums.map((n) => {
+      expect(n.anchor).toBe('end');
+      expect(n.at.x).toBeLessThan(u.s1 - th);
+      expect(n.at.x).toBeGreaterThan(u.s0 + u.width / 2);
+      return bayOf(n.at.y);
+    });
+    expect(seen).not.toContain(-1);
+    expect(new Set(seen).size).toBe(seen.length);
+    return { seen, labelBay: bayOf(label.at.y), bays: bays.length };
+  };
+
+  it('every bay shows its clear height when the unit is wide enough for the zone label beside it', () => {
+    // Interior 2214 high, 3 boards: (2214 - 54) / 4 = 540 per bay.
+    const { q, d } = shelvesWall(4);
+    const r = baysOf(q, d, '540');
+    expect(r.seen).toHaveLength(4);
+    expect(r.seen).toContain(r.labelBay);
+  });
+
+  it('a narrower unit keeps the figure out of the bay that carries the zone label', () => {
+    // 300 wide: "Shelves 2214" centred would run into a right-aligned figure.
+    const { q, d } = shelvesWall(4, 300);
+    const r = baysOf(q, d, '540');
+    expect(r.seen).toHaveLength(3);
+    expect(r.seen).not.toContain(r.labelBay);
+  });
+
+  it('a single bay has nothing to add: the zone label already carries its height', () => {
+    const { d } = shelvesWall(1);
+    expect(of(d, 'text').filter((x) => /^\d+$/.test(x.text))).toHaveLength(0);
+  });
+
+  it('bays too low for the figure stay unnumbered', () => {
+    // 40 bays of ~37 mm: no room for a 0.7 × 40 = 28 mm figure with its margins.
+    const { d } = shelvesWall(40);
+    expect(of(d, 'text').filter((x) => /^\d+$/.test(x.text))).toHaveLength(0);
   });
 });
 

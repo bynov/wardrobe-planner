@@ -205,10 +205,28 @@ function drawUnit(prims: Prim[], u: UnitLayout, p: Project, lang: Lang, s: numbe
           t(lang, 'drawing.rodHeight', { n: Math.round(z.rodY) }), s * 0.7, 'end'));
       }
     }
-    if (u.width >= 4 * s && z.height >= 1.5 * s) {
-      prims.push(text(v2(cx, zoneLabelY(z, th)),
-        t(lang, 'drawing.zone', { type: t(lang, `zone.${z.zone.type}`), n: Math.round(z.height) }),
-        s * 0.8, 'middle'));
+    const labelY = zoneLabelY(z, th);
+    const label = t(lang, 'drawing.zone', { type: t(lang, `zone.${z.zone.type}`), n: Math.round(z.height) });
+    const hasLabel = u.width >= 4 * s && z.height >= 1.5 * s;
+    if (hasLabel) prims.push(text(v2(cx, labelY), label, s * 0.8, 'middle'));
+    // The clear height of each shelf bay, right-aligned inside it — the number a fitter checks a
+    // folded pile or a box against. In the bay that carries the zone label it goes in only when
+    // the two cannot touch (all bays of a zone are equal, so nothing is lost when it stays out);
+    // a bay too low for the figure stays bare.
+    if (z.shelfYs.length > 0 && u.width >= 4 * s) {
+      const edges = [z.yBot, ...z.shelfYs.map((y) => y + th)];
+      const tops = [...z.shelfYs, z.yTop];
+      const figure = (h: number) => String(Math.round(h));
+      // Text width as the IR estimates it (0.6 em per glyph): label centred, figure right-aligned.
+      const labelRight = cx + label.length * 0.8 * s * 0.6 / 2;
+      edges.forEach((y0, i) => {
+        const y1 = tops[i];
+        if (y1 - y0 < 1.2 * s) return;
+        const x = u.s1 - th - 0.3 * s;
+        const figureLeft = x - figure(y1 - y0).length * 0.7 * s * 0.6;
+        if (hasLabel && labelY > y0 && labelY < y1 && figureLeft < labelRight + 0.5 * s) return;
+        prims.push(text(v2(x, (y0 + y1) / 2), figure(y1 - y0), s * 0.7, 'end'));
+      });
     }
   }
 }
