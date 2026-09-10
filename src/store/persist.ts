@@ -2,10 +2,12 @@ import { isLang, msg, t, tmDeep, type Lang, type Msg } from '../i18n';
 import { WALLS } from '../geometry/frames';
 import { defaultProject } from '../model/defaults';
 import { validate } from '../model/validate';
-import { DOOR_HINGES, DOOR_SWINGS, ROD_DIRS, ROD_REFS, type Column, type Project } from '../model/types';
+import { isUnits, type Units } from '../units';
+import { DOOR_HINGES, DOOR_SWINGS, ROD_DIRS, ROD_REFS, ZONE_TYPES, type Column, type Project } from '../model/types';
 
 export const STORAGE_KEY = 'wardrobe-planner:project';
 export const LANG_KEY = 'wardrobe-planner:lang';
+export const UNITS_KEY = 'wardrobe-planner:units';
 export const FILE_VERSION = 2;
 /** Versions this build can still read; anything older is migrated up to `FILE_VERSION`. */
 const READABLE_VERSIONS = [1, 2];
@@ -35,7 +37,7 @@ function isZoneShape(v: unknown): boolean {
   // Optional too: a file written before the rail-direction feature pins no direction, which reads
   // back as `along` — the behaviour that file was saved with.
   if (v.rodDir !== undefined && !ROD_DIRS.some((d) => d === v.rodDir)) return false;
-  return v.type === 'open' || v.type === 'shelves' || v.type === 'drawers' || v.type === 'hanging';
+  return ZONE_TYPES.some((z) => z === v.type);
 }
 
 /** Optional: a gap written before the wall-mounted-rail feature carries none, which reads back as
@@ -138,7 +140,7 @@ export function parseErrorText(lang: Lang, r: { error: Msg; reason?: Msg }): str
     : tmDeep(lang, r.error);
 }
 
-export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
+export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 export function loadFromStorage(storage: StorageLike): Project | null {
   try {
@@ -171,6 +173,23 @@ export function loadLang(storage: StorageLike): Lang | null {
 export function saveLang(storage: StorageLike, lang: Lang): void {
   try {
     storage.setItem(LANG_KEY, lang);
+  } catch {
+    // best-effort
+  }
+}
+
+export function loadUnits(storage: StorageLike): Units | null {
+  try {
+    const v = storage.getItem(UNITS_KEY);
+    return isUnits(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUnits(storage: StorageLike, units: Units): void {
+  try {
+    storage.setItem(UNITS_KEY, units);
   } catch {
     // best-effort
   }

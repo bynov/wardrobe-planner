@@ -27,4 +27,12 @@ describe('drawingToSvg', () => {
     expect(svg).toContain('fill="#e8e2d5"');
     expect(svg).toContain('stroke-width="2"');
   });
+  it("labels dimensions in the drawing's own units", () => {
+    const mm = makeDrawing('t', [dim(v2(0, 0), v2(600, 0), -30)], 10);
+    expect(drawingToSvg(mm)).toContain('>600<');
+    const inch = makeDrawing('t', [dim(v2(0, 0), v2(600, 0), -30)], 10, 'in');
+    expect(inch.units).toBe('in');
+    expect(drawingToSvg(inch)).toContain('>23 5/8<');
+    expect(drawingToSvg(inch)).not.toContain('>600<');
+  });
 });

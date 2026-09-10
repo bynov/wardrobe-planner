@@ -11,8 +11,11 @@ export function setSnapshotSource(fn: (() => HTMLCanvasElement) | null): void {
   source = fn;
 }
 
-/** Downscaled JPEG data URL: a full-resolution PNG bloated the PDF far past the drawings. */
-function encode(canvas: HTMLCanvasElement): string {
+/**
+ * Downscaled JPEG data URL: a full-resolution PNG bloated the PDF far past the drawings.
+ * Exported because the off-screen renderer captures its own canvas rather than the live one.
+ */
+export function encodeCanvas(canvas: HTMLCanvasElement): string {
   const scale = Math.min(1, SNAPSHOT_MAX_WIDTH / Math.max(1, canvas.width));
   const off = document.createElement('canvas');
   off.width = Math.max(1, Math.round(canvas.width * scale));
@@ -33,7 +36,7 @@ function encode(canvas: HTMLCanvasElement): string {
 export function cacheSnapshot(): string | null {
   if (!source) return lastSnapshot;
   try {
-    lastSnapshot = encode(source());
+    lastSnapshot = encodeCanvas(source());
   } catch {
     // a lost context or a tainted canvas: keep whatever was cached before
   }
@@ -46,9 +49,4 @@ export function cacheSnapshot(): string | null {
  */
 export function clearSnapshot(): void {
   lastSnapshot = null;
-}
-
-/** The live capture when the viewport is mounted, else the cached one. */
-export function takeSnapshot(): string | null {
-  return cacheSnapshot();
 }

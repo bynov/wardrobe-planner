@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { jsPDF } from 'jspdf';
-import { makeDrawing, rectPrim, text } from '../drawing/ir';
+import { dim, makeDrawing, rectPrim, text } from '../drawing/ir';
 import { drawingToPdf, pickScale, type PdfBox } from './pdf';
 import { v2 } from '../geometry/vec';
 
@@ -43,5 +43,17 @@ describe('drawingToPdf', () => {
     const content = stream(doc);
     expect(content).toContain('\nS\n'); // stroke only, never `B`/`f`
     expect(content).not.toContain('\nB\n');
+  });
+
+  it("prints dimension labels in the drawing's own units", () => {
+    const inch = makeDrawing('t', [dim(v2(0, 0), v2(600, 0), -30)], 10, 'in');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    drawingToPdf(doc, inch, BOX);
+    expect(stream(doc)).toContain('23 5/8');
+
+    const mm = makeDrawing('t', [dim(v2(0, 0), v2(600, 0), -30)], 10);
+    const doc2 = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    drawingToPdf(doc2, mm, BOX);
+    expect(stream(doc2)).toContain('600');
   });
 });

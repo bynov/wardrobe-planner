@@ -11,12 +11,25 @@ export const ROD_DROP = 80;
  */
 export const MAX_ROD_HEIGHT = 2000;
 export const ROD_DIAMETER = 25;
-/** Free space a rail keeps from either end of its zone, so a garment can be lifted off it. */
+/** Vertical free space a rail keeps below the top and above the bottom of its zone, so a garment
+ * can be lifted off it. */
 export const ROD_CLEARANCE = 40;
 export const PLINTH_SETBACK = 40;
 export const MIN_ZONE_HEIGHT = 100;
 export const MIN_DRAWER_FRONT = 80;
 export const MAX_DRAWER_FRONT = 450;
+/** Tilt of a shoe shelf, front edge down: enough to show the shoes without them sliding off. */
+export const SHOE_TILT_DEG = 15;
+/** Height of the lip along a shoe shelf's front edge that stops the shoes sliding off it. */
+export const SHOE_LIP = 40;
+/** Least vertical pitch a shoe shelf can be given: below this a pair of shoes no longer fits. */
+export const MIN_SHOE_PITCH = 150;
+/**
+ * A tilted shoe board is shallow — a shoe is about 300 mm long — so it never reaches the back of a
+ * 600 mm unit; this also keeps the board's vertical drop (about 91 mm) plus the lip inside the
+ * minimum pitch at any unit depth.
+ */
+export const SHOE_SHELF_DEPTH = 350;
 
 export interface Heights {
   carcassHeight: number;
@@ -51,6 +64,16 @@ export function drawerFrontHeight(height: number, count: number): number {
   return (height - 2 * REVEAL - DRAWER_GAP * (count - 1)) / count;
 }
 
+/** One tilted shoe shelf: absolute Y of the board's top surface at its back and front edges (the
+ * board leans front-edge down), and its depth — `SHOE_SHELF_DEPTH`, or the interior less the
+ * setback when the unit is shallower than that. The board is front-aligned: its front edge sits
+ * `SHELF_SETBACK` behind the unit's front, like a flat shelf, and the space behind it stays open. */
+export interface ShoeShelf {
+  yBack: number;
+  yFront: number;
+  depth: number;
+}
+
 export interface DrawerFront {
   y0: number;
   y1: number;
@@ -63,6 +86,7 @@ export interface ZoneLayout {
   yTop: number;
   height: number;
   shelfYs: number[]; // absolute underside Y
+  shoeShelves: ShoeShelf[];
   drawerFronts: DrawerFront[];
   frontW: number;
   frontH: number;
@@ -199,6 +223,7 @@ export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: 
       yTop,
       height,
       shelfYs: [],
+      shoeShelves: [],
       drawerFronts: [],
       frontW: interiorWidth - 2 * REVEAL,
       frontH: 0,
@@ -211,6 +236,16 @@ export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: 
       // boards, so a count of 1 is a single open bay with no shelf in it.
       const opening = (height - (zone.count - 1) * t) / zone.count;
       for (let k = 1; k < zone.count; k++) zl.shelfYs.push(yBot + k * opening + (k - 1) * t);
+    } else if (zone.type === 'shoes' && zone.count >= 1) {
+      // `count` counts BOARDS here, not bays: each tilted board is centred in its own equal slice
+      // of the zone, so the shoes above it get the same room whichever slice they sit in.
+      const shoeDepth = Math.min(SHOE_SHELF_DEPTH, interiorDepth - SHELF_SETBACK);
+      const drop = shoeDepth * Math.sin((SHOE_TILT_DEG * Math.PI) / 180);
+      const pitch = height / zone.count;
+      for (let k = 0; k < zone.count; k++) {
+        const mid = yBot + pitch * k + pitch / 2;
+        zl.shoeShelves.push({ yBack: mid + drop / 2, yFront: mid - drop / 2, depth: shoeDepth });
+      }
     } else if (zone.type === 'drawers' && zone.count >= 1) {
       // Whole millimetres: a fitter cuts fronts to a round size, and the remainder (< 1 mm per
       // front) is absorbed by the reveal above the top one.

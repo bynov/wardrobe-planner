@@ -1,0 +1,40 @@
+# Walk-in Planner
+
+> Free browser planner for walk-in wardrobes: https://walkinplanner.com/
+
+Walk-in Planner lays out a walk-in wardrobe in a rectangular room. You enter the room
+size, choose which walls to build against, and stack shelves, hanging rails and drawer
+fronts column by column along each wall.
+
+It produces: a 3D preview, a dimensioned plan seen from above, one elevation per wall,
+a cut list of every panel/shelf/divider/drawer front/rod, and a PDF of all of it.
+Lengths are modelled in millimetres and can be displayed in mm or inches.
+
+It runs entirely in the browser. Projects are kept in localStorage and can be exported
+to and imported from a JSON file; nothing is uploaded to a server. No account is needed.
+Free and open source (MIT): https://github.com/bynov/wardrobe-planner
+
+It does NOT do: doors or hinged fronts on units, drawer boxes, runners or other
+hardware, or rooms that are not rectangular.
+
+## Pages
+- https://walkinplanner.com/ — English landing page
+- https://walkinplanner.com/ru/ — Russian landing page
+- https://walkinplanner.com/app/ — the planner itself (browser app)
+
+## Guides (English)
+- https://walkinplanner.com/guides/wardrobe-dimensions/ — unit depth 500-650 mm (600 default),
+  unit width 400-1000 mm, plinth 100 mm, ceiling gap 150 mm, panel 18 mm, back 4 mm,
+  minimum unit width 136 mm, shelf setback 20 mm
+- https://walkinplanner.com/guides/hanging-rail-height/ — long hanging rail 1600-1800 mm above
+  the floor, double hanging 1000 mm + 2000 mm, 2000 mm maximum (the planner clamps there),
+  80 mm below the shelf above, and at least 40 mm clear of the top and bottom of its hanging
+  zone (that 40 mm is vertical; the rail itself spans the full inside width of the carcass,
+  564 mm in a 600 mm unit)
+- https://walkinplanner.com/guides/shelf-depth-and-spacing/ — folded clothes at a 300-350 mm
+  pitch, shoes at 150-200 mm (150 mm minimum on a shelf tilted 15 degrees), shelf depth =
+  unit depth - back panel - a 20 mm setback at the front (576 mm in a 600 mm unit with a 4 mm
+  back), maximum span 900 mm for an 18 mm board
+- https://walkinplanner.com/guides/walk-in-closet-minimum-width/ — one wall 1500 mm across
+  (600 mm units + 900 mm aisle), two facing walls 2100 mm, U-shape 2100 x 2400 mm,
+  doorway 700-900 mm clear

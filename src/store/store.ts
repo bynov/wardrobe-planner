@@ -1,12 +1,25 @@
 import { create } from 'zustand';
 import { WALLS, minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
-import { detectLang, msg, type Lang, type Msg } from '../i18n';
+import { detectLang, msg, t, type Lang, type Msg } from '../i18n';
 import { defaultProject } from '../model/defaults';
+import { makeTemplate } from '../model/templates';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
 import type { Column, Door, Gap, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
 import { validate } from '../model/validate';
-import { loadFromStorage, loadLang, saveLang, saveToStorage, type StorageLike } from './persist';
+import { loadLang, loadUnits, saveLang, saveUnits, type StorageLike } from './persist';
+import {
+  deleteProject as deleteStored,
+  getCurrent,
+  listProjects,
+  loadProjectById,
+  migrateLegacy,
+  newProjectId,
+  saveProject,
+  setCurrent,
+  type ProjectMeta,
+} from './projects';
+import { detectUnits, type Units } from '../units';
 
 export type Tab = 'design' | '3d' | 'cutlist';
 
@@ -24,6 +37,12 @@ export interface UiState {
   explode: number; // 0..1
   toast: Msg | null;
   lang: Lang;
+  /** Display only: every length in the project stays in mm. */
+  units: Units;
+  /** Key of the project autosave writes to, and the row the projects menu highlights. */
+  projectId: string;
+  /** Nothing was stored when the app started: the hint bar offers the first three steps. */
+  firstRun: boolean;
 }
 
 export interface PlannerState {
@@ -32,6 +51,8 @@ export interface PlannerState {
   lastValid: Project;
   past: Project[];
   future: Project[];
+  /** Mirror of the stored project index, most recent first; refreshed after every save/switch/create/delete. */
+  projects: ProjectMeta[];
   ui: UiState;
 
   setProject: (updater: (p: Project) => Project) => void;
@@ -58,10 +79,15 @@ export interface PlannerState {
 
   select: (patch: Partial<Selection>) => void;
   newProject: () => void;
-  loadProject: (p: Project) => void;
+  /** Saves `p` under a fresh id (so it is listed at once) and, unless told otherwise, opens it. */
+  createProject: (p: Project, opts?: { select?: boolean }) => string;
+  switchProject: (id: string) => void;
+  duplicateProject: (id: string) => void;
+  deleteProject: (id: string) => void;
   setUi: (patch: Partial<UiState>) => void;
   toast: (m: Msg | null) => void;
   setLang: (lang: Lang) => void;
+  setUnits: (units: Units) => void;
 }
 
 export const HISTORY_LIMIT = 100;
@@ -131,7 +157,13 @@ function swapped<T>(items: T[], i: number, j: number): T[] {
   return next;
 }
 
-export function createPlannerStore(initial: Project = defaultProject(), lang: Lang = 'en') {
+export function createPlannerStore(
+  initial: Project = defaultProject(),
+  lang: Lang = 'en',
+  units: Units = 'mm',
+  projectId = 'p0',
+  storage: StorageLike | null = null,
+) {
   const initialErrors = validate(initial);
   return create<PlannerState>()((set, get) => {
     /** Adopts `project` as the current one: re-validates, keeps a valid `lastValid`, cleans the selection. */
@@ -148,13 +180,44 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
       };
     };
 
+    /**
+     * Opens an already stored project: fresh history and selection, and it becomes the autosave
+     * target. Whichever project the user picked is the one they meant to work on, so the first-run
+     * hint has done its job and does not come back for the rest of the session.
+     */
+    const open = (project: Project, id: string) => {
+      if (storage) setCurrent(storage, id);
+      set((s) => {
+        const errors = validate(project);
+        return {
+          project,
+          errors,
+          lastValid: errors.length ? defaultProject() : project,
+          past: [],
+          future: [],
+          projects: storage ? listProjects(storage) : s.projects,
+          ui: { ...s.ui, selection: NO_SELECTION, projectId: id, firstRun: false },
+        };
+      });
+    };
+
+    /** The index can name a project whose payload is gone; drop the row rather than open nothing. */
+    const missing = (id: string) => {
+      if (storage) deleteStored(storage, id);
+      set((s) => ({
+        projects: storage ? listProjects(storage) : s.projects,
+        ui: { ...s.ui, toast: msg('toast.projectMissing') },
+      }));
+    };
+
     return {
       project: initial,
       errors: initialErrors,
       lastValid: initialErrors.length ? defaultProject() : initial,
       past: [],
       future: [],
-      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang },
+      projects: storage ? listProjects(storage) : [],
+      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false },
 
       setProject: (updater) =>
         set((s) => {
@@ -281,24 +344,63 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
 
       select: (patch) => set((s) => ({ ui: { ...s.ui, selection: { ...s.ui.selection, ...patch } } })),
 
-      newProject: () => get().loadProject(defaultProject()),
+      newProject: () => {
+        get().createProject(defaultProject());
+      },
 
-      loadProject: (project) =>
-        set((s) => {
-          const errors = validate(project);
-          return {
-            project,
-            errors,
-            lastValid: errors.length ? defaultProject() : project,
-            past: [],
-            future: [],
-            ui: { ...s.ui, selection: NO_SELECTION },
-          };
-        }),
+      createProject: (p, opts) => {
+        const id = newProjectId();
+        // Saved right away, so the new project is listed even before autosave first fires.
+        const saved = storage ? saveProject(storage, id, p) : true;
+        if (opts?.select === false) set((s) => ({ projects: storage ? listProjects(storage) : s.projects }));
+        else open(p, id);
+        // A full storage would leave the project open but unstored, which is worth saying at once.
+        if (!saved) get().toast(msg('toast.storageFull'));
+        return id;
+      },
+
+      switchProject: (id) => {
+        if (!storage || id === get().ui.projectId) return;
+        const p = loadProjectById(storage, id);
+        if (!p) {
+          missing(id);
+          return;
+        }
+        open(p, id);
+      },
+
+      duplicateProject: (id) => {
+        if (!storage) return;
+        const p = loadProjectById(storage, id);
+        if (!p) {
+          missing(id);
+          return;
+        }
+        get().createProject({ ...p, name: t(get().ui.lang, 'ui.copySuffix', { name: p.name }) });
+      },
+
+      deleteProject: (id) => {
+        if (!storage) return;
+        deleteStored(storage, id);
+        if (id !== get().ui.projectId) {
+          set({ projects: listProjects(storage) });
+          return;
+        }
+        // The current project just went away: open the newest of the rest, or start over.
+        for (const m of listProjects(storage)) {
+          const p = loadProjectById(storage, m.id);
+          if (p) {
+            open(p, m.id);
+            return;
+          }
+        }
+        get().createProject(defaultProject());
+      },
 
       setUi: (patch) => set((s) => ({ ui: { ...s.ui, ...patch } })),
       toast: (m) => set((s) => ({ ui: { ...s.ui, toast: m } })),
       setLang: (l) => set((s) => ({ ui: { ...s.ui, lang: l } })),
+      setUnits: (u) => set((s) => ({ ui: { ...s.ui, units: u } })),
     };
   });
 }
@@ -307,11 +409,39 @@ export type PlannerStore = ReturnType<typeof createPlannerStore>;
 
 export function startAutosave(store: PlannerStore, storage: StorageLike, delay = 300): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
+  // A full storage would otherwise toast on every keystroke; say it once per run of failures.
+  let warnedFull = false;
+
+  const save = (id: string, project: Project) => {
+    const ok = saveProject(storage, id, project);
+    if (ok) warnedFull = false;
+    else if (!warnedFull) {
+      warnedFull = true;
+      store.getState().toast(msg('toast.storageFull'));
+    }
+    store.setState({ projects: listProjects(storage) });
+  };
+
   const unsub = store.subscribe((s, prev) => {
     if (s.ui.lang !== prev.ui.lang) saveLang(storage, s.ui.lang);
+    if (s.ui.units !== prev.ui.units) saveUnits(storage, s.ui.units);
+    if (s.ui.projectId !== prev.ui.projectId) {
+      // Another project was opened. A pending debounce belongs to the one being left: firing it
+      // later would write the incoming project under the outgoing id, and dropping it would lose
+      // the last edits. Flush it here instead — unless that project was the one just deleted.
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+      if (listProjects(storage).some((m) => m.id === prev.ui.projectId)) save(prev.ui.projectId, prev.project);
+      return;
+    }
     if (s.project === prev.project) return;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => saveToStorage(storage, s.project), delay);
+    timer = setTimeout(() => {
+      timer = null;
+      const now = store.getState();
+      save(now.ui.projectId, now.project);
+    }, delay);
   });
   return () => {
     unsub();
@@ -319,9 +449,47 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
   };
 }
 
-const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
-const initialLang: Lang =
-  (browserStorage && loadLang(browserStorage)) ?? detectLang(typeof navigator !== 'undefined' ? navigator.language : undefined);
+/**
+ * Picks the project to open: the legacy single-project key is adopted into the index first, then
+ * the project last open, then the most recently saved one. Nothing stored at all is a first run,
+ * which opens the L-shape example — stored and made current straight away, so a reload finds the
+ * very same project rather than starting over with a second copy.
+ */
+export function bootstrap(
+  storage: StorageLike | null,
+  lang: Lang = 'en',
+): { project: Project; projectId: string; firstRun: boolean } {
+  if (storage) {
+    migrateLegacy(storage);
+    const current = getCurrent(storage);
+    const p = current ? loadProjectById(storage, current) : null;
+    if (current && p) return { project: p, projectId: current, firstRun: false };
+    // The index can name a project whose payload is gone; drop the row rather than list a phantom.
+    if (current) deleteStored(storage, current);
+    for (const m of listProjects(storage)) {
+      const newest = loadProjectById(storage, m.id);
+      if (newest) return { project: newest, projectId: m.id, firstRun: false };
+    }
+  }
+  const project = makeTemplate('lShape', t(lang, 'template.lShape'));
+  const projectId = newProjectId();
+  if (storage) {
+    saveProject(storage, projectId, project);
+    setCurrent(storage, projectId);
+  }
+  return { project, projectId, firstRun: true };
+}
 
-export const useStore = createPlannerStore((browserStorage && loadFromStorage(browserStorage)) ?? defaultProject(), initialLang);
-if (browserStorage) startAutosave(useStore, browserStorage);
+const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
+const navLang = typeof navigator !== 'undefined' ? navigator.language : undefined;
+const initialLang: Lang = (browserStorage && loadLang(browserStorage)) ?? detectLang(navLang);
+const initialUnits: Units = (browserStorage && loadUnits(browserStorage)) ?? detectUnits(navLang);
+
+const boot = bootstrap(browserStorage, initialLang);
+export const useStore = createPlannerStore(boot.project, initialLang, initialUnits, boot.projectId, browserStorage);
+useStore.setState((s) => ({ ui: { ...s.ui, firstRun: boot.firstRun } }));
+if (browserStorage) {
+  setCurrent(browserStorage, boot.projectId);
+  useStore.setState({ projects: listProjects(browserStorage) });
+  startAutosave(useStore, browserStorage);
+}

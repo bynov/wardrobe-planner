@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://walkinplanner.com/sitemap.xml

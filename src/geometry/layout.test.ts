@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
 import type { Column, Zone } from '../model/types';
-import { MAX_ROD_HEIGHT, ROD_DROP, defaultGapRailHeight, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
+import { MAX_ROD_HEIGHT, ROD_DROP, SHELF_SETBACK, SHOE_SHELF_DEPTH, SHOE_TILT_DEG, defaultGapRailHeight, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
+import type { UnitLayout } from './layout';
 
 const p = defaultProject(); // t 18, plinth 100, topGap 150, height 2500 → carcass 2250, interior 2214
 
@@ -77,6 +78,60 @@ describe('layoutUnit', () => {
     expect(h.yTop).toBe(1118);
     expect(h.rodY).toBeCloseTo(1118 - ROD_DROP);
     expect(h.rodY).toBeLessThan(MAX_ROD_HEIGHT);
+  });
+});
+
+describe('layoutUnit: shoe shelves', () => {
+  it('lays out tilted shoe shelves centred in their pitch', () => {
+    const q = defaultProject();
+    q.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shoes', 900, 5)])];
+    const L = layoutWall(q, 'back')[0] as UnitLayout;
+    const z = L.zones[0];
+    expect(z.shoeShelves).toHaveLength(5);
+    const pitch = z.height / 5;
+    const depth = Math.min(SHOE_SHELF_DEPTH, L.interiorDepth - SHELF_SETBACK);
+    const drop = depth * Math.sin((SHOE_TILT_DEG * Math.PI) / 180);
+    expect(z.shoeShelves[0].depth).toBeCloseTo(depth);
+    expect(z.shoeShelves[0].yBack - z.shoeShelves[0].yFront).toBeCloseTo(drop);
+    expect((z.shoeShelves[0].yBack + z.shoeShelves[0].yFront) / 2).toBeCloseTo(z.yBot + pitch / 2);
+    expect(z.shoeShelves[4].yBack).toBeLessThan(z.yTop);
+  });
+
+  it('every board stays inside its zone at the minimum legal pitch', () => {
+    // 750 / 5 = MIN_SHOE_PITCH exactly, on a deep wall — the worst case for the tilt's drop.
+    const q = defaultProject();
+    q.wardrobe.walls.back.depth = 900;
+    q.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shoes', 750, 5), makeZone('open')])];
+    const L = layoutWall(q, 'back')[0] as UnitLayout;
+    const z = L.zones[0];
+    expect(z.height).toBe(750);
+    // The board is capped at SHOE_SHELF_DEPTH, so a deeper unit does not tilt it any further.
+    expect(L.interiorDepth - SHELF_SETBACK).toBeGreaterThan(SHOE_SHELF_DEPTH);
+    for (const s of z.shoeShelves) {
+      expect(s.depth).toBe(SHOE_SHELF_DEPTH);
+      expect(s.yBack).toBeLessThanOrEqual(z.yTop);
+      expect(s.yFront).toBeGreaterThanOrEqual(z.yBot);
+    }
+  });
+
+  it('a unit too shallow for the full board depth clips it to the interior', () => {
+    const q = defaultProject();
+    q.wardrobe.walls.back.depth = 300;
+    q.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shoes', 900, 5)])];
+    const L = layoutWall(q, 'back')[0] as UnitLayout;
+    const clipped = L.interiorDepth - SHELF_SETBACK;
+    expect(clipped).toBeLessThan(SHOE_SHELF_DEPTH);
+    expect(L.zones[0].shoeShelves[0].depth).toBe(clipped);
+  });
+
+  it('every other zone type lays out no shoe shelves', () => {
+    const u = makeUnit(600, [makeZone('shelves', null, 3), makeZone('drawers', 600, 3), makeZone('hanging'), makeZone('open')]);
+    for (const z of layoutUnit(p, 'back', 0, 0, u, 0).zones) expect(z.shoeShelves).toEqual([]);
+  });
+
+  it('a shoes zone of no shelves lays out none', () => {
+    const u = makeUnit(600, [makeZone('shoes', null, 0)]);
+    expect(layoutUnit(p, 'back', 0, 0, u, 0).zones[0].shoeShelves).toEqual([]);
   });
 });
 

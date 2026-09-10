@@ -3,13 +3,16 @@ import {
   FILE_VERSION,
   LANG_KEY,
   STORAGE_KEY,
+  UNITS_KEY,
   loadFromStorage,
   loadLang,
+  loadUnits,
   parseErrorText,
   parseProjectJson,
   parseProjectShape,
   saveLang,
   saveToStorage,
+  saveUnits,
   serializeProject,
 } from './persist';
 import { defaultProject } from '../model/defaults';
@@ -18,11 +21,7 @@ import { makeUnit, makeZone } from '../model/factory';
 import { layoutUnit } from '../geometry/layout';
 import { WALLS } from '../geometry/frames';
 import type { Unit } from '../model/types';
-
-const memStorage = () => {
-  const mem = new Map<string, string>();
-  return { mem, getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); } };
-};
+import { memStorage } from './testStorage';
 
 describe('serialize / parse', () => {
   it('round-trips a project', () => {
@@ -100,6 +99,14 @@ describe('serialize / parse', () => {
       const u = p.wardrobe.walls.back.segments[0][0] as { zones: { height: unknown }[] };
       u.zones[0].height = 'tall';
     })).toBe(false);
+  });
+
+  it('accepts a file whose unit carries a shoes zone', () => {
+    const p = defaultProject();
+    p.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shoes', 900, 5)])];
+    const r = parseProjectShape(JSON.stringify({ version: FILE_VERSION, project: p }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect((r.project.wardrobe.walls.back.segments[0][0] as Unit).zones[0].type).toBe('shoes');
   });
 
   it('accepts a null zone height', () => {
@@ -207,20 +214,34 @@ describe('storage', () => {
     expect(loadLang(storage)).toBeNull();
   });
 
+  it('saves and loads the units, ignoring junk', () => {
+    const storage = memStorage();
+    expect(loadUnits(storage)).toBeNull();
+    saveUnits(storage, 'in');
+    expect(storage.mem.get(UNITS_KEY)).toBe('in');
+    expect(loadUnits(storage)).toBe('in');
+    storage.setItem(UNITS_KEY, 'cubits');
+    expect(loadUnits(storage)).toBeNull();
+  });
+
   it('survives a throwing storage', () => {
     const throwing = {
       getItem: () => { throw new Error('disabled'); },
       setItem: () => { throw new Error('disabled'); },
+      removeItem: () => { throw new Error('disabled'); },
     };
     expect(loadFromStorage(throwing)).toBeNull();
     expect(loadLang(throwing)).toBeNull();
+    expect(loadUnits(throwing)).toBeNull();
     expect(() => saveToStorage(throwing, defaultProject())).not.toThrow();
     expect(() => saveLang(throwing, 'en')).not.toThrow();
+    expect(() => saveUnits(throwing, 'in')).not.toThrow();
   });
 
   it('uses the wardrobe-planner storage keys', () => {
     expect(STORAGE_KEY).toBe('wardrobe-planner:project');
     expect(LANG_KEY).toBe('wardrobe-planner:lang');
+    expect(UNITS_KEY).toBe('wardrobe-planner:units');
     expect(FILE_VERSION).toBe(2);
   });
 });

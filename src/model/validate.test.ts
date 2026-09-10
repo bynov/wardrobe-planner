@@ -91,6 +91,32 @@ describe('validate', () => {
     expect(validate(q).some((e) => e.message.key === 'error.shelfCount')).toBe(true);
   });
 
+  it('error.shoePitch: 5 shoe shelves in 500 mm', () => {
+    const q = clone(defaultProject());
+    const unit = q.wardrobe.walls.back.segments[0][0];
+    if (unit.kind === 'unit') unit.zones = [makeZone('shoes', 500, 5), makeZone('open')];
+    const e = validate(q).find((x) => x.message.key === 'error.shoePitch');
+    expect(e).toBeDefined();
+    expect(e?.path).toBe('walls.back.segments.0.0.zones.0');
+  });
+
+  it('no error.shoePitch: 5 shoe shelves in 900 mm', () => {
+    const q = clone(defaultProject());
+    const unit = q.wardrobe.walls.back.segments[0][0];
+    if (unit.kind === 'unit') unit.zones = [makeZone('shoes', 900, 5), makeZone('open')];
+    expect(validate(q).some((x) => x.message.key === 'error.shoePitch')).toBe(false);
+  });
+
+  it('error.shelfCount: a shoes zone with 0 shelves', () => {
+    const q = clone(defaultProject());
+    const unit = q.wardrobe.walls.back.segments[0][0];
+    if (unit.kind === 'unit') unit.zones = [makeZone('shoes', null, 0)];
+    const keys = validate(q).map((x) => x.message.key);
+    expect(keys).toContain('error.shelfCount');
+    // A zone with no shelves has no pitch to complain about; one message is enough.
+    expect(keys).not.toContain('error.shoePitch');
+  });
+
   it('error.drawerCount: 0 drawers', () => {
     const q = clone(defaultProject());
     const unit = q.wardrobe.walls.back.segments[0][0];

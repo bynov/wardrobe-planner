@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://walkinplanner.com/</loc>
+    <lastmod>2026-09-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://walkinplanner.com/" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://walkinplanner.com/ru/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://walkinplanner.com/" />
+  </url>
+  <url>
+    <loc>https://walkinplanner.com/ru/</loc>
+    <lastmod>2026-09-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://walkinplanner.com/" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://walkinplanner.com/ru/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://walkinplanner.com/" />
+  </url>
+  <url>
+    <loc>https://walkinplanner.com/guides/wardrobe-dimensions/</loc>
+    <lastmod>2026-09-10</lastmod>
+  </url>
+  <url>
+    <loc>https://walkinplanner.com/guides/hanging-rail-height/</loc>
+    <lastmod>2026-09-10</lastmod>
+  </url>
+  <url>
+    <loc>https://walkinplanner.com/guides/shelf-depth-and-spacing/</loc>
+    <lastmod>2026-09-10</lastmod>
+  </url>
+  <url>
+    <loc>https://walkinplanner.com/guides/walk-in-closet-minimum-width/</loc>
+    <lastmod>2026-09-10</lastmod>
+  </url>
+</urlset>
