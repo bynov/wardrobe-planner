@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
-import type { Zone } from '../model/types';
+import type { Column, Zone } from '../model/types';
 import { MAX_ROD_HEIGHT, ROD_DROP, defaultGapRailHeight, heights, layoutAll, layoutUnit, layoutWall, zoneHeights } from './layout';
 
 const p = defaultProject(); // t 18, plinth 100, topGap 150, height 2500 → carcass 2250, interior 2214
@@ -283,6 +283,60 @@ describe('layoutWall: a gap\'s wall-mounted rail', () => {
     const g = layoutWall(q, 'back')[0];
     if (g.kind !== 'gap') throw new Error('expected a gap');
     expect(g.rail!.s0).toBe(150);
+  });
+
+  /** A side wall whose run ends in a trailing rail gap, with the neighbouring back wall's corner
+   * column set to `corner`: room 1400 deep, back wall 600 deep, so the left run ends at 800. */
+  const leftIntoCorner = (corner: Column, side: 'start' | 'end' = 'end') => {
+    const q = structuredClone(p);
+    q.room = { width: 2700, depth: 1400, height: 2600 };
+    q.wardrobe.walls.left.segments[0] = [
+      makeUnit(400, [makeZone('shelves', null, 5)]),
+      { id: 'g1', kind: 'gap', width: 400, rail: { dir: 'along', height: 2000 } },
+    ];
+    if (side === 'end') q.wardrobe.walls.back.segments[0] = [corner, makeUnit(750, [makeZone('hanging')])];
+    else {
+      // The mirror image: the rail gap first, and the FRONT wall's last column in the start corner.
+      q.wardrobe.walls.left.segments[0].reverse();
+      q.wardrobe.walls.front.enabled = true;
+      q.wardrobe.walls.front.depth = 600;
+      // The front wall's run past the door is 720 wide (2700 - 1900 - 80), so the corner column alone.
+      q.wardrobe.walls.front.segments = [[], [corner]];
+    }
+    const g = layoutWall(q, 'left')[side === 'end' ? 1 : 0];
+    if (g.kind !== 'gap') throw new Error('expected a gap');
+    return g.rail!;
+  };
+
+  it('an along rail runs on through the corner when the neighbour leaves that corner as a plain gap', () => {
+    // The back wall's first column is an empty 600 mm gap: nothing stands in the corner, so the
+    // rod carries on to the real wall at 1400 rather than stopping at the claimed 800.
+    const r = leftIntoCorner({ id: 'c', kind: 'gap', width: 600 });
+    expect(r).toEqual({ dir: 'along', y: 2000, s0: 400 + K, s1: 1400 - K, length: 1000 - 2 * K });
+  });
+
+  it('a neighbour gap wider than the rod\'s reach into the corner is enough', () => {
+    // The rod runs at mid-depth (300) of the left wall; a 400 mm gap on the back wall clears it.
+    expect(leftIntoCorner({ id: 'c', kind: 'gap', width: 400 }).s1).toBe(1400 - K);
+  });
+
+  it('a neighbour gap that stops short of the rod\'s line keeps the rail at the corner', () => {
+    // A 300 mm gap: the back wall's unit starts right on the rod's line, so no way through.
+    expect(leftIntoCorner({ id: 'c', kind: 'gap', width: 300 }).s1).toBe(800 - K);
+  });
+
+  it('a neighbour rail gap in the corner is not passed through either', () => {
+    expect(leftIntoCorner({ id: 'c', kind: 'gap', width: 600, rail: { dir: 'across', height: 1800 } }).s1).toBe(800 - K);
+  });
+
+  it('a unit in the neighbour\'s corner keeps the rail at the corner', () => {
+    expect(leftIntoCorner(makeUnit(600, [makeZone('hanging')])).s1).toBe(800 - K);
+  });
+
+  it('the start corner works the same way, against the neighbour\'s last column', () => {
+    const open = leftIntoCorner({ id: 'c', kind: 'gap', width: 600 }, 'start');
+    expect(open).toEqual({ dir: 'along', y: 2000, s0: 0 + K, s1: 1000 - K, length: 1000 - 2 * K });
+    expect(leftIntoCorner(makeUnit(600, [makeZone('hanging')]), 'start').s0).toBe(600 + K);
   });
 
   it('an along rail on the last gap stops at the corner a side wall leaves for its neighbour', () => {

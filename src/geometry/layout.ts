@@ -1,4 +1,4 @@
-import { WALLS, wallSegments } from './frames';
+import { WALLS, cornerClaim, leftOf, rightOf, wallLength, wallSegments } from './frames';
 import type { Column, Gap, GapRail, Project, RodDir, Unit, Wall, Zone } from '../model/types';
 
 export const SHELF_SETBACK = 20;
@@ -145,6 +145,38 @@ export function layoutGapRail(
 
 export type ColumnLayout = UnitLayout | GapLayout;
 
+/**
+ * Whether an `along` rail at `wall`'s mid-depth can run on through the corner at its `side` end,
+ * across the stretch the neighbouring wall claims there. It can when the neighbour keeps that
+ * corner empty: its columns nearest the corner are plain gaps (or nothing at all), leaving the
+ * rod's line — `depth / 2` from our wall, plus the usual clearance — clear of any unit or rail.
+ */
+export function cornerPassable(p: Project, wall: Wall, side: 'start' | 'end'): boolean {
+  if (cornerClaim(p, wall, side) === 0) return false; // no corner claimed: the run reaches the wall already
+  const n = side === 'start' ? leftOf(wall) : rightOf(wall);
+  const segs = wallSegments(p, n);
+  const touching = side === 'start' ? segs[segs.length - 1] : segs[0];
+  const cols = p.wardrobe.walls[n].segments[touching.index];
+  const isPlainGap = (c: Column) => c.kind === 'gap' && !c.rail;
+  const reach = p.wardrobe.walls[wall].depth / 2 + SHELF_SETBACK;
+  if (side === 'end') {
+    // Our end corner is the neighbour's start: how far from its wall start does its first solid column begin?
+    let solidStart = touching.s0;
+    for (const c of cols) {
+      if (!isPlainGap(c)) return solidStart >= reach;
+      solidStart += c.width;
+    }
+    return true;
+  }
+  // Our start corner is the neighbour's end: how far from its wall end does its last solid column stop?
+  let solidEnd = touching.s0 + cols.reduce((a, c) => a + c.width, 0);
+  for (let i = cols.length - 1; i >= 0; i--) {
+    if (!isPlainGap(cols[i])) return wallLength(p.room, n) - solidEnd >= reach;
+    solidEnd -= cols[i].width;
+  }
+  return true;
+}
+
 export function layoutUnit(p: Project, wall: Wall, segment: 0 | 1, columnIndex: number, unit: Unit, s0: number): UnitLayout {
   const w = p.wardrobe;
   const t = w.panelThickness;
@@ -227,22 +259,27 @@ export function layoutWall(p: Project, wall: Wall): ColumnLayout[] {
   if (!plan.enabled) return [];
   const out: ColumnLayout[] = [];
   let columnIndex = 0;
-  for (const seg of wallSegments(p, wall)) {
+  const segs = wallSegments(p, wall);
+  const L = wallLength(p.room, wall);
+  for (const seg of segs) {
     const columns = plan.segments[seg.index];
+    // Where a rail that reaches the run's end may go on to: the real wall, if the corner is open.
+    const runStart = seg === segs[0] && cornerPassable(p, wall, 'start') ? 0 : seg.s0;
+    const runEnd = seg === segs[segs.length - 1] && cornerPassable(p, wall, 'end') ? L : seg.s1;
     // Column starts, plus the end of the run after the last one.
     const starts: number[] = [seg.s0];
     for (const c of columns) starts.push(starts[starts.length - 1] + c.width);
     const isPlainGap = (c: Column | undefined) => c?.kind === 'gap' && !c.rail;
     // The empty stretch a rail gap sits in: back over the plain gaps before it, unless one of
     // those already belongs to an earlier rail; on over the plain gaps after it, and the free
-    // rest of the run if nothing but plain gaps follows.
+    // rest of the run if nothing but plain gaps follows — through the corner, when it is open.
     const railSpan = (i: number) => {
       let a = i;
       while (a > 0 && isPlainGap(columns[a - 1])) a -= 1;
       if (a > 0 && columns[a - 1].kind === 'gap') a = i; // an earlier rail gap owns that stretch
       let b = i + 1;
       while (b < columns.length && isPlainGap(columns[b])) b += 1;
-      return { s0: starts[a], s1: b === columns.length ? seg.s1 : starts[b] };
+      return { s0: a === 0 ? runStart : starts[a], s1: b === columns.length ? runEnd : starts[b] };
     };
     columns.forEach((c, i) => {
       const s = starts[i];
