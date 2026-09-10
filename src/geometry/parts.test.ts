@@ -152,13 +152,18 @@ describe('buildUnitParts: a front-to-back rail', () => {
 
 describe('buildParts: a gap\'s wall-mounted rail', () => {
   const K = 20;
-  /** One wall carrying a single 800 mm gap; every other wall is off. */
+  /** One wall carrying an 800 mm gap followed by an open unit, so the gap has a neighbour to stop
+   * at (a trailing gap's rail would run on to the end of the wall); every other wall is off.
+   * Only the rods are returned — the unit's own panels are not what these tests are about. */
   const only = (wall: 'back' | 'left', rail?: { dir: 'along' | 'across'; height: number }) => {
     const q = structuredClone(p);
     for (const w of ['back', 'right', 'front', 'left'] as const) q.wardrobe.walls[w].enabled = w === wall;
-    q.wardrobe.walls[wall].segments[0] = [{ id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) }];
+    q.wardrobe.walls[wall].segments[0] = [
+      { id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) },
+      makeUnit(600, [makeZone('open')]),
+    ];
     q.wardrobe.walls[wall].segments[1] = [];
-    return buildParts(q);
+    return buildParts(q).filter((part) => part.kind === 'rod');
   };
 
   it('a plain gap builds nothing at all', () => {

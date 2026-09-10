@@ -213,9 +213,38 @@ describe('layoutWall: a gap\'s wall-mounted rail', () => {
     expect(wallWith().depth).toBe(600);
   });
 
-  it('an along rail spans the gap, held clear of both ends', () => {
+  it('an along rail on the last gap runs on to the end of the wall, held clear of both ends', () => {
+    // The back wall is 2400 wide and the 800 mm gap is its only column: the rest is empty, so the
+    // rail spans the whole empty stretch, from the gap's start to the wall's end.
     const g = wallWith({ dir: 'along', height: 1800 });
+    expect(g.rail).toEqual({ dir: 'along', y: 1800, s0: 0 + K, s1: 2400 - K, length: 2400 - 2 * K });
+  });
+
+  it('an along rail on a gap followed by a unit stops at that unit', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'g1', kind: 'gap', width: 800, rail: { dir: 'along', height: 1800 } },
+      makeUnit(600, [makeZone('hanging')]),
+    ];
+    const g = layoutWall(q, 'back')[0];
+    if (g.kind !== 'gap') throw new Error('expected a gap');
     expect(g.rail).toEqual({ dir: 'along', y: 1800, s0: 0 + K, s1: 800 - K, length: 800 - 2 * K });
+    expect(g.s1).toBe(800); // the gap itself keeps its own width
+  });
+
+  it('an along rail on the last gap stops at the corner a side wall leaves for its neighbour', () => {
+    // Left wall, 2000 long; the back wall is enabled and 600 deep, so the left wall's run ends at
+    // 2000 - 600 = 1400. A unit then a trailing gap: the rail runs from the gap to that corner.
+    const q = structuredClone(p);
+    q.wardrobe.walls.left.enabled = true;
+    q.wardrobe.walls.left.segments[0] = [
+      makeUnit(600, [makeZone('hanging')]),
+      { id: 'g1', kind: 'gap', width: 300, rail: { dir: 'along', height: 1800 } },
+    ];
+    const g = layoutWall(q, 'left')[1];
+    if (g.kind !== 'gap') throw new Error('expected a gap');
+    expect(g.s0).toBe(600);
+    expect(g.rail).toEqual({ dir: 'along', y: 1800, s0: 600 + K, s1: 1400 - K, length: 800 - 2 * K });
   });
 
   it('an across rail stands at the gap centre and reaches the wall\'s depth', () => {

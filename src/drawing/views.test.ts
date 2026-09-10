@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { planView, wallElevation, wallName } from './views';
 import { defaultProject } from '../model/defaults';
+import { makeUnit, makeZone } from '../model/factory';
 import { cornerClaim, doorSpan, wallSegments } from '../geometry/frames';
 import { layoutAll, layoutWall, type UnitLayout } from '../geometry/layout';
 import type { Unit } from '../model/types';
@@ -407,12 +408,16 @@ describe('rail direction in the drawings', () => {
 
 describe('a gap\'s wall-mounted rail in the drawings', () => {
   const D = 25, K = 20;
-  /** Back wall: one 800 mm gap, optionally with a rail; every other wall off. */
+  /** Back wall: one 800 mm gap, optionally with a rail, then an open unit so the gap has a neighbour
+   * to stop at (a trailing gap's rail would run on to the end of the wall); every other wall off. */
   const gapWall = (rail?: { dir: 'along' | 'across'; height: number }) => {
     const q = structuredClone(defaultProject());
     q.wardrobe.walls.left.enabled = false;
     q.wardrobe.walls.right.enabled = false;
-    q.wardrobe.walls.back.segments[0] = [{ id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) }];
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'g1', kind: 'gap', width: 800, ...(rail ? { rail } : {}) },
+      makeUnit(600, [makeZone('open')]),
+    ];
     return q;
   };
   const circleOf = (d: Drawing) => of(d, 'poly').find((q) =>

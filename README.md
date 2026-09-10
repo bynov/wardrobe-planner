@@ -22,7 +22,10 @@ Languages: English and Russian (switch in the top bar; the PDF embeds PT Sans, S
    `Esc` clears the selection, `Cmd/Ctrl+D` duplicates the unit, `Cmd/Ctrl+Z` undoes.
 3. A **gap** can carry a *hanging rail (wall-mounted)* — the usual answer for the stretch a run
    has to leave free in a corner: tick it on the gap, pick a direction and a height above the
-   floor, and the rod (but not its brackets) joins the cut list. No carcass is built.
+   floor, and the rod (but not its brackets) joins the cut list. No carcass is built. When the
+   gap is the last column of its run, an *along* rail carries on over the empty rest of the wall,
+   up to the next wall (or the corner left for the neighbouring run) — no need to size the gap
+   to fit.
 4. A hanging zone's rail runs **along the wall** by default; switch its *Direction* to
    **front to back (corner)** for a unit boxed into a corner, where a wall-parallel rail
    cannot be reached. The plan shows every rail as a dashed line, so the two read apart.
