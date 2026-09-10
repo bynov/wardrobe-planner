@@ -226,8 +226,9 @@ function drawGap(prims: Prim[], g: GapLayout, topY: number, lang: Lang, s: numbe
   if (r.dir === 'across') {
     prims.push(text(v2(cx + ROD_DIAMETER, r.y - 0.3 * s), t(lang, 'drawing.rodAcrossShort'), s * 0.7, 'start'));
   }
-  // The height above the finished floor is the number a fitter sets the brackets out from.
-  prims.push(text(v2(g.s1, r.y + 0.9 * s), t(lang, 'drawing.rodHeight', { n: Math.round(r.y) }), s * 0.7, 'end'));
+  // The height above the finished floor is the number a fitter sets the brackets out from. It
+  // sits at the rod's far end, which for an `along` rail may lie past the gap's own end.
+  prims.push(text(v2(Math.max(g.s1, r.s1), r.y + 0.9 * s), t(lang, 'drawing.rodHeight', { n: Math.round(r.y) }), s * 0.7, 'end'));
 }
 
 /** The door opening on this wall: dashed hole in the elevation plus its size label. */

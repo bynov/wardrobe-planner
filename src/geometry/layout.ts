@@ -1,5 +1,5 @@
 import { WALLS, wallSegments } from './frames';
-import type { Gap, GapRail, Project, RodDir, Unit, Wall, Zone } from '../model/types';
+import type { Column, Gap, GapRail, Project, RodDir, Unit, Wall, Zone } from '../model/types';
 
 export const SHELF_SETBACK = 20;
 export const REVEAL = 2;
@@ -94,12 +94,13 @@ export interface UnitLayout {
   leftover: number;
 }
 
-/** Where a gap's wall-mounted rail actually hangs. `along`: it spans the gap at mid-depth, held
- * `SHELF_SETBACK` clear of each neighbour — and when the gap is the last column of its run, it
- * carries on over the empty stretch after it, up to the end of the run (the next wall, or the
- * corner left for the neighbouring wall's units). `across`: it stands at the gap's middle and
- * runs into the room, from the wall to the front edge of the runs beside it, with the same
- * clearance. */
+/** Where a gap's wall-mounted rail actually hangs. `along`: it spans the whole empty stretch the
+ * gap sits in at mid-depth, held `SHELF_SETBACK` clear of each neighbour — the gap itself, the
+ * plain (rail-less) gaps beside it, and the free rest of the run after the last column, up to
+ * the end of the run (the next wall, or the corner left for the neighbouring wall's units). A
+ * unit or another rail gap bounds the stretch; between two rail gaps the plain ones go with the
+ * first. `across`: it stands at its own gap's middle and runs into the room, from the wall to
+ * the front edge of the runs beside it, with the same clearance. */
 export interface GapRailLayout {
   dir: RodDir;
   /** Rail axis, absolute Y. */
@@ -128,17 +129,18 @@ export function defaultGapRailHeight(p: Project): number {
   return Math.min(MAX_ROD_HEIGHT, heights(p).topY - ROD_DROP);
 }
 
-/** `s1` is the gap's own end; `runEnd` is where the wall's run ends, which an `along` rail on a
- * trailing gap reaches instead. */
-export function layoutGapRail(rail: GapRail | undefined, s0: number, s1: number, depth: number, runEnd = s1): GapRailLayout | null {
+/** `s0`..`s1` is the gap itself; `span` is the empty stretch it sits in (see `GapRailLayout`),
+ * which an `along` rail spans instead. Defaults to the gap alone. */
+export function layoutGapRail(
+  rail: GapRail | undefined, s0: number, s1: number, depth: number, span: { s0: number; s1: number } = { s0, s1 },
+): GapRailLayout | null {
   if (!rail) return null;
   const k = SHELF_SETBACK;
   if (rail.dir === 'across') {
     const c = (s0 + s1) / 2;
     return { dir: 'across', y: rail.height, s0: c, s1: c, length: depth - 2 * k };
   }
-  const end = Math.max(s1, runEnd);
-  return { dir: 'along', y: rail.height, s0: s0 + k, s1: end - k, length: end - s0 - 2 * k };
+  return { dir: 'along', y: rail.height, s0: span.s0 + k, s1: span.s1 - k, length: span.s1 - span.s0 - 2 * k };
 }
 
 export type ColumnLayout = UnitLayout | GapLayout;
@@ -226,21 +228,33 @@ export function layoutWall(p: Project, wall: Wall): ColumnLayout[] {
   const out: ColumnLayout[] = [];
   let columnIndex = 0;
   for (const seg of wallSegments(p, wall)) {
-    let s = seg.s0;
     const columns = plan.segments[seg.index];
+    // Column starts, plus the end of the run after the last one.
+    const starts: number[] = [seg.s0];
+    for (const c of columns) starts.push(starts[starts.length - 1] + c.width);
+    const isPlainGap = (c: Column | undefined) => c?.kind === 'gap' && !c.rail;
+    // The empty stretch a rail gap sits in: back over the plain gaps before it, unless one of
+    // those already belongs to an earlier rail; on over the plain gaps after it, and the free
+    // rest of the run if nothing but plain gaps follows.
+    const railSpan = (i: number) => {
+      let a = i;
+      while (a > 0 && isPlainGap(columns[a - 1])) a -= 1;
+      if (a > 0 && columns[a - 1].kind === 'gap') a = i; // an earlier rail gap owns that stretch
+      let b = i + 1;
+      while (b < columns.length && isPlainGap(columns[b])) b += 1;
+      return { s0: starts[a], s1: b === columns.length ? seg.s1 : starts[b] };
+    };
     columns.forEach((c, i) => {
+      const s = starts[i];
       if (c.kind === 'unit') out.push(layoutUnit(p, wall, seg.index, columnIndex, c, s));
       else {
         const depth = plan.depth;
-        // The last column's rail may run on over the empty rest of the segment.
-        const runEnd = i === columns.length - 1 ? seg.s1 : s + c.width;
         out.push({
           kind: 'gap', gap: c, wall, segment: seg.index, columnIndex,
           s0: s, s1: s + c.width, width: c.width, depth,
-          rail: layoutGapRail(c.rail, s, s + c.width, depth, runEnd),
+          rail: layoutGapRail(c.rail, s, s + c.width, depth, c.rail ? railSpan(i) : undefined),
         });
       }
-      s += c.width;
       columnIndex += 1;
     });
   }

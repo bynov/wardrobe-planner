@@ -232,6 +232,59 @@ describe('layoutWall: a gap\'s wall-mounted rail', () => {
     expect(g.s1).toBe(800); // the gap itself keeps its own width
   });
 
+  it('an along rail runs on over the plain gaps after it, up to the next unit', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'g1', kind: 'gap', width: 300, rail: { dir: 'along', height: 1800 } },
+      { id: 'g2', kind: 'gap', width: 500 },
+      makeUnit(600, [makeZone('hanging')]),
+    ];
+    const [g1, g2] = layoutWall(q, 'back');
+    if (g1.kind !== 'gap' || g2.kind !== 'gap') throw new Error('expected gaps');
+    expect(g1.rail).toEqual({ dir: 'along', y: 1800, s0: 0 + K, s1: 800 - K, length: 800 - 2 * K });
+    expect(g2.rail).toBeNull();
+    expect(g1.s1).toBe(300); // the gap itself keeps its own width
+  });
+
+  it('an along rail also takes the plain gaps before it, back to the unit', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [
+      makeUnit(600, [makeZone('hanging')]),
+      { id: 'g1', kind: 'gap', width: 500 },
+      { id: 'g2', kind: 'gap', width: 300, rail: { dir: 'along', height: 1800 } },
+      makeUnit(600, [makeZone('hanging')]),
+    ];
+    const g = layoutWall(q, 'back')[2];
+    if (g.kind !== 'gap') throw new Error('expected a gap');
+    expect(g.rail).toEqual({ dir: 'along', y: 1800, s0: 600 + K, s1: 1400 - K, length: 800 - 2 * K });
+  });
+
+  it('two rail gaps in one run split the plain gaps between them at the second rail', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'g1', kind: 'gap', width: 300, rail: { dir: 'along', height: 1800 } },
+      { id: 'g2', kind: 'gap', width: 500 },
+      { id: 'g3', kind: 'gap', width: 300, rail: { dir: 'along', height: 1200 } },
+      { id: 'g4', kind: 'gap', width: 200 },
+    ];
+    const [g1, , g3] = layoutWall(q, 'back');
+    if (g1.kind !== 'gap' || g3.kind !== 'gap') throw new Error('expected gaps');
+    expect(g1.rail).toEqual({ dir: 'along', y: 1800, s0: 0 + K, s1: 800 - K, length: 800 - 2 * K });
+    // g3 takes g4 and the empty rest of the wall (2400 wide), but nothing before it.
+    expect(g3.rail).toEqual({ dir: 'along', y: 1200, s0: 800 + K, s1: 2400 - K, length: 1600 - 2 * K });
+  });
+
+  it('an across rail stays at its own gap\'s centre even beside plain gaps', () => {
+    const q = structuredClone(p);
+    q.wardrobe.walls.back.segments[0] = [
+      { id: 'g1', kind: 'gap', width: 300, rail: { dir: 'across', height: 1800 } },
+      { id: 'g2', kind: 'gap', width: 500 },
+    ];
+    const g = layoutWall(q, 'back')[0];
+    if (g.kind !== 'gap') throw new Error('expected a gap');
+    expect(g.rail!.s0).toBe(150);
+  });
+
   it('an along rail on the last gap stops at the corner a side wall leaves for its neighbour', () => {
     // Left wall, 2000 long; the back wall is enabled and 600 deep, so the left wall's run ends at
     // 2000 - 600 = 1400. A unit then a trailing gap: the rail runs from the gap to that corner.
