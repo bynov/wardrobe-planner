@@ -1,5 +1,5 @@
 import { WALLS, doorArc, doorSpan, localToWorld, minUnitWidth, segmentUsed, wallFrame, wallLength, wallSegments } from '../geometry/frames';
-import { MAX_DRAWER_FRONT, MIN_DRAWER_FRONT, MIN_ZONE_HEIGHT, ROD_CLEARANCE, drawerFrontHeight, heights, layoutAll, layoutUnit, zoneHeights } from '../geometry/layout';
+import { MAX_DRAWER_FRONT, MIN_DRAWER_FRONT, MIN_SHOE_PITCH, MIN_ZONE_HEIGHT, ROD_CLEARANCE, drawerFrontHeight, heights, layoutAll, layoutUnit, zoneHeights } from '../geometry/layout';
 import type { MessageKey, Params } from '../i18n';
 import { msg } from '../i18n';
 import { v3 } from '../geometry/vec';
@@ -101,7 +101,9 @@ export function validate(p: Project): ValidationError[] {
       c.zones.forEach((z, zi) => {
         const zp = `${path}.zones.${zi}`;
         if (zh[zi] < MIN_ZONE_HEIGHT) push(zp, 'error.zoneHeight', { ...U, n: MIN_ZONE_HEIGHT });
-        if (z.type === 'shelves' && z.count < 1) push(zp, 'error.shelfCount', U);
+        if ((z.type === 'shelves' || z.type === 'shoes') && z.count < 1) push(zp, 'error.shelfCount', U);
+        // Only worth checking once there is at least one board to space out.
+        if (z.type === 'shoes' && z.count >= 1 && zh[zi] / z.count < MIN_SHOE_PITCH) push(zp, 'error.shoePitch', { ...U, n: MIN_SHOE_PITCH });
         // A negative offset always lands past one end, so it needs no rule of its own.
         if (z.type === 'hanging' && z.rod && zls) {
           const { rodY, yBot, yTop } = zls[zi];

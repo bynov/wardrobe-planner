@@ -43,7 +43,7 @@ export function drawingToPdf(doc: jsPDF, d: Drawing, box: PdfBox): number {
   const X = (x: number) => ox + x / N;
   const Y = (y: number) => oy - y / N;
   doc.setTextColor(...INK);
-  for (const p of expandPrims(d.prims, d.textSize)) {
+  for (const p of expandPrims(d.prims, d.textSize, d.units)) {
     if (p.t === 'line') {
       applyStroke(doc, p.stroke);
       doc.line(X(p.a.x), Y(p.a.y), X(p.b.x), Y(p.b.y));

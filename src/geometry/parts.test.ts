@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
-import { ROD_DIAMETER, layoutUnit } from './layout';
+import { ROD_DIAMETER, SHELF_SETBACK, SHOE_LIP, SHOE_TILT_DEG, layoutUnit } from './layout';
 import type { Zone } from '../model/types';
 import { buildParts, buildUnitParts, partBounds } from './parts';
 import { frameTransform, wallFrame } from './frames';
+import { msg } from '../i18n';
 
 const p = defaultProject();
 
@@ -46,6 +47,74 @@ describe('buildUnitParts', () => {
     expect(a.min.y + ROD_DIAMETER / 2).toBeCloseTo(1038, 0);
     expect(b.min.y + ROD_DIAMETER / 2).toBeCloseTo(418, 0);
     expect(b.max.x - b.min.x).toBeCloseTo(a.max.x - a.min.x); // the rod is still interior-width long
+  });
+});
+
+describe('shoe shelves', () => {
+  const tilt = (SHOE_TILT_DEG * Math.PI) / 180;
+  const th = p.wardrobe.panelThickness;
+  const u = makeUnit(600, [makeZone('shoes', 900, 5), makeZone('shelves', null, 3)]);
+  const L = layoutUnit(p, 'back', 0, 0, u, 0);
+  const parts = buildUnitParts(L, p);
+  const z = L.zones[0];
+  const boards = parts.filter((x) => x.kind === 'shelf' && (x.notes ?? []).some((n) => n.key === 'note.tilted'));
+  const lips = parts.filter((x) => x.kind === 'lip');
+  /** Wall-local z of the front edge of a front-aligned board: the setback behind the unit's front. */
+  const frontZ = p.wardrobe.backThickness + L.interiorDepth - SHELF_SETBACK;
+
+  it('makes one tilted board per shoe shelf, leaving the flat shelves alone', () => {
+    expect(z.shoeShelves).toHaveLength(5);
+    expect(boards).toHaveLength(5);
+    expect(parts.filter((x) => x.kind === 'shelf')).toHaveLength(5 + 2); // + the 3-compartment zone
+    for (const b of boards) {
+      expect(b.material).toBe('panel');
+      expect(b.nameKey).toBe('shelf');
+      expect(b.thickness).toBe(th);
+      expect(b.notes).toEqual([msg('note.tilted', { deg: SHOE_TILT_DEG })]);
+      expect(b.transform.rotation.x).toBeCloseTo(Math.PI / 2 + tilt, 9); // FLAT_ROT + front-edge down
+      expect(b.transform.rotation.y).toBe(0);
+      expect(b.transform.rotation.z).toBe(0);
+    }
+  });
+
+  it('hangs each board front-edge down, front-aligned, inside the carcass', () => {
+    boards.forEach((b, k) => {
+      const sh = z.shoeShelves[k];
+      expect(sh.yFront).toBeLessThan(sh.yBack); // the front edge is the low one
+      expect(sh.depth).toBeCloseTo(350);
+      const bb = partBounds(b);
+      expect(bb.min.x).toBeCloseTo(th); // interior width, between the sides
+      expect(bb.max.x).toBeCloseTo(600 - th);
+      expect(bb.max.z).toBeCloseTo(frontZ, 6); // front edge a setback behind the unit front
+      expect(bb.min.z).toBeCloseTo(frontZ - sh.depth * Math.cos(tilt) - th * Math.sin(tilt), 6);
+      expect(bb.max.y).toBeCloseTo(sh.yBack, 6);
+      expect(bb.min.y).toBeCloseTo(sh.yFront - th * Math.cos(tilt), 6);
+      expect(bb.min.y).toBeGreaterThan(z.yBot);
+      expect(bb.max.y).toBeLessThan(z.yTop);
+      expect(bb.min.z).toBeGreaterThan(p.wardrobe.backThickness); // the space behind stays open
+    });
+  });
+
+  it('stands a lip on the front edge of every board, perpendicular to it', () => {
+    expect(lips).toHaveLength(5);
+    lips.forEach((l, k) => {
+      const sh = z.shoeShelves[k];
+      expect(l.nameKey).toBe('lip');
+      expect(l.material).toBe('panel');
+      expect(l.thickness).toBe(th);
+      expect(l.transform.rotation.x).toBeCloseTo(tilt, 9); // NO_ROT turned by the board's tilt
+      expect(l.transform.rotation.y).toBe(0);
+      const lb = partBounds(l);
+      expect(lb.min.x).toBeCloseTo(th);
+      expect(lb.max.x).toBeCloseTo(600 - th);
+      // outer face on the board's front edge, leaning back over the board — never past the front
+      expect(lb.min.z).toBeCloseTo(frontZ - th * Math.cos(tilt), 6);
+      expect(lb.max.z).toBeCloseTo(frontZ + SHOE_LIP * Math.sin(tilt), 6);
+      expect(lb.max.z).toBeLessThan(L.depth);
+      expect(lb.min.y).toBeCloseTo(sh.yFront, 6); // stands ON the front edge, nothing below it
+      expect(lb.max.y).toBeCloseTo(sh.yFront + th * Math.sin(tilt) + SHOE_LIP * Math.cos(tilt), 6);
+      expect(lb.max.y).toBeLessThan(z.yTop);
+    });
   });
 });
 

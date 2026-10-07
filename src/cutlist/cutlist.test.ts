@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildCutList, locationTag, partDims } from './cutlist';
-import { buildParts, rect, type Part } from '../geometry/parts';
+import { buildCutList, locationTag, noteText, partDims } from './cutlist';
+import { buildParts, buildUnitParts, rect, type Part } from '../geometry/parts';
+import { makeUnit, makeZone } from '../model/factory';
+import { SHOE_LIP, layoutUnit } from '../geometry/layout';
 import { defaultProject } from '../model/defaults';
 import { v3 } from '../geometry/vec';
 
@@ -54,6 +56,16 @@ describe('cut list', () => {
     }
   });
 
+  it('renders a rod-diameter note in the display unit', () => {
+    const note = { key: 'note.rodDia', params: { d: 25 } } as const;
+    expect(noteText('en', note)).toBe('\u00d825 mm');
+    expect(noteText('en', note, 'mm')).toBe('\u00d825 mm');
+    expect(noteText('en', note, 'in')).toBe('\u00d81 in');
+    expect(noteText('ru', note, 'in')).toBe('\u00d81 \u0434\u044e\u0439\u043c');
+    // a note with no length in it is untouched
+    expect(noteText('en', { key: 'note.rodAcross' }, 'in')).toBe('front-to-back rail');
+  });
+
   it('partDims returns the outline bounding box with the longer edge first', () => {
     const part: Part = {
       id: 'test', wall: 'back', columnIndex: 0, unitId: 'u',
@@ -82,5 +94,32 @@ describe('cut list: shape grouping', () => {
   it('every part still lands in exactly one row', () => {
     const parts = buildParts(defaultProject());
     expect(buildCutList(parts).reduce((s, r) => s + r.qty, 0)).toBe(parts.length);
+  });
+});
+
+describe('cut list: shoe shelves', () => {
+  const p = defaultProject();
+  const u = makeUnit(600, [makeZone('shoes', 900, 5), makeZone('shelves', null, 3)]);
+  const rows = buildCutList(buildUnitParts(layoutUnit(p, 'back', 0, 0, u, 0), p));
+
+  it('groups the lips into one row of five, right after the shelves', () => {
+    const lip = rows.find((r) => r.kind === 'lip')!;
+    expect(lip).toBeDefined();
+    expect(lip.nameKey).toBe('lip');
+    expect(lip.qty).toBe(5);
+    expect(lip.material).toBe('panel');
+    expect(lip.thickness).toBe(18);
+    expect([lip.length, lip.width]).toEqual([600 - 2 * 18, SHOE_LIP]);
+    const kinds = rows.map((r) => r.kind);
+    expect(kinds.indexOf('lip')).toBe(kinds.lastIndexOf('shelf') + 1);
+  });
+
+  it('keeps the tilted boards apart from the flat shelves and notes the tilt', () => {
+    const shelves = rows.filter((r) => r.kind === 'shelf');
+    const tilted = shelves.find((r) => r.notes.some((n) => n.key === 'note.tilted'))!;
+    expect(tilted.qty).toBe(5);
+    expect([tilted.length, tilted.width]).toEqual([600 - 2 * 18, 350]);
+    expect(noteText('en', tilted.notes[0])).toBe('tilted 15°');
+    expect(shelves.filter((r) => r.notes.length === 0)).toHaveLength(1); // the 3-compartment zone
   });
 });

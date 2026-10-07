@@ -1,13 +1,23 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
+import { PAGES } from './site/pages.ts';
 
-// GitHub Pages serves the site under /<repo>/; the workflow sets BASE_PATH.
+const pages = ['app/index.html', ...PAGES.map((p) => p.file)];
+
 export default defineConfig({
-  base: process.env.BASE_PATH ?? '/',
+  base: '/',
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: Object.fromEntries(
+        pages.map((p) => [p.replace(/\/?index\.html$/, '') || 'index', resolve(import.meta.dirname, p)]),
+      ),
+    },
+  },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'site/**/*.test.ts'],
     passWithNoTests: true,
   },
 });

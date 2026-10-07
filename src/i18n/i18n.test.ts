@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { en } from './en';
 import { ru } from './ru';
 import { LANGS, detectLang, msg, t, tm } from './index';
+import { UNITS } from '../units';
 import { WALLS } from '../geometry/frames';
 import { MATERIALS, PART_NAME_KEYS } from '../geometry/parts';
 import { PRESET_KEYS } from '../model/presets';
+import { TEMPLATE_KEYS } from '../model/templates';
 import { DOOR_HINGES, DOOR_SWINGS, ROD_DIRS, ROD_REFS, ZONE_TYPES } from '../model/types';
 
 describe('i18n', () => {
@@ -18,7 +20,7 @@ describe('i18n', () => {
     }
   });
   it('interpolates and falls back', () => {
-    expect(t('en', 'ui.freeWidth', { n: 120 })).toBe('free 120 mm');
+    expect(t('en', 'ui.freeWidth', { n: 120, u: 'mm' })).toBe('free 120 mm');
     expect(tm('ru', msg('ui.freeWidth', { n: 5 }))).toContain('5');
     expect(detectLang('ru-RU')).toBe('ru');
     expect(detectLang(undefined)).toBe('en');
@@ -33,7 +35,9 @@ describe('i18n', () => {
     ['wall.', WALLS],
     ['wall.abbr.', WALLS],
     ['preset.', PRESET_KEYS],
+    ['template.', TEMPLATE_KEYS],
     ['ui.lang.', LANGS],
+    ['ui.units.', UNITS],
     ['ui.swing.', DOOR_SWINGS],
     ['ui.swingOpt.', DOOR_SWINGS],
     ['ui.hinge.', DOOR_HINGES],

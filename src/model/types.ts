@@ -1,7 +1,7 @@
 import type { Msg } from '../i18n';
 
 export type Wall = 'back' | 'right' | 'front' | 'left'; // runtime list: WALLS in geometry/frames
-export const ZONE_TYPES = ['open', 'shelves', 'drawers', 'hanging'] as const;
+export const ZONE_TYPES = ['open', 'shelves', 'drawers', 'hanging', 'shoes'] as const;
 export type ZoneType = (typeof ZONE_TYPES)[number];
 
 export interface Room { width: number; depth: number; height: number }

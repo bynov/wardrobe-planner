@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { planView, wallElevation, wallName } from './views';
 import { defaultProject } from '../model/defaults';
 import { makeUnit, makeZone } from '../model/factory';
+import { makeTemplate } from '../model/templates';
 import { cornerClaim, doorSpan, wallSegments } from '../geometry/frames';
 import { layoutAll, layoutWall, type UnitLayout } from '../geometry/layout';
 import type { Project, Unit } from '../model/types';
-import type { Drawing, Prim } from './ir';
+import { boxesOverlap, expandPrims, textBox, type Drawing, type Prim } from './ir';
 
 type P<K extends Prim['t']> = Extract<Prim, { t: K }>;
 const of = <K extends Prim['t']>(d: Drawing, k: K) => d.prims.filter((p): p is P<K> => p.t === k);
@@ -522,5 +523,217 @@ describe('a gap\'s wall-mounted rail in the drawings', () => {
     expect(across.b.x).toBeCloseTo(400);
     expect(across.a.y).toBeCloseTo(-K); // no back panel to clear in a gap
     expect(across.b.y).toBeCloseTo(-(600 - K));
+  });
+});
+
+describe('units in the drawings', () => {
+  /** Every label the renderers actually print, dimension labels included. */
+  const labels = (d: Drawing) => expandPrims(d.prims, d.textSize, d.units)
+    .filter((p): p is P<'text'> => p.t === 'text')
+    .map((p) => p.text);
+
+  it('defaults to millimetres, byte for byte as before', () => {
+    const d = wallElevation(defaultProject(), 'back', 'en');
+    expect(d.units).toBe('mm');
+    expect(labels(d)).toContain('600');
+    expect(planView(defaultProject(), 'en').units).toBe('mm');
+  });
+
+  it('labels an elevation in fractional inches when asked', () => {
+    const d = wallElevation(defaultProject(), 'back', 'en', 'in');
+    expect(d.units).toBe('in');
+    const ls = labels(d);
+    expect(ls).toContain('23 5/8');   // the 600 mm unit width
+    expect(ls).not.toContain('600');  // no bare millimetre figure survives
+    expect(ls).not.toContain('2400'); // the wall length
+  });
+
+  it('labels a plan in fractional inches when asked', () => {
+    const d = planView(defaultProject(), 'en', 'in');
+    expect(d.units).toBe('in');
+    const ls = labels(d);
+    expect(ls).toContain('94 1/2');   // the 2400 mm room width
+    expect(ls).not.toContain('2400');
+    expect(ls.join(' ')).toContain('Door 31 1/2 × 82 11/16'); // 800 × 2100
+  });
+
+  it('prints inch rail heights and zone sizes inside the elevation', () => {
+    const d = wallElevation(defaultProject(), 'back', 'en', 'in');
+    const joined = labels(d).join(' ');
+    expect(joined).not.toMatch(/rail at \d{4}/);
+    expect(joined).toMatch(/rail at \d+( \d+\/\d+)?/);
+    expect(joined).toContain('ceiling gap 5 7/8'); // 150 mm top gap
+  });
+});
+
+describe('wallElevation — shoe shelves', () => {
+  const p = defaultProject();
+  p.wardrobe.walls.back.segments[0] = [makeUnit(600, [makeZone('shoes', 900, 5), makeZone('shelves', null, 3)])];
+  const d = wallElevation(p, 'back', 'en');
+  const u = layoutWall(p, 'back').filter((c): c is UnitLayout => c.kind === 'unit')[0];
+  const z = u.zones[0];
+  const drop = z.shoeShelves[0].yBack - z.shoeShelves[0].yFront;
+  const spanY = (q: P<'poly'>) => Math.max(...q.pts.map((v) => v.y)) - Math.min(...q.pts.map((v) => v.y));
+  const lowY = (q: P<'poly'>) => Math.min(...q.pts.map((v) => v.y));
+
+  it('draws one filled band per board, of the height the tilt drops it', () => {
+    expect(drop).toBeCloseTo(350 * Math.sin((15 * Math.PI) / 180), 6);
+    const bands = of(d, 'poly').filter((q) => q.fill === 'panel' && Math.abs(spanY(q) - drop) < 0.01);
+    expect(bands).toHaveLength(5);
+    bands.forEach((q, k) => {
+      expect(lowY(q)).toBeCloseTo(z.shoeShelves[k].yFront, 6);
+      expect(Math.min(...q.pts.map((v) => v.x))).toBeCloseTo(u.s0 + p.wardrobe.panelThickness);
+      expect(Math.max(...q.pts.map((v) => v.x))).toBeCloseTo(u.s0 + p.wardrobe.panelThickness + u.interiorWidth);
+    });
+  });
+
+  it('outlines the lip above each front edge', () => {
+    const lips = of(d, 'poly').filter((q) => q.stroke === 'thick' && q.fill !== 'panel' && Math.abs(spanY(q) - 40) < 0.01);
+    expect(lips).toHaveLength(5);
+    lips.forEach((q, k) => expect(lowY(q)).toBeCloseTo(z.shoeShelves[k].yFront, 6));
+  });
+
+  it('labels the zone "Shoes ×5" and keeps the label off the boards', () => {
+    expect(hasText(d, 'Shoes ×5')).toBe(true);
+    expect(hasText(wallElevation(p, 'back', 'ru'), 'Обувь ×5')).toBe(true);
+    const label = of(d, 'text').find((q) => q.text === 'Shoes ×5')!;
+    expect(label.at.y).toBeGreaterThan(z.yBot);
+    expect(label.at.y).toBeLessThan(z.yTop);
+    for (const sh of z.shoeShelves) expect(label.at.y > sh.yFront && label.at.y < sh.yBack).toBe(false);
+  });
+});
+
+describe('labels never collide', () => {
+  /** The box the IR gives a text prim — the same estimate the sheet bounds are measured with. */
+  const bx = (d: Drawing, q: P<'text'>) => textBox(q, d.textSize);
+  const boxOf = (q: P<'poly'>) => ({
+    min: { x: Math.min(...q.pts.map((v) => v.x)), y: Math.min(...q.pts.map((v) => v.y)) },
+    max: { x: Math.max(...q.pts.map((v) => v.x)), y: Math.max(...q.pts.map((v) => v.y)) },
+  });
+  const find = (d: Drawing, re: RegExp) => of(d, 'text').find((q) => re.test(q.text));
+  /** Back wall `cols` wide, both side walls off, so the wall is exactly the room's width. */
+  const backWall = (width: number, cols: Project['wardrobe']['walls']['back']['segments'][0]) => {
+    const q = structuredClone(defaultProject());
+    q.room.width = width;
+    q.wardrobe.walls.left.enabled = false;
+    q.wardrobe.walls.right.enabled = false;
+    q.wardrobe.walls.back.segments[0] = cols;
+    return q;
+  };
+
+  it('the ceiling-gap caption rides over the row of unit tags instead of through it', () => {
+    const p = makeTemplate('uShape', 'U');
+    const d = wallElevation(p, 'back', 'ru', 'in'); // the longest wording, in the wider unit
+    const cap = find(d, /^зазор до потолка/)!;
+    const tags = of(d, 'text').filter((q) => /^B\d+$/.test(q.text));
+    expect(tags).toHaveLength(5);
+    for (const tag of tags) expect(boxesOverlap(bx(d, cap), bx(d, tag))).toBe(false);
+    expect(cap.at.y).toBeGreaterThan(2350); // above the tag row, still inside the 150 mm gap
+    expect(cap.at.y + cap.size! ).toBeLessThanOrEqual(2500);
+    // a caption that never reached a tag stays in the middle of the gap, as before
+    const en = wallElevation(p, 'back', 'en');
+    expect(find(en, /^ceiling gap/)!.at.y).toBeCloseTo((2350 + 2500) / 2, 6);
+  });
+
+  it('the ceiling-gap caption stays inside a gap too shallow to ride over the tags', () => {
+    for (const topGap of [150, 100, 80, 60, 20]) {
+      for (const [lang, units] of [['ru', 'in'], ['en', 'mm']] as const) {
+        const p = makeTemplate('uShape', 'U');
+        p.wardrobe.topGap = topGap;
+        const d = wallElevation(p, 'back', lang, units);
+        const cap = find(d, /^(зазор до потолка|ceiling gap)/);
+        const where = `${topGap} ${lang}/${units}`;
+        // a gap with nowhere to put the caption goes without it: the height chain still dimensions it
+        expect([where, of(d, 'dim').some((q) => Math.abs(Math.abs(q.b.y - q.a.y) - topGap) < 0.01)]).toEqual([where, true]);
+        // where there is room for it the caption is still drawn; only a hopeless band drops it:
+        // a gap under a line tall, or (RU at 100 mm) one with no slot between the tags either
+        const fits = topGap >= 1.2 * d.textSize && !(topGap === 100 && lang === 'ru');
+        expect([where, cap !== undefined]).toEqual([where, fits]);
+        if (!cap) continue;
+        const box = bx(d, cap)!;
+        expect([where, box.max.y <= p.room.height, box.min.x >= 0]).toEqual([where, true, true]);
+        for (const tag of of(d, 'text').filter((x) => /^B\d+$/.test(x.text))) {
+          expect([where, tag.text, boxesOverlap(box, bx(d, tag))]).toEqual([where, tag.text, false]);
+        }
+      }
+    }
+    // the 150 mm gap of every template and the default project keeps its caption where it was
+    expect(find(wallElevation(makeTemplate('uShape', 'U'), 'back', 'en'), /^ceiling gap/)!.at.y).toBeCloseTo(2425, 6);
+  });
+
+  it('a zone label too wide for its unit is left out instead of run over the neighbour', () => {
+    const q = backWall(2600, [300, 400, 500, 600, 800].map((w) => makeUnit(w, [makeZone('hanging')])));
+    const d = wallElevation(q, 'back', 'en');
+    const labels = of(d, 'text').filter((x) => x.text.startsWith('Hanging rail'));
+    expect(labels).toHaveLength(4); // the 300 mm unit cannot hold the wording
+    expect(labels.map((x) => x.at.x)).not.toContain(150);
+    for (let i = 1; i < labels.length; i++) {
+      expect(boxesOverlap(bx(d, labels[i - 1]), bx(d, labels[i]))).toBe(false);
+    }
+  });
+
+  it('a zone label with no band of its own height is left out instead of printed over the boards', () => {
+    const tight = wallElevation(backWall(1200, [makeUnit(600, [makeZone('shelves', null, 40)])]), 'back', 'en');
+    expect(find(tight, /^Shelves/)).toBeUndefined(); // 40 bays of ~37 mm, none of them a line tall
+    const boards = of(tight, 'poly').filter((x) => x.fill === 'panel').map(boxOf).filter((b) => b.max.y - b.min.y < 100);
+    expect(boards).toHaveLength(39);
+    for (const x of of(tight, 'text')) for (const b of boards) expect(boxesOverlap(bx(tight, x), b)).toBe(false);
+    // a zone with room for it still carries its label
+    expect(find(wallElevation(backWall(1200, [makeUnit(600, [makeZone('shelves', null, 4)])]), 'back', 'en'), /^Shelves/)).toBeDefined();
+  });
+
+  it('a zone label never prints over the rod end drawn in the same zone', () => {
+    const crowded = wallElevation(backWall(1200, [makeUnit(600, [makeZone('hanging', 150), makeZone('shelves', null, 3)])]), 'back', 'en');
+    expect(find(crowded, /^Hanging rail 150/)).toBeUndefined();
+    // every drawing keeps its labels off the rods: the rod circles are the 16-point filled polys
+    for (const p of [defaultProject(), makeTemplate('uShape', 'U')]) {
+      for (const wall of ['back', 'left', 'right'] as const) {
+        const d = wallElevation(p, wall, 'ru', 'in');
+        const rods = of(d, 'poly').filter((x) => x.fill === 'panel' && x.pts.length === 16).map(boxOf);
+        for (const x of of(d, 'text')) for (const r of rods) expect(boxesOverlap(bx(d, x), r)).toBe(false);
+      }
+    }
+  });
+
+  it('the rail-height caption goes in only where the wording fits the unit, not just the width gate', () => {
+    const cols = () => [makeUnit(300, [makeZone('hanging')]), makeUnit(900, [makeZone('hanging')])];
+    // both units clear the 5 × text-size gate, and the EN millimetre wording fits both, as before
+    const mm = wallElevation(backWall(1200, cols()), 'back', 'en');
+    const caps = of(mm, 'text').filter((x) => /^rail at/.test(x.text));
+    expect(caps).toHaveLength(2);
+    expect(bx(mm, caps[0])!.min.x).toBeGreaterThanOrEqual(18); // inside the 300 mm unit's interior
+    // the RU inch wording is four glyphs wider: it no longer runs out of the narrow unit
+    const inch = wallElevation(backWall(1200, cols()), 'back', 'ru', 'in');
+    const ru = of(inch, 'text').filter((x) => /^штанга на/.test(x.text));
+    expect(ru).toHaveLength(1);
+    expect(bx(inch, ru[0])!.min.x).toBeGreaterThanOrEqual(300);
+  });
+
+  it('the ⟂ caption of an across rail is dropped where it would run out of its column', () => {
+    const across = (w: number) => {
+      const u = makeUnit(w, [makeZone('hanging')]);
+      u.zones[0] = { ...u.zones[0], rodDir: 'across' };
+      return u;
+    };
+    const d = wallElevation(backWall(1200, [across(300), across(900)]), 'back', 'ru');
+    const caps = of(d, 'text').filter((x) => x.text.startsWith('⟂'));
+    expect(caps).toHaveLength(1); // only the 900 mm unit has room for it
+    expect(bx(d, caps[0])!.max.x).toBeLessThanOrEqual(1200 - 18);
+    expect(of(d, 'poly').filter((x) => x.fill === 'panel' && x.pts.length === 16)).toHaveLength(2); // both rods still drawn
+  });
+
+  it('a gap caption takes the band beside its rail, not the rod itself', () => {
+    const q = backWall(1400, [
+      { id: 'g1', kind: 'gap', width: 800, rail: { height: 1200, dir: 'across' } },
+      makeUnit(600, [makeZone('open')]),
+    ]);
+    const d = wallElevation(q, 'back', 'en');
+    const cap = find(d, /^gap$/)!;
+    const rod = of(d, 'poly').find((x) => x.fill === 'panel' && x.pts.length === 16)!;
+    expect(boxesOverlap(bx(d, cap), boxOf(rod))).toBe(false);
+    for (const x of of(d, 'text')) if (x !== cap) expect(boxesOverlap(bx(d, cap), bx(d, x))).toBe(false);
+    // a gap with no rail keeps its caption in the middle, as before
+    const plain = backWall(1400, [{ id: 'g1', kind: 'gap', width: 800 }, makeUnit(600, [makeZone('open')])]);
+    expect(find(wallElevation(plain, 'back', 'en'), /^gap$/)!.at.y).toBeCloseTo(2350 / 2, 6);
   });
 });

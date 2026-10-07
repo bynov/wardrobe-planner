@@ -34,7 +34,7 @@ export function drawingToSvgParts(d: Drawing): { viewBox: string; inner: string 
   const b = d.bounds;
   const w = b.max.x - b.min.x, h = b.max.y - b.min.y;
   const out: string[] = [];
-  for (const p of expandPrims(d.prims, d.textSize)) {
+  for (const p of expandPrims(d.prims, d.textSize, d.units)) {
     const s = primToSvg(p, d.textSize);
     if (s) out.push(s);
   }

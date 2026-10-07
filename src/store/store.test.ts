@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPlannerStore, findColumn, startAutosave } from './store';
-import { loadFromStorage, loadLang } from './persist';
+import { bootstrap, createPlannerStore, findColumn, startAutosave } from './store';
+import { STORAGE_KEY, loadLang, loadUnits, saveToStorage } from './persist';
+import { getCurrent, listProjects, loadProjectById, projectKey, saveProject, setCurrent } from './projects';
 import { defaultProject } from '../model/defaults';
+import { makeTemplate } from '../model/templates';
+import { t } from '../i18n';
 import { makeGap, makeZone } from '../model/factory';
-import type { Unit } from '../model/types';
-
-const memStorage = () => {
-  const mem = new Map<string, string>();
-  return { mem, getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); } };
-};
+import type { Project, Unit } from '../model/types';
+import { memStorage } from './testStorage';
 
 const backCols = (s: ReturnType<typeof createPlannerStore>) => s.getState().project.wardrobe.walls.back.segments[0];
 const unitAt = (s: ReturnType<typeof createPlannerStore>, i: number) => backCols(s)[i] as Unit;
@@ -257,7 +256,7 @@ describe('store: history', () => {
     expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
   });
 
-  it('newProject and loadProject clear history and reset the selection', () => {
+  it('newProject clears history and resets the selection', () => {
     const s = createPlannerStore();
     s.getState().select({ wall: 'left', columnId: backCols(s)[0].id });
     s.getState().setName('X');
@@ -266,13 +265,6 @@ describe('store: history', () => {
     expect(s.getState().past).toEqual([]);
     expect(s.getState().future).toEqual([]);
     expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
-
-    const p = defaultProject();
-    p.name = 'Loaded';
-    s.getState().setName('Y');
-    s.getState().loadProject(p);
-    expect(s.getState().project.name).toBe('Loaded');
-    expect(s.getState().past).toEqual([]);
   });
 });
 
@@ -324,6 +316,14 @@ describe('store: ui and settings', () => {
     expect(s.getState().ui.lang).toBe('en');
   });
 
+  it('setUnits flips the display units, defaulting to mm', () => {
+    expect(createPlannerStore().getState().ui.units).toBe('mm');
+    const s = createPlannerStore(defaultProject(), 'en', 'in');
+    expect(s.getState().ui.units).toBe('in');
+    s.getState().setUnits('mm');
+    expect(s.getState().ui.units).toBe('mm');
+  });
+
   it('starts on the design tab with nothing selected', () => {
     const s = createPlannerStore();
     expect(s.getState().ui).toMatchObject({
@@ -334,27 +334,31 @@ describe('store: ui and settings', () => {
       explode: 0,
       toast: null,
       lang: 'en',
+      units: 'mm',
     });
   });
 });
 
 describe('store: autosave', () => {
-  it('debounces project writes and persists the language immediately', () => {
+  it('debounces project writes and persists the language and units immediately', () => {
     vi.useFakeTimers();
     const storage = memStorage();
-    const s = createPlannerStore();
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', storage);
     const stop = startAutosave(s, storage, 100);
     s.getState().setName('A');
     s.getState().setName('B');
-    expect(storage.mem.has('wardrobe-planner:project')).toBe(false);
+    expect(storage.mem.has(projectKey('p0'))).toBe(false);
     vi.advanceTimersByTime(150);
-    expect(loadFromStorage(storage)?.name).toBe('B');
+    expect(loadProjectById(storage, 'p0')?.name).toBe('B');
     s.getState().setLang('ru');
     expect(loadLang(storage)).toBe('ru');
+    expect(loadUnits(storage)).toBeNull();
+    s.getState().setUnits('in');
+    expect(loadUnits(storage)).toBe('in');
     stop();
     s.getState().setName('C');
     vi.advanceTimersByTime(150);
-    expect(loadFromStorage(storage)?.name).toBe('B');
+    expect(loadProjectById(storage, 'p0')?.name).toBe('B');
     vi.useRealTimers();
   });
 });
@@ -395,5 +399,338 @@ describe('store: a gap\'s wall-mounted rail', () => {
     const gap = s.getState().project.wardrobe.walls.right.segments[0][0] as { width: number; rail?: unknown };
     expect(gap.width).toBe(600);
     expect(gap.rail).toEqual({ dir: 'along', height: 2000 });
+  });
+});
+
+describe('store: projects', () => {
+  const named = (name: string) => ({ ...defaultProject(), name });
+  /** Column and zone ids are freshly generated, so a template only ever matches id-free. */
+  const idless = (p: Project): unknown => JSON.parse(JSON.stringify(p, (k, v: unknown) => (k === 'id' ? undefined : v)));
+  const withStorage = (id: string, project = defaultProject()) => {
+    const storage = memStorage();
+    return { storage, store: (p = project) => createPlannerStore(p, 'en', 'mm', id, storage) };
+  };
+
+  describe('bootstrap', () => {
+    it('opens the L-shape starter template on empty storage and stores it', () => {
+      const storage = memStorage();
+      const first = bootstrap(storage);
+      expect(first.firstRun).toBe(true);
+      expect(first.projectId).toEqual(expect.any(String));
+      expect(first.project.name).toBe(t('en', 'template.lShape'));
+      expect(idless(first.project)).toEqual(idless(makeTemplate('lShape', t('en', 'template.lShape'))));
+
+      // Stored and current, so a reload finds it instead of starting over.
+      expect(loadProjectById(storage, first.projectId)?.name).toBe(first.project.name);
+      expect(getCurrent(storage)).toBe(first.projectId);
+      const again = bootstrap(storage);
+      expect(again.firstRun).toBe(false);
+      expect(again.projectId).toBe(first.projectId);
+    });
+
+    it('names the starter template in the given language', () => {
+      expect(bootstrap(memStorage(), 'ru').project.name).toBe(t('ru', 'template.lShape'));
+    });
+
+    it('reopens a saved project instead of the template', () => {
+      const storage = memStorage();
+      saveProject(storage, 'p1', named('Saved'));
+      const again = bootstrap(storage);
+      expect(again.firstRun).toBe(false);
+      expect(again.projectId).toBe('p1');
+      expect(again.project.name).toBe('Saved');
+    });
+
+    it('prefers the current id, and falls back to the newest project', () => {
+      const storage = memStorage();
+      saveProject(storage, 'old', named('Old'), 1000);
+      saveProject(storage, 'new', named('New'), 2000);
+      expect(bootstrap(storage).projectId).toBe('new'); // saveProject leaves no current id
+      setCurrent(storage, 'old');
+      expect(bootstrap(storage).projectId).toBe('old');
+    });
+
+    it('falls back to the newest project when the current id is a phantom', () => {
+      const storage = memStorage();
+      saveProject(storage, 'real', named('Real'), 1000);
+      setCurrent(storage, 'gone');
+      expect(bootstrap(storage).project.name).toBe('Real');
+    });
+
+    it('drops the index row when the current project payload is gone', () => {
+      const storage = memStorage();
+      saveProject(storage, 'real', named('Real'), 500);
+      saveProject(storage, 'ghost', named('Ghost'), 1000);
+      storage.mem.delete(projectKey('ghost'));
+      setCurrent(storage, 'ghost');
+      const b = bootstrap(storage);
+      expect(b.projectId).toBe('real');
+      expect(b.project.name).toBe('Real');
+      expect(listProjects(storage).map((m) => m.id)).toEqual(['real']);
+    });
+
+    it('migrates the legacy single-project key', () => {
+      const storage = memStorage();
+      saveToStorage(storage, named('Legacy'));
+      const b = bootstrap(storage);
+      expect(b.firstRun).toBe(false);
+      expect(b.project.name).toBe('Legacy');
+      expect(storage.mem.has(STORAGE_KEY)).toBe(false);
+    });
+
+    it('is a first run with no storage at all', () => {
+      expect(bootstrap(null).firstRun).toBe(true);
+    });
+  });
+
+  it('opening another project retires the first-run hint', () => {
+    const { storage, store } = withStorage('p0');
+    const s = store();
+    s.setState((st) => ({ ui: { ...st.ui, firstRun: true } }));
+    saveProject(storage, 'p1', named('Other'));
+    s.getState().switchProject('p1');
+    expect(s.getState().ui.firstRun).toBe(false);
+    // and a brand new one retires it just the same
+    s.setState((st) => ({ ui: { ...st.ui, firstRun: true } }));
+    s.getState().newProject();
+    expect(s.getState().ui.firstRun).toBe(false);
+  });
+
+  it('createProject saves and selects it, clearing history and selection', () => {
+    const { storage, store } = withStorage('p0');
+    const s = store();
+    s.getState().setName('Zero');
+    s.getState().select({ wall: 'right', columnId: 'whatever' });
+    s.getState().createProject(named('Second'));
+
+    const id = s.getState().ui.projectId;
+    expect(id).not.toBe('p0');
+    expect(s.getState().project.name).toBe('Second');
+    expect(s.getState().past).toEqual([]);
+    expect(s.getState().future).toEqual([]);
+    expect(s.getState().ui.selection).toEqual({ wall: 'back', columnId: null, zoneId: null });
+    expect(loadProjectById(storage, id)?.name).toBe('Second'); // saved before autosave ever runs
+    expect(getCurrent(storage)).toBe(id);
+    expect(s.getState().projects.map((m) => m.name)).toEqual(['Second']);
+  });
+
+  it('an imported project lands beside the open one, which keeps its stored contents', () => {
+    const storage = memStorage();
+    saveProject(storage, 'p0', named('Mine'), 1000);
+    const s = createPlannerStore(named('Mine'), 'en', 'mm', 'p0', storage);
+    // What TopBar's JSON import does: a shape-valid file becomes a project of its own.
+    s.getState().createProject(named('Imported'));
+
+    const id = s.getState().ui.projectId;
+    expect(id).not.toBe('p0');
+    expect(s.getState().project.name).toBe('Imported');
+    expect(loadProjectById(storage, 'p0')?.name).toBe('Mine'); // the project that was open is untouched
+    expect(loadProjectById(storage, id)?.name).toBe('Imported');
+    expect(s.getState().projects.map((m) => m.name).sort()).toEqual(['Imported', 'Mine']);
+  });
+
+  it('createProject with select: false saves without leaving the current project', () => {
+    const { storage, store } = withStorage('p0', named('Here'));
+    const s = store();
+    s.getState().createProject(named('Aside'), { select: false });
+    expect(s.getState().project.name).toBe('Here');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().projects.map((m) => m.name)).toEqual(['Aside']);
+    expect(listProjects(storage)).toHaveLength(1);
+  });
+
+  it('newProject creates a fresh default project', () => {
+    const { store } = withStorage('p0');
+    const s = store();
+    s.getState().setName('Renamed');
+    s.getState().newProject();
+    expect(s.getState().project.name).toBe(defaultProject().name);
+    expect(s.getState().ui.projectId).not.toBe('p0');
+  });
+
+  it('switchProject loads the other project and resets history', () => {
+    const { storage, store } = withStorage('p0');
+    saveProject(storage, 'p1', named('One'), 1000);
+    const s = store();
+    s.getState().setName('Zero');
+    s.getState().switchProject('p1');
+    expect(s.getState().project.name).toBe('One');
+    expect(s.getState().ui.projectId).toBe('p1');
+    expect(s.getState().past).toEqual([]);
+    expect(getCurrent(storage)).toBe('p1');
+  });
+
+  it('switchProject drops an index entry whose payload is missing and toasts', () => {
+    const { storage, store } = withStorage('p0', named('Here'));
+    saveProject(storage, 'ghost', named('Ghost'), 1000);
+    storage.mem.delete(projectKey('ghost'));
+    const s = store();
+    s.getState().switchProject('ghost');
+    expect(s.getState().project.name).toBe('Here'); // stays put
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().ui.toast).toEqual({ key: 'toast.projectMissing' });
+    expect(s.getState().projects).toEqual([]);
+    expect(listProjects(storage)).toEqual([]);
+  });
+
+  it('duplicateProject copies under a new id with a "(copy)" name and selects it', () => {
+    const { storage, store } = withStorage('p1', named('One'));
+    saveProject(storage, 'p1', named('One'), 1000);
+    const s = store();
+    s.getState().duplicateProject('p1');
+    const id = s.getState().ui.projectId;
+    expect(id).not.toBe('p1');
+    expect(s.getState().project.name).toBe('One (copy)');
+    expect(loadProjectById(storage, 'p1')?.name).toBe('One'); // the original is untouched
+    expect(s.getState().projects.map((m) => m.name).sort()).toEqual(['One', 'One (copy)']);
+  });
+
+  it('deleteProject of the current one opens the newest of the rest', () => {
+    const { storage, store } = withStorage('cur', named('Cur'));
+    saveProject(storage, 'old', named('Old'), 1000);
+    saveProject(storage, 'newer', named('Newer'), 2000);
+    saveProject(storage, 'cur', named('Cur'), 3000);
+    const s = store();
+    s.getState().deleteProject('cur');
+    expect(s.getState().ui.projectId).toBe('newer');
+    expect(s.getState().project.name).toBe('Newer');
+    expect(s.getState().projects.map((m) => m.id)).toEqual(['newer', 'old']);
+    expect(loadProjectById(storage, 'cur')).toBeNull();
+  });
+
+  it('deleteProject of another one leaves the current project alone', () => {
+    const { storage, store } = withStorage('cur', named('Cur'));
+    saveProject(storage, 'cur', named('Cur'), 2000);
+    saveProject(storage, 'other', named('Other'), 1000);
+    const s = store();
+    s.getState().deleteProject('other');
+    expect(s.getState().ui.projectId).toBe('cur');
+    expect(s.getState().project.name).toBe('Cur');
+    expect(s.getState().projects.map((m) => m.id)).toEqual(['cur']);
+  });
+
+  it('deleting the last project leaves a fresh default one behind', () => {
+    const { storage, store } = withStorage('only', named('Only'));
+    saveProject(storage, 'only', named('Only'), 1000);
+    const s = store();
+    s.getState().deleteProject('only');
+    expect(s.getState().ui.projectId).not.toBe('only');
+    expect(s.getState().project.name).toBe(defaultProject().name);
+    expect(s.getState().projects).toHaveLength(1);
+    expect(listProjects(storage)[0].id).toBe(s.getState().ui.projectId);
+  });
+
+  it('the actions are graceful no-ops without storage', () => {
+    const s = createPlannerStore(named('Alone'), 'en', 'mm', 'p0');
+    s.getState().switchProject('p1');
+    s.getState().duplicateProject('p0');
+    s.getState().deleteProject('p0');
+    expect(s.getState().project.name).toBe('Alone');
+    expect(s.getState().projects).toEqual([]);
+  });
+
+  it('createProject says so when the new project could not be stored', () => {
+    const storage = memStorage();
+    const failing = { ...storage, setItem: () => { throw new Error('quota'); } };
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', failing);
+    s.getState().createProject(named('Doomed'));
+    expect(s.getState().project.name).toBe('Doomed'); // still opened, so the work is not lost
+    expect(s.getState().ui.toast).toEqual({ key: 'toast.storageFull' });
+  });
+
+  it('autosave writes under the current project id and refreshes the index', () => {
+    vi.useFakeTimers();
+    const { storage, store } = withStorage('p1');
+    const s = store();
+    const stop = startAutosave(s, storage, 100);
+    s.getState().setName('Renamed');
+    vi.advanceTimersByTime(150);
+    expect(loadProjectById(storage, 'p1')?.name).toBe('Renamed');
+    expect(s.getState().projects[0]).toMatchObject({ id: 'p1', name: 'Renamed' });
+    expect(storage.mem.has(STORAGE_KEY)).toBe(false); // never the legacy key any more
+
+    s.getState().createProject(named('Next'));
+    const id = s.getState().ui.projectId;
+    s.getState().setName('Next edited');
+    vi.advanceTimersByTime(150);
+    expect(loadProjectById(storage, id)?.name).toBe('Next edited');
+    expect(loadProjectById(storage, 'p1')?.name).toBe('Renamed'); // the old one is left as it was
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('autosave flushes a pending edit under the outgoing id when another project is opened', () => {
+    vi.useFakeTimers();
+    const storage = memStorage();
+    saveProject(storage, 'p1', named('One'), 1000);
+    saveProject(storage, 'p2', named('Two'), 5000);
+    const s = createPlannerStore(named('One'), 'en', 'mm', 'p1', storage);
+    const stop = startAutosave(s, storage, 100);
+
+    s.getState().setName('One edited');
+    vi.advanceTimersByTime(50); // still inside the debounce
+    s.getState().switchProject('p2');
+    expect(loadProjectById(storage, 'p1')?.name).toBe('One edited'); // the outgoing edit survived
+    expect(s.getState().project.name).toBe('Two');
+    expect(listProjects(storage).find((m) => m.id === 'p2')?.updatedAt).toBe(5000);
+
+    vi.advanceTimersByTime(200); // the cancelled timer never writes the incoming project
+    expect(loadProjectById(storage, 'p2')?.name).toBe('Two');
+    expect(listProjects(storage).find((m) => m.id === 'p2')?.updatedAt).toBe(5000);
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('autosave does not resurrect the project that was just deleted', () => {
+    vi.useFakeTimers();
+    const storage = memStorage();
+    saveProject(storage, 'p1', named('One'), 1000);
+    saveProject(storage, 'p2', named('Two'), 500);
+    const s = createPlannerStore(named('One'), 'en', 'mm', 'p1', storage);
+    const stop = startAutosave(s, storage, 100);
+
+    s.getState().setName('One edited');
+    vi.advanceTimersByTime(50); // still inside the debounce
+    s.getState().deleteProject('p1');
+    expect(s.getState().ui.projectId).toBe('p2');
+    expect(storage.mem.has(projectKey('p1'))).toBe(false);
+    expect(listProjects(storage).map((m) => m.id)).toEqual(['p2']);
+
+    vi.advanceTimersByTime(200);
+    expect(storage.mem.has(projectKey('p1'))).toBe(false);
+    expect(listProjects(storage).map((m) => m.id)).toEqual(['p2']);
+    expect(loadProjectById(storage, 'p2')?.name).toBe('Two');
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('autosave toasts toast.storageFull once per failure run', () => {
+    vi.useFakeTimers();
+    const storage = memStorage();
+    let full = true;
+    const failing = { ...storage, setItem: (k: string, v: string) => { if (full) throw new Error('quota'); storage.setItem(k, v); } };
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p1', failing);
+    const stop = startAutosave(s, failing, 100);
+
+    s.getState().setName('A');
+    vi.advanceTimersByTime(150);
+    expect(s.getState().ui.toast).toEqual({ key: 'toast.storageFull' });
+
+    s.getState().toast(null);
+    s.getState().setName('B');
+    vi.advanceTimersByTime(150);
+    expect(s.getState().ui.toast).toBeNull(); // not once per keystroke
+
+    full = false;
+    s.getState().setName('C');
+    vi.advanceTimersByTime(150);
+    expect(loadProjectById(storage, 'p1')?.name).toBe('C');
+
+    full = true;
+    s.getState().setName('D');
+    vi.advanceTimersByTime(150);
+    expect(s.getState().ui.toast).toEqual({ key: 'toast.storageFull' });
+    stop();
+    vi.useRealTimers();
   });
 });

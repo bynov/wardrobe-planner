@@ -1,11 +1,11 @@
 import type { Project, Wall } from '../model/types';
 import { msg, type Msg } from '../i18n';
 import { frameTransform, wallFrame } from './frames';
-import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, type GapLayout, type UnitLayout } from './layout';
+import { layoutAll, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, SHELF_SETBACK, SHOE_LIP, SHOE_TILT_DEG, type GapLayout, type UnitLayout } from './layout';
 import { bounds3, FLAT_ROT, NO_ROT, ROD_ROT, SIDE_ROT, toWorld, v2, v3, type Box3, type Transform, type Vec2, type Vec3 } from './vec';
 
-export type PartKind = 'side' | 'top' | 'bottom' | 'back' | 'divider' | 'shelf' | 'drawerFront' | 'plinth' | 'rod';
-export const PART_NAME_KEYS = ['sideL', 'sideR', 'top', 'bottom', 'back', 'divider', 'shelf', 'drawerFront', 'plinth', 'rod'] as const;
+export type PartKind = 'side' | 'top' | 'bottom' | 'back' | 'divider' | 'shelf' | 'lip' | 'drawerFront' | 'plinth' | 'rod';
+export const PART_NAME_KEYS = ['sideL', 'sideR', 'top', 'bottom', 'back', 'divider', 'shelf', 'lip', 'drawerFront', 'plinth', 'rod'] as const;
 export type PartNameKey = (typeof PART_NAME_KEYS)[number];
 export const MATERIALS = ['panel', 'back', 'rod'] as const;
 export type Material = (typeof MATERIALS)[number];
@@ -60,9 +60,28 @@ export function buildUnitParts(L: UnitLayout, p: Project): Part[] {
   add('top', 'top', 'top', rect(iw, depth), t, v3(s0 + t, plinth + ch, 0), FLAT_ROT);
   add('back', 'back', 'back', rect(iw, ih), w.backThickness, v3(s0 + t, floorY, 0), NO_ROT, 'back');
   L.dividerYs.forEach((y, k) => add(`divider${k + 1}`, 'divider', 'divider', rect(iw, id), t, v3(s0 + t, y, w.backThickness), FLAT_ROT, 'panel', undefined, k + 1));
-  let shelfN = 0, drawerN = 0;
+  let shelfN = 0, lipN = 0, drawerN = 0;
+  // A front-aligned board stops this far behind the wall: the front of the unit less the setback.
+  const frontZ = w.backThickness + id - SHELF_SETBACK;
+  const tilt = (SHOE_TILT_DEG * Math.PI) / 180;
   for (const z of L.zones) {
     for (const y of z.shelfYs) add(`shelf${++shelfN}`, 'shelf', 'shelf', rect(iw, id - SHELF_SETBACK), t, v3(s0 + t, y + t, w.backThickness), FLAT_ROT, 'panel', undefined, shelfN);
+    for (const sh of z.shoeShelves) {
+      // A flat shelf's FLAT_ROT (rx = +90deg) sends local +y into the room and the thickness
+      // straight down. Turning a further `tilt` the same way keeps the depth running roomwards
+      // while dropping it: the far (front) edge ends up `depth·sin(tilt)` below the near one, so
+      // the origin is the board's BACK edge, top surface, and the front edge lands at `frontZ`.
+      const backZ = frontZ - sh.depth * Math.cos(tilt);
+      add(`shoe${++shelfN}`, 'shelf', 'shelf', rect(iw, sh.depth), t, v3(s0 + t, sh.yBack, backZ),
+        v3(FLAT_ROT.x + tilt, 0, 0), 'panel', [msg('note.tilted', { deg: SHOE_TILT_DEG })], shelfN);
+      // The lip stands square to the board along that front edge, so it is NO_ROT turned by the
+      // same tilt: its local +y follows the board's upward normal, which leans into the room. It
+      // is seated on the board's top face with its outer face on the front edge — set out by one
+      // thickness so the lip leans back over the board instead of over the front of the unit.
+      add(`lip${++lipN}`, 'lip', 'lip', rect(iw, SHOE_LIP), t,
+        v3(s0 + t, sh.yFront + t * Math.sin(tilt), frontZ - t * Math.cos(tilt)),
+        v3(tilt, 0, 0), 'panel', undefined, lipN);
+    }
     for (const d of z.drawerFronts) add(`drawer${++drawerN}`, 'drawerFront', 'drawerFront', rect(z.frontW, d.y1 - d.y0), t, v3(s0 + t + REVEAL, d.y0, depth - t), NO_ROT, 'panel', undefined, drawerN);
     if (z.rodY !== null) {
       const dia = msg('note.rodDia', { d: ROD_DIAMETER });

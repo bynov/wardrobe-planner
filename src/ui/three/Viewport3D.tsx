@@ -7,11 +7,12 @@ import { buildParts } from '../../geometry/parts';
 import { layoutAll } from '../../geometry/layout';
 import { WALLS, localToWorld, wallFrame, wallLength } from '../../geometry/frames';
 import { rotY, v3, type Vec3 } from '../../geometry/vec';
-import type { Room, Wall } from '../../model/types';
+import type { Project, Room, Wall } from '../../model/types';
 import { cacheSnapshot, setSnapshotSource } from '../snapshot';
 import { PartMesh } from './PartMesh';
 import { RoomMesh } from './RoomMesh';
 import { useT } from '../useT';
+import { formatLen } from '../../units';
 import type { MessageKey } from '../../i18n';
 
 /** Keeps `snapshot.ts` supplied with the live canvas, and refreshes its cache as the model settles. */
@@ -83,15 +84,41 @@ function FadeTracker({ room, onChange }: { room: Room; onChange: (walls: Set<Wal
   return null;
 }
 
-export function Viewport3D() {
-  const project = useStore((s) => s.lastValid);
+/**
+ * Fires once, from the first frame after the whole scene (the parts included) has mounted. The
+ * off-screen renderer waits for it — and then for one more animation frame, because R3F runs the
+ * `useFrame` subscriptions *before* it draws, so nothing is on the buffer yet when this fires.
+ */
+function FirstFrame({ onFirstFrame }: { onFirstFrame: () => void }) {
+  const firedRef = useRef(false);
+  useFrame(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onFirstFrame();
+  });
+  return null;
+}
+
+export interface Viewport3DProps {
+  /** Renders this project instead of the store's `lastValid` — the off-screen snapshot passes the
+   * project being exported so it never depends on what the live viewport happens to hold. */
+  project?: Project;
+  /** Off-screen capture: no overlay controls, no orbiting, and the global snapshot cache is left
+   * alone — the live viewport owns it, and this canvas is read directly by its own renderer. */
+  snapshotOnly?: boolean;
+  onFirstFrame?: () => void;
+}
+
+export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirstFrame }: Viewport3DProps) {
+  const storeProject = useStore((s) => s.lastValid);
+  const project = projectProp ?? storeProject;
   // Only the three viewport controls: selecting the whole `ui` slice re-rendered the scene on
   // every toast, tab switch and selection change.
   const showDims = useStore((s) => s.ui.showDims);
   const showRoom = useStore((s) => s.ui.showRoom);
   const explode = useStore((s) => s.ui.explode);
   const setUi = useStore((s) => s.setUi);
-  const { t } = useT();
+  const { t, units } = useT();
   const { room } = project;
 
   const parts = useMemo(() => buildParts(project), [project]);
@@ -112,7 +139,7 @@ export function Viewport3D() {
       <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ fov: 45 }} style={{ background: '#f0f2f5' }}>
         <CameraFit room={room} />
         <FadeTracker room={room} onChange={onFadeChange} />
-        <SnapshotBridge version={parts} />
+        {!snapshotOnly && <SnapshotBridge version={parts} />}
         <ambientLight intensity={0.75} />
         <directionalLight position={[-2000, 4000, 3000]} intensity={1.1} />
         <directionalLight position={[3000, 2000, -2000]} intensity={0.4} />
@@ -128,7 +155,7 @@ export function Viewport3D() {
               const p = localToWorld(frame, v3((L.s0 + L.s1) / 2, -60, L.depth + 80));
               return (
                 <Html key={`${L.wall}-${L.columnIndex}`} position={[p.x, p.y, p.z]} center>
-                  <div className="dim3d">{Math.round(L.width)}</div>
+                  <div className="dim3d">{formatLen(Math.round(L.width), units)}</div>
                 </Html>
               );
             })}
@@ -143,20 +170,23 @@ export function Viewport3D() {
             })}
           </group>
         )}
-        <OrbitControls makeDefault target={[target.x, target.y, target.z]} />
+        {!snapshotOnly && <OrbitControls makeDefault target={[target.x, target.y, target.z]} />}
+        {onFirstFrame && <FirstFrame onFirstFrame={onFirstFrame} />}
       </Canvas>
-      <div className="controls">
-        <label>
-          <input type="checkbox" checked={showDims} onChange={(e) => setUi({ showDims: e.target.checked })} /> {t('ui.dims')}
-        </label>
-        <label>
-          <input type="checkbox" checked={showRoom} onChange={(e) => setUi({ showRoom: e.target.checked })} /> {t('ui.room')}
-        </label>
-        <label>
-          {t('ui.explode')}{' '}
-          <input type="range" min={0} max={1} step={0.05} value={explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} />
-        </label>
-      </div>
+      {!snapshotOnly && (
+        <div className="controls">
+          <label>
+            <input type="checkbox" checked={showDims} onChange={(e) => setUi({ showDims: e.target.checked })} /> {t('ui.dims')}
+          </label>
+          <label>
+            <input type="checkbox" checked={showRoom} onChange={(e) => setUi({ showRoom: e.target.checked })} /> {t('ui.room')}
+          </label>
+          <label>
+            {t('ui.explode')}{' '}
+            <input type="range" min={0} max={1} step={0.05} value={explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

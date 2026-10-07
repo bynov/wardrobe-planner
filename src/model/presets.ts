@@ -1,7 +1,7 @@
 import { makeGap, makeUnit, makeZone } from './factory';
 import type { Column } from './types';
 
-export type PresetKey = 'hanging' | 'doubleHanging' | 'shelves' | 'drawersHanging' | 'drawersShelves' | 'open' | 'gap';
+export type PresetKey = 'hanging' | 'doubleHanging' | 'shelves' | 'drawersHanging' | 'drawersShelves' | 'shoes' | 'open' | 'gap';
 
 export const PRESET_KEYS: PresetKey[] = [
   'hanging',
@@ -9,6 +9,7 @@ export const PRESET_KEYS: PresetKey[] = [
   'shelves',
   'drawersHanging',
   'drawersShelves',
+  'shoes',
   'open',
   'gap',
 ];
@@ -30,6 +31,9 @@ export function makePreset(key: PresetKey, width: number): Column {
       return makeUnit(width, [Z('drawers', 600, 3), Z('hanging')]);
     case 'drawersShelves':
       return makeUnit(width, [Z('drawers', 800, 4), Z('shelves', null, 4)]); // 4 compartments = 3 boards
+    case 'shoes':
+      // 5 tilted boards at a 180 mm pitch, with ordinary shelves filling the space above them.
+      return makeUnit(width, [Z('shoes', 900, 5), Z('shelves', null, 3)]);
     case 'open':
       return makeUnit(width, [Z('open')]);
     case 'gap':

@@ -1,13 +1,9 @@
 import { v2, type Vec2 } from '../geometry/vec';
+import { formatLen, type Units } from '../units';
 import type { Prim } from './ir';
 
-export function fmtLen(n: number): string {
-  const r = Math.round(n * 10) / 10;
-  return Number.isInteger(r) ? String(r) : r.toFixed(1);
-}
-
 /** Expand a linear dimension into extension lines, dimension line, 45-degree ticks and a label. */
-export function expandDim(d: Extract<Prim, { t: 'dim' }>, textSize: number): Prim[] {
+export function expandDim(d: Extract<Prim, { t: 'dim' }>, textSize: number, units: Units = 'mm'): Prim[] {
   const dx = d.b.x - d.a.x, dy = d.b.y - d.a.y;
   const len = Math.hypot(dx, dy);
   if (len < 1e-9) return [];
@@ -33,7 +29,7 @@ export function expandDim(d: Extract<Prim, { t: 'dim' }>, textSize: number): Pri
   out.push({
     t: 'text',
     at: P(mid, sign * textSize * 0.6),
-    text: d.label ?? fmtLen(len),
+    text: d.label ?? formatLen(len, units),
     size: textSize,
     anchor: 'middle',
     rotate: rotate === 0 ? undefined : rotate,

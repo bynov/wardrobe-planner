@@ -9,6 +9,7 @@ const COLORS: Record<PartKind, string> = {
   bottom: '#d9c7a3',
   divider: '#d9c7a3',
   shelf: '#e3d5b8',
+  lip: '#e3d5b8',
   back: '#cbb997',
   drawerFront: '#9fbbd0',
   plinth: '#8a7a5e',
@@ -23,6 +24,7 @@ function explodeOffset(kind: PartKind, f: number, dir: Vec3): THREE.Vector3 {
   switch (kind) {
     case 'drawerFront': return along(300);
     case 'shelf':
+    case 'lip': // a lip travels with the board it stands on
     case 'divider': return along(120);
     case 'top': return new THREE.Vector3(0, 200 * f, 0);
     case 'plinth': return along(60);

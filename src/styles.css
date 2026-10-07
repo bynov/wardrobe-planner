@@ -4,15 +4,17 @@ button { font: inherit; padding: 4px 10px; border: 1px solid #bbb; background: #
 button:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- app shell ---- */
-.app { display: grid; grid-template-rows: 48px 1fr; height: 100vh; }
-.topbar { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #ddd; background: #fafafa; }
+/* A column flexbox, not a grid: the hint bar comes and goes between the top bar and the content,
+   and only `.content` may take the leftover height (its panes scroll against it). */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.topbar { flex: none; height: 48px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #ddd; background: #fafafa; }
 .topbar input.name { font-size: 15px; padding: 4px 8px; width: 200px; }
 .tabs { display: flex; gap: 2px; margin-left: 12px; }
 .tabs button.active { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
-.tabs.lang { margin-left: 4px; }
-.tabs.lang button { padding: 6px 8px; font-size: 12px; }
+.tabs.lang, .tabs.units { margin-left: 4px; }
+.tabs.lang button, .tabs.units button { padding: 6px 8px; font-size: 12px; }
 .spacer { flex: 1; }
-.content { position: relative; min-width: 0; min-height: 0; overflow: auto; background: #fff; }
+.content { flex: 1; position: relative; min-width: 0; min-height: 0; overflow: auto; background: #fff; }
 
 /* ---- shared form bits ---- */
 .panel h3, .inspector h3 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
@@ -90,6 +92,10 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .menu button { align-items: baseline; gap: 12px; border-radius: 3px; }
 .menu button .derived { margin-top: 0; white-space: nowrap; }
 .menu button:disabled:hover { background: transparent; }
+.projects { position: relative; }
+.projects .menu { top: calc(100% + 2px); right: 0; }
+.projects .menu button.active { background: #e3edf8; font-weight: 600; }
+.projects .menu .sep { border-top: 1px solid #ddd; margin: 4px 0; }
 
 /* inspector */
 .inspector h3 .sub { text-transform: none; letter-spacing: 0; color: #777; font-weight: 400; }
@@ -108,7 +114,7 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .zone-btns button { padding: 2px 6px; line-height: 1.1; }
 .zone-fields { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .zone-fields label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
-.zone-fields input[type="number"] { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
+.zone-fields input:not([type="checkbox"]) { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
 .zone-fields label.chk { cursor: pointer; }
 /* a full-width checkbox row in the inspector (the gap's wall-mounted rail) */
 .inspector label.chk.wide { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 13px; cursor: pointer; }
@@ -166,3 +172,77 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 
 /* "the unit is selected, not a zone" hint under the inspector's unit title */
 .inspector .zonehint { font-size: 12px; color: #666; line-height: 1.35; margin: 0 0 6px; }
+
+/* first-run hint band under the top bar: the three steps to a design of one's own */
+.hintbar {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  background: #eaf3fc; border-bottom: 1px solid #c3dcf2; color: #1d4d78;
+  padding: 6px 12px; font-size: 13px;
+}
+.hintbar ol {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+  list-style: none; margin: 0; padding: 0; counter-reset: hint;
+}
+.hintbar li { counter-increment: hint; }
+.hintbar li::before {
+  content: counter(hint); display: inline-grid; place-items: center;
+  width: 18px; height: 18px; margin-right: 6px; border-radius: 50%;
+  background: #2b6cb0; color: #fff; font-size: 11px; font-weight: 700;
+}
+.hintbar button { margin-left: auto; white-space: nowrap; }
+
+/* ---- mobile layout ----
+   Below 820px the three design panes stack into one scrolling column (plan + settings, elevation,
+   inspector) and the menus become bottom sheets; the `.settings` <details> and the top bar's "⋯"
+   are the only DOM the phone layout needs, and both are inert above the breakpoint. */
+/* The table used to be the tab pane's own flex item and stretched to its width; the wrapper takes
+   that place, so it has to pass the stretch on. Below the breakpoint it goes back to a plain block
+   and scrolls the too-wide table sideways instead. */
+.tablewrap { display: flex; flex-direction: column; max-width: 100%; }
+.topbar .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+@media (max-width: 820px) {
+  .topbar { height: auto; flex-wrap: wrap; padding: 6px 8px; row-gap: 6px; }
+  .topbar input.name { width: 100%; box-sizing: border-box; order: -1; }
+  .tabs { margin-left: 0; }
+  .design { grid-template-columns: 1fr; grid-template-rows: auto minmax(50vh, auto) auto; height: auto; }
+  /* the panes scroll with the page here, not each against its own box */
+  .panel { border-right: 0; border-bottom: 1px solid #ddd; overflow: visible; }
+  .plan { position: static; }
+  .plan svg { max-height: 40vh; }
+  /* list-item, not block: `display: block` on a <summary> takes the disclosure triangle away and
+     with it the only sign that the section folds */
+  details.settings > summary {
+    display: list-item; list-style-position: inside;
+    padding: 8px 10px; font-weight: 600; cursor: pointer;
+  }
+  .elevation { min-height: 50vh; }
+  .inspector { border-left: 0; border-top: 1px solid #ddd; overflow: visible; }
+  .menu {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; border-radius: 12px 12px 0 0;
+    max-height: 60vh; overflow: auto; padding-bottom: env(safe-area-inset-bottom);
+  }
+  .projects .menu { top: auto; }
+  .menu button, .topbar button, .tabs button { min-height: 40px; }
+  /* 16px is the size below which iOS Safari zooms the page on focus. The panel, inspector and top
+     bar controls set their own size at up to two classes of specificity, so a bare `input` selector
+     would lose to every one of them: name them. */
+  .app input, .app select,
+  .app .topbar input.name,
+  .app .zone-fields input:not([type="checkbox"]),
+  .app .zone-fields.rail select { font-size: 16px; }
+  .zone-fields input:not([type="checkbox"]) { width: 76px; }
+  /* Orbiting must not scroll the page. OrbitControls writes touch-action inline on the canvas (and
+     leaves 'auto' behind after a StrictMode remount), which no stylesheet rule can outrank without
+     !important — but a touch is only allowed to pan when every element from the target up permits
+     it, so saying it on the container is enough. */
+  .viewport { touch-action: none; }
+  .tablewrap { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (min-width: 821px) { details.settings > summary { display: none; } }
+@media (max-width: 600px) {
+  .topbar .actions { display: none; width: 100%; flex-wrap: wrap; gap: 6px; }
+  .topbar .actions.open { display: flex; }
+  .topbar .more { display: inline-block; }
+}
+@media (min-width: 601px) { .topbar .more { display: none; } }
