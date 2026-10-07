@@ -21,7 +21,7 @@ pnpm embed-font                           # regenerate src/pdf/fonts/ptsans.ts (
 
 `pnpm test`, `pnpm typecheck` and `pnpm build` must all pass before a task is called done; test output should be pristine. Tests are `src/**/*.test.ts` running in the `node` environment (no DOM), so everything under test must stay DOM-free.
 
-Git: commit/push only when the user explicitly asks. CI (`.github/workflows/pages.yml`) runs test + build on push to `master` and deploys to GitHub Pages at the custom domain `walkinplanner.com` (`public/CNAME`); the app lives under `/app/`.
+Git: task done → commit, push, open a PR into `master` (no direct pushes to `master` — it deploys). Fixes to work with an open PR go onto that PR's branch. CI (`.github/workflows/pages.yml`) runs test + build on push to `master` and deploys to GitHub Pages at the custom domain `walkinplanner.com` (`public/CNAME`); the app lives under `/app/`.
 
 ## Architecture
 
