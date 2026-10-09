@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:18px;color:var(--ink);font-family:'Schibsted Grotesk',system-ui,sans-serif">
+<sc-if value="{{ none }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:8px;padding:28px 4px;text-align:center;align-items:center">
+<div style="width:44px;height:56px;border:1.5px dashed var(--line2);border-radius:6px"></div>
+<div style="font-size:14px;font-weight:600">Nothing selected</div>
+<div style="font-size:13px;line-height:1.45;color:var(--ink2);max-width:220px;text-wrap:pretty">Click a unit in the elevation to edit it, or a + to insert a new one.</div>
+</div>
+</sc-if>
+<sc-if value="{{ has }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:19px;font-weight:600;letter-spacing:-0.01em">{{ title }}</span><span style="font-size:13px;color:var(--ink3)">on {{ wallName }}</span></div>
+<sc-if value="{{ isUnit }}"><div style="font:12px 'IBM Plex Mono',monospace;color:var(--ink3)">Interior {{ interior }}</div></sc-if>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:13px;color:var(--ink2)">Width</span>
+<div style="display:flex;align-items:center;border:1px solid var(--line2);border-radius:8px;background:var(--surface);overflow:hidden">
+<button onClick="{{ widthDown }}" style="white-space:nowrap;width:34px;height:34px;border:0;background:transparent;color:var(--ink2);font-size:16px;cursor:pointer" style-hover="background:var(--surface2)">−</button>
+<span style="min-width:76px;text-align:center;font:500 14px 'IBM Plex Mono',monospace;border-left:1px solid var(--line);border-right:1px solid var(--line);line-height:34px">{{ width }}</span>
+<button onClick="{{ widthUp }}" style="white-space:nowrap;width:34px;height:34px;border:0;background:transparent;color:var(--ink2);font-size:16px;cursor:pointer" style-hover="background:var(--surface2)">+</button>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+<button onClick="{{ moveL }}" style="white-space:nowrap;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:500 12px inherit;font-family:inherit;cursor:pointer" style-hover="background:var(--surface2)">← Move</button>
+<button onClick="{{ moveR }}" style="white-space:nowrap;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:500 12px inherit;font-family:inherit;cursor:pointer" style-hover="background:var(--surface2)">Move →</button>
+<button onClick="{{ dup }}" style="white-space:nowrap;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:500 12px inherit;font-family:inherit;cursor:pointer" style-hover="background:var(--surface2)">Duplicate</button>
+<button onClick="{{ remove }}" style="white-space:nowrap;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--danger);font:500 12px inherit;font-family:inherit;cursor:pointer" style-hover="background:var(--surface2)">Remove</button>
+</div>
+<sc-if value="{{ isGap }}">
+<div style="display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)">
+<div onClick="{{ toggleRail }}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer"><span style="font-size:13px">Wall-mounted hanging rail</span><span style="width:30px;height:18px;border-radius:9px;background:{{ railBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ railKnob }};width:14px;height:14px;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0003"></span></span></div>
+<div style="font-size:12px;line-height:1.45;color:var(--ink3);text-wrap:pretty">A gap has no carcass. A rail here is fixed to the wall, which is the usual answer for a corner.</div>
+</div>
+</sc-if>
+<sc-if value="{{ isUnit }}">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:13px;font-weight:600">Zones</span><span style="font-size:12px;color:var(--ink3)">top to bottom</span></div><button onClick="{{ addZone }}" style="white-space:nowrap;border:0;background:transparent;color:var(--accent);font:600 13px inherit;font-family:inherit;cursor:pointer;padding:4px 0">+ Add zone</button></div>
+<sc-for list="{{ zones }}" as="z" hint-placeholder-count="2">
+<div onClick="{{ z.select }}" style="display:flex;flex-direction:column;gap:12px;padding:12px;border:1px solid {{ z.border }};border-radius:10px;background:{{ z.bg }};cursor:pointer">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:22px;height:28px;flex:none;border:1.5px solid var(--draw);border-radius:3px;background:{{ z.glyph }}"></span>
+<span style="font-size:14px;font-weight:500;flex:1">{{ z.name }}</span>
+<span style="font:13px 'IBM Plex Mono',monospace;color:var(--ink2)">{{ z.height }}</span>
+<sc-if value="{{ z.isAuto }}"><span style="font:10px 'IBM Plex Mono',monospace;color:var(--ink3);border:1px solid var(--line2);border-radius:4px;padding:1px 4px">AUTO</span></sc-if>
+</div>
+<sc-if value="{{ z.sel }}">
+<div style="display:flex;flex-wrap:wrap;gap:4px">
+<sc-for list="{{ z.types }}" as="c"><button onClick="{{ c.onClick }}" style="white-space:nowrap;height:28px;padding:0 10px;border-radius:14px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font:500 12px inherit;font-family:inherit;cursor:pointer">{{ c.label }}</button></sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+<div onClick="{{ z.toggleAuto }}" style="display:flex;align-items:center;gap:8px;cursor:pointer"><span style="width:30px;height:18px;border-radius:9px;background:{{ z.autoBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ z.autoKnob }};width:14px;height:14px;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0003"></span></span><span style="font-size:12px;color:var(--ink2)">Auto height</span></div>
+<sc-if value="{{ z.counted }}">
+<div style="display:flex;align-items:center;gap:8px;margin-left:auto"><span style="font-size:12px;color:var(--ink2)">{{ z.countLabel }}</span>
+<div style="display:flex;align-items:center;border:1px solid var(--line2);border-radius:7px;overflow:hidden;background:var(--surface)"><button onClick="{{ z.dec }}" style="white-space:nowrap;width:26px;height:26px;border:0;background:transparent;color:var(--ink2);cursor:pointer">−</button><span style="min-width:24px;text-align:center;font:500 13px 'IBM Plex Mono',monospace">{{ z.count }}</span><button onClick="{{ z.inc }}" style="white-space:nowrap;width:26px;height:26px;border:0;background:transparent;color:var(--ink2);cursor:pointer">+</button></div></div>
+</sc-if>
+</div>
+<div style="display:flex;gap:6px;border-top:1px solid var(--line);padding-top:10px">
+<button onClick="{{ z.up }}" style="white-space:nowrap;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink2);font:12px inherit;font-family:inherit;cursor:pointer">↑ Up</button>
+<button onClick="{{ z.down }}" style="white-space:nowrap;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink2);font:12px inherit;font-family:inherit;cursor:pointer">↓ Down</button>
+<button onClick="{{ z.remove }}" style="white-space:nowrap;height:26px;padding:0 10px;margin-left:auto;border:0;background:transparent;color:var(--danger);font:12px inherit;font-family:inherit;cursor:pointer">Remove zone</button>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:340,&quot;height&quot;:640}}">
+const NAMES = { open: 'Open', shelves: 'Shelves', drawers: 'Drawers', hanging: 'Hanging rail', shoes: 'Shoe shelves' };
+const SHORT = { open: 'Open', shelves: 'Shelves', drawers: 'Drawers', hanging: 'Hanging', shoes: 'Shoes' };
+const GLYPH = {
+  open: 'var(--wood)',
+  shelves: 'repeating-linear-gradient(to bottom, var(--wood) 0 6px, var(--draw) 6px 7.5px)',
+  drawers: 'repeating-linear-gradient(to bottom, var(--wood2) 0 7px, var(--draw) 7px 8.5px)',
+  hanging: 'linear-gradient(var(--draw),var(--draw)) center 5px / 70% 2px no-repeat, var(--wood)',
+  shoes: 'repeating-linear-gradient(170deg, var(--wood) 0 5px, var(--draw) 5px 6.5px)',
+};
+const COUNT_LABEL = { shelves: 'Compartments', drawers: 'Drawers', shoes: 'Shelves' };
+class Component extends DCLogic {
+  renderVals() {
+    const P = this.props;
+    const c = P.col;
+    const fmt = P.fmt ?? ((n) => Math.round(n) + ' mm');
+    const call = (fn, ...a) => (e) => { e && e.stopPropagation && e.stopPropagation(); P[fn] && P[fn](...a); };
+    if (!c) return { none: true, has: false };
+    const interior = 2250 - 36;
+    const fixed = (c.zones || []).reduce((s, z) => s + (z.h || 0), 0), na = (c.zones || []).filter((z) => !z.h).length;
+    const ah = na ? Math.max(60, (interior - fixed - ((c.zones || []).length - 1) * 18) / na) : 0;
+    const zones = (c.zones || []).map((z, zi) => {
+      const sel = zi === P.selectedZone;
+      const auto = !z.h;
+      return {
+        sel, name: NAMES[z.type], height: fmt(z.h || ah), isAuto: auto, glyph: GLYPH[z.type],
+        border: sel ? 'var(--accent)' : 'var(--line)', bg: sel ? 'var(--surface)' : 'transparent',
+        select: call('onSelectZone', zi),
+        types: Object.keys(SHORT).map((k) => ({ label: SHORT[k], onClick: call('onZone', zi, { type: k }), bg: k === z.type ? 'var(--ink)' : 'var(--surface)', fg: k === z.type ? 'var(--bg)' : 'var(--ink2)', border: k === z.type ? 'var(--ink)' : 'var(--line2)' })),
+        toggleAuto: call('onZone', zi, { h: auto ? Math.round(ah / 10) * 10 : null }),
+        autoBg: auto ? 'var(--accent)' : 'var(--line2)', autoKnob: auto ? '14px' : '2px',
+        counted: !!COUNT_LABEL[z.type], countLabel: COUNT_LABEL[z.type], count: z.count,
+        inc: call('onZone', zi, { count: Math.min(12, z.count + 1) }), dec: call('onZone', zi, { count: Math.max(1, z.count - 1) }),
+        up: call('onMoveZone', zi, 1), down: call('onMoveZone', zi, -1), remove: call('onRemoveZone', zi),
+      };
+    }).reverse();
+    return {
+      none: false, has: true, isGap: !!c.gap, isUnit: !c.gap,
+      title: (c.gap ? 'Gap ' : 'Unit ') + c.label, wallName: P.wallName ?? 'Back wall', width: fmt(c.width),
+      interior: `${fmt(c.width - 36).replace(/ (mm|in)$/, '')} × ${fmt(interior).replace(/ (mm|in)$/, '')} × ${fmt(596)}`,
+      widthDown: call('onWidth', -50), widthUp: call('onWidth', 50), moveL: call('onMove', -1), moveR: call('onMove', 1), dup: call('onDuplicate'), remove: call('onRemove'),
+      addZone: call('onAddZone'), zones,
+      toggleRail: call('onRail'), railBg: c.rail ? 'var(--accent)' : 'var(--line2)', railKnob: c.rail ? '14px' : '2px',
+    };
+  }
+}
+</script>
+</body>
+</html>
