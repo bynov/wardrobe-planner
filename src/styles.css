@@ -1,8 +1,67 @@
 @import '../site/tokens.css';
+*, *::before, *::after { box-sizing: border-box; }
 :root { font-family: var(--font-ui); font-size: 14px; color: var(--ink); background: var(--bg); }
 body { margin: 0; }
-button { font: inherit; padding: 4px 10px; border: 1px solid #bbb; background: #fff; border-radius: 3px; cursor: pointer; }
+button, input, select { font: inherit; color: inherit; }
+/* Legacy bordered button, kept until Task 9 retires the old component CSS; every new control class
+   below sets its own border/background/padding, so it wins by specificity. */
+button { padding: 4px 10px; border: 1px solid var(--line2); background: var(--surface); border-radius: 3px; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- shared controls (src/ui/controls.tsx) ---- */
+.mono { font-family: var(--font-mono); }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink3); }
+.meta { font-size: 12px; color: var(--ink3); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.divider { width: 1px; height: 20px; background: var(--line); flex: none; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--line2); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { background: var(--accent); filter: brightness(1.06); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover { background: var(--surface2); }
+.btn.danger { color: var(--danger); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:hover { background: var(--surface); }
+.btn.primary:disabled:hover { background: var(--accent); filter: none; }
+.btn.ghost:disabled:hover { background: transparent; }
+
+.icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ink2); font-size: 16px; cursor: pointer; }
+.icon:hover { background: var(--surface2); }
+.icon:disabled { color: var(--line2); cursor: default; background: transparent; opacity: 1; }
+
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface2); }
+.seg button { height: 30px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: var(--ink2); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--ink); }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.seg-sm { padding: 2px; border-radius: 8px; }
+.seg-sm button { height: 24px; padding: 0 9px; border-radius: 6px; font-size: 12px; }
+.seg.mono button { font-family: var(--font-mono); }
+
+.stepper { display: inline-flex; align-items: center; height: 34px; border: 1px solid var(--line2); border-radius: 7px; overflow: hidden; background: var(--surface); }
+.stepper button { width: 34px; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--ink2); font-size: 16px; cursor: pointer; }
+.stepper button:hover { background: var(--surface2); }
+.stepper input { width: 64px; min-width: 0; height: 100%; padding: 0 4px; border: 0; background: transparent; text-align: center; font: 500 14px var(--font-mono); }
+.stepper input:focus-visible { outline-offset: -2px; }
+
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.switch-track { position: relative; flex: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line2); transition: background 0.15s; }
+.switch-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
+.switch input:checked + .switch-track { background: var(--accent); }
+.switch input:checked + .switch-track::after { transform: translateX(14px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.logo { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--ink); }
+.logo-u { width: 12px; height: 10px; border: 2.5px solid var(--accent); border-top: 0; border-radius: 0 0 6px 6px; }
+
+.menu { position: absolute; z-index: 5; min-width: 200px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+.menu .menu-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font-size: 13px; text-align: left; cursor: pointer; }
+.menu .menu-item:hover { background: var(--surface2); }
+.menu .menu-item.on { background: var(--accent-soft); }
+.menu .menu-item.danger { color: var(--danger); }
 
 /* ---- app shell ---- */
 /* A column flexbox, not a grid: the hint bar comes and goes between the top bar and the content,
@@ -38,7 +97,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .plus circle { fill: #2b6cb0; stroke: #fff; stroke-width: 2; vector-effect: non-scaling-stroke; cursor: pointer; }
 .plus text { fill: #fff; font-weight: 700; pointer-events: none; }
 .plus:hover circle { fill: #1e4e85; }
-.menu { position: absolute; z-index: 5; background: #fff; border: 1px solid #bbb; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 4px; min-width: 200px; }
 .menu button { display: flex; justify-content: space-between; width: 100%; border: 0; text-align: left; padding: 6px 8px; }
 .menu button:hover { background: #eef3fa; }
 .plan svg { width: 100%; height: auto; display: block; background: #fff; border-bottom: 1px solid #ddd; max-height: 42vh; object-fit: contain; }
