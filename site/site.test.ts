@@ -50,7 +50,7 @@ describe('site pages', () => {
         for (const q of faq.mainEntity) expect(summaries, q.name).toContain(q.name);
       });
       it('internal links resolve to files', () => {
-        const hrefs = [...html.matchAll(/href="(\/[^"#?]*)"/g)].map((m) => m[1]);
+        const hrefs = [...html.matchAll(/href="(\/[^"#?]*)(?:[?#][^"]*)?"/g)].map((m) => m[1]);
         for (const h of hrefs) {
           if (h === '/app/') continue; // built by Vite from app/index.html
           const file = h.endsWith('/') ? `${h.slice(1)}index.html` : h.slice(1);
@@ -58,10 +58,21 @@ describe('site pages', () => {
           expect(inPublic || existsSync(resolve(root, file)), h).toBe(true);
         }
       });
-      if (p.kind === 'landing')
+      it('loads site.js, has the no-flash theme script and exactly one h1', () => {
+        expect(html).toMatch(/<script[^>]+src="\/site\/site\.js"/);
+        expect(html).toContain("localStorage.getItem('wardrobe-planner:theme')");
+        expect((html.match(/<h1[ >]/g) ?? []).length).toBe(1);
+        expect(html).toContain('class="theme"');
+      });
+      if (p.kind === 'landing') {
         it('has hreflang en, ru, x-default', () => {
           for (const l of ['en', 'ru', 'x-default']) expect(html).toContain(`hreflang="${l}"`);
         });
+        it('has the section anchors and template links', () => {
+          for (const id of ['how', 'templates', 'guides', 'faq']) expect(html).toContain(`id="${id}"`);
+          for (const t of ['oneWall', 'lShape', 'uShape']) expect(html).toContain(`href="/app/?template=${t}"`);
+        });
+      }
     });
   }
   it('sitemap lists exactly the pages', () => {

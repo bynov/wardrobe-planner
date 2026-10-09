@@ -66,17 +66,21 @@
       }
     </script>
     <script data-goatcounter="https://walkinplanner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <script type="module" src="/site/site.js"></script>
   </head>
   <body>
     <header class="nav">
-      <a class="brand" href="/">Walk-in Planner</a>
-      <nav>
-        <a href="/">Home</a>
-        <a href="/ru/">RU</a>
-        <a class="cta" href="/app/">Open the planner</a>
-      </nav>
+      <div class="nav-in">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"><i></i></span><span>Walk-in Planner</span></a>
+        <nav class="nav-links" aria-label="Main"><a href="/#how">How it works</a><a href="/#guides">Guides</a><a href="/#faq">FAQ</a><a href="https://github.com/bynov/wardrobe-planner">GitHub</a></nav>
+        <div class="nav-end">
+          <a class="lang" href="/ru/" hreflang="ru" lang="ru">RU</a>
+          <button class="theme" type="button" title="Colour theme" data-auto="Auto" data-light="Light" data-dark="Dark"><span class="theme-dot" aria-hidden="true"></span><span class="theme-label">Auto</span></button>
+          <a class="btn ink" href="/app/">Open the planner</a>
+        </div>
+      </div>
     </header>
-    <main>
+    <main class="page">
       <article>
         <h1>Hanging rail height in a walk-in wardrobe</h1>
         <p>
@@ -237,6 +241,11 @@
         </ul>
       </section>
     </main>
-    <footer><a href="https://github.com/bynov/wardrobe-planner">Source on GitHub</a> · MIT</footer>
+    <footer class="site-foot">
+      <div class="foot-in">
+        <span>Walk-in Planner · MIT licence</span>
+        <div class="foot-links"><a href="https://github.com/bynov/wardrobe-planner">Source on GitHub</a><a href="/ru/" hreflang="ru" lang="ru">Русский</a></div>
+      </div>
+    </footer>
   </body>
 </html>
