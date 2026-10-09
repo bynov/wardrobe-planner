@@ -100,11 +100,9 @@ a.menu-item { text-decoration: none; }
 .content { flex: 1; position: relative; min-width: 0; min-height: 0; overflow: auto; background: var(--bg); }
 
 /* ---- shared form bits ---- */
-.inspector h3 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
 .field { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 6px; margin: 4px 0; }
 .field input, .field select { width: 100%; box-sizing: border-box; padding: 3px 6px; font: inherit; }
 .field input[type="checkbox"] { width: auto; justify-self: start; }
-.derived { font-size: 12px; color: #666; margin-top: 4px; }
 
 /* ---- design tab (Task 12) ---- */
 .elevation { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
@@ -125,9 +123,6 @@ a.menu-item { text-decoration: none; }
 .wallhit { fill: color-mix(in oklch, var(--accent) 5%, transparent); stroke: var(--line2); stroke-dasharray: 8 6; cursor: pointer; vector-effect: non-scaling-stroke; }
 .wallhit:hover { fill: color-mix(in oklch, var(--accent) 15%, transparent); }
 .wallhit.on { fill: color-mix(in oklch, var(--accent) 12%, transparent); stroke: var(--accent); stroke-dasharray: none; stroke-width: 3; }
-.inspector { padding: 0; }
-.inspector h4 { margin: 10px 0 4px; font-size: 13px; }
-.inspector .hint { color: #666; font-size: 13px; padding: 8px; }
 
 /* ---- 3D viewport ---- */
 .viewport { width: 100%; height: 100%; position: relative; }
@@ -155,36 +150,44 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .elevation .body svg { flex: 1; width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .plus text { user-select: none; }
 
-/* inspector */
-.inspector h3 .sub { text-transform: none; letter-spacing: 0; color: #777; font-weight: 400; }
-.inspector .row.btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 4px; }
-.inspector .row.btns button { flex: 1 1 auto; padding: 4px 6px; }
-.inspector button.wide { width: 100%; margin-top: 8px; }
-.zone-row {
-  /* minmax(0, 1fr): without the 0 minimum the <select> claims its longest option's width and the
-     RU wording pushes the move/remove buttons out of the inspector */
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center;
-  padding: 6px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer;
-}
-.zone-row.active { background: #e3edf8; border-color: #2b6cb0; }
-.zone-row select { width: 100%; min-width: 0; box-sizing: border-box; padding: 3px 4px; font: inherit; }
-.zone-btns { display: flex; gap: 2px; }
-.zone-btns button { padding: 2px 6px; line-height: 1.1; }
-.zone-fields { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-.zone-fields label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
-.zone-fields input:not([type="checkbox"]) { width: 62px; box-sizing: border-box; padding: 2px 4px; font: inherit; }
-.zone-fields label.chk { cursor: pointer; }
-/* a full-width checkbox row in the inspector (the gap's wall-mounted rail) */
-.inspector label.chk.wide { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 13px; cursor: pointer; }
-/* the direction option labels are long ("front to back (corner)"), so the control column takes
-   whatever the label leaves rather than the panel's fixed 110px */
-.inspector .gap-rail .field { grid-template-columns: auto minmax(120px, 1fr); }
-/* the rail line of a hanging zone: an inline select, so it must not take the full row like the
-   zone-type one above it */
-.zone-fields.rail select { width: auto; min-width: 0; padding: 2px 4px; font: inherit; font-size: 12px; }
-.zone-fields .rail-label { font-size: 12px; color: #555; }
-.zone-fields .rail-eff { font-size: 11px; color: #777; }
-.zone-eff { grid-column: 1 / -1; font-size: 11px; color: #777; }
+/* ---- inspector (src/ui/Inspector.tsx, ZoneCard.tsx) ---- */
+.insp { display: flex; flex-direction: column; gap: 18px; }
+.insp-title { display: flex; flex-direction: column; gap: 4px; }
+.title-row { display: flex; align-items: baseline; gap: 8px; }
+.insp .title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+.insp .sub { font-size: 13px; color: var(--ink3); }
+.field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.field-label { font-size: 13px; color: var(--ink2); }
+.stepper.disabled { opacity: 0.5; }
+.stepper button:disabled { cursor: default; background: transparent; }
+.actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.actions .btn { padding: 0 4px; }
+.zones { display: flex; flex-direction: column; gap: 8px; }
+.zones-head { display: flex; align-items: baseline; gap: 8px; }
+.link { margin-left: auto; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.zonecard { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.zonecard.on { border-color: var(--accent); }
+.zonehead { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; }
+.zonehead:hover { background: var(--surface2); }
+.zonename { font-size: 14px; font-weight: 500; }
+.zoneh { margin-left: auto; font-size: 12px; color: var(--ink2); }
+.badge { padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
+.zonebody { display: flex; flex-direction: column; gap: 12px; padding: 0 12px 12px; }
+.zonebody .seg { flex-wrap: wrap; align-self: stretch; }
+.zonebody .seg button { flex: 1 1 auto; padding: 0 8px; }
+.rail { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.zonefoot { display: flex; gap: 4px; padding-top: 8px; border-top: 1px solid var(--line); }
+.zonefoot .btn { flex: 1; padding: 0 6px; }
+.zonefoot .btn.danger { flex: 1.4; }
+.gapcard { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.gapcard .seg { flex-wrap: wrap; }
+.gapcard .seg button { flex: 1 1 auto; padding: 0 8px; }
+.gapcard p { margin: 0; line-height: 1.45; }
+.empty-sel { align-items: center; gap: 8px; padding: 28px 4px; text-align: center; }
+.empty-icon { width: 44px; height: 56px; border: 1.5px dashed var(--line2); border-radius: 6px; }
+.empty-title { font-size: 14px; font-weight: 600; }
+.empty-hint { max-width: 220px; font-size: 13px; line-height: 1.45; color: var(--ink2); text-wrap: pretty; }
 
 /* free-tail drop zone in the elevation + the "+" hint on a disabled plan band */
 .placeholder { cursor: pointer; }
@@ -218,9 +221,6 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
 .tabpane { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: auto; }
 .tabpane > .viewport { flex: 1; min-height: 0; }
 .tabpane > .stale { flex: none; }
-
-/* "the unit is selected, not a zone" hint under the inspector's unit title */
-.inspector .zonehint { font-size: 12px; color: #666; line-height: 1.35; margin: 0 0 6px; }
 
 /* ---- design mode ---- */
 .design-modes { display: flex; flex-direction: column; height: 100%; min-height: 0; }
@@ -312,10 +312,7 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
   /* 16px is the size below which iOS Safari zooms the page on focus. The panel, inspector and top
      bar controls set their own size at up to two classes of specificity, so a bare `input` selector
      would lose to every one of them: name them. */
-  .app input, .app select,
-  .app .zone-fields input:not([type="checkbox"]),
-  .app .zone-fields.rail select { font-size: 16px; }
-  .zone-fields input:not([type="checkbox"]) { width: 76px; }
+  .app input, .app select { font-size: 16px; }
   /* Orbiting must not scroll the page. OrbitControls writes touch-action inline on the canvas (and
      leaves 'auto' behind after a StrictMode remount), which no stylesheet rule can outrank without
      !important — but a touch is only allowed to pan when every element from the target up permits

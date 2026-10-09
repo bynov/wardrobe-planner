@@ -43,7 +43,7 @@ export function Segmented<T extends string>({ value, options, onChange, size = '
   );
 }
 
-export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLabel, stepLabels }: {
+export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLabel, stepLabels, disabled }: {
   value: number;
   onChange: (v: number) => void;
   step: number;
@@ -53,15 +53,16 @@ export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLab
   ariaLabel: string;
   /** Accessible names for the − and + buttons; both fall back to `ariaLabel`. */
   stepLabels?: { down: string; up: string };
+  disabled?: boolean;
 }) {
   const input = useNumberInput(value, onChange, units);
   return (
-    <div className="stepper mono">
-      <button type="button" aria-label={stepLabels?.down ?? ariaLabel} onClick={() => onChange(clampStep(value, -step, min, max))}>
+    <div className={cx('stepper', 'mono', disabled && 'disabled')}>
+      <button type="button" disabled={disabled} aria-label={stepLabels?.down ?? ariaLabel} onClick={() => onChange(clampStep(value, -step, min, max))}>
         {MINUS}
       </button>
-      <input type="text" inputMode="decimal" aria-label={ariaLabel} {...input} />
-      <button type="button" aria-label={stepLabels?.up ?? ariaLabel} onClick={() => onChange(clampStep(value, step, min, max))}>
+      <input type="text" inputMode="decimal" disabled={disabled} aria-label={ariaLabel} {...input} />
+      <button type="button" disabled={disabled} aria-label={stepLabels?.up ?? ariaLabel} onClick={() => onChange(clampStep(value, step, min, max))}>
         {PLUS}
       </button>
     </div>
