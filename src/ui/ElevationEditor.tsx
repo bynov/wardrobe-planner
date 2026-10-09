@@ -64,19 +64,6 @@ export function ElevationEditor() {
   const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
   const narrow = useMediaQuery(NARROW_QUERY);
 
-  // Escape clears the armed insert slot (and must not also clear the selection).
-  useEffect(() => {
-    if (!insertAt) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      e.preventDefault();
-      setInsertAt(null);
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [insertAt, setInsertAt]);
-
   const view = useMemo(() => {
     const d = wallElevation(project, wall, lang, units);
     return drawable(d, project) ? { p: project, d } : { p: lastValid, d: wallElevation(lastValid, wall, lang, units) };
