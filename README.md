@@ -43,12 +43,14 @@ Dark theme and phone layout:
 
 1. First run opens an example layout and a three-step hint bar (click a wall → press **+** →
    click a unit). Dismiss it once and it stays gone. **Projects ▾** in the top bar lists your
-   projects and creates a new one blank or from a template (One wall, L-shape, U-shape);
-   `/app/?template=uShape` opens straight into one.
+   projects; **+ New project** there opens **Room** mode, where you start blank or from a
+   template (One wall, L-shape, U-shape) and size the room and door. `/app/?template=uShape`
+   opens straight into one.
 2. **Design** mode: pick a wall in the wall tabs (or the mini-plan beside them), then click a **+**
    in the wall elevation to choose the insert position; the preset tray below the drawing adds a
    unit there (long hanging, double hanging, shelves, drawers + hanging, drawers + shelves, shoe
-   rack, open compartment, or an empty gap).
+   rack, open compartment, or an empty gap). The tray's *Wardrobe on this wall* switch turns the
+   selected wall on or off.
 3. Click a unit to edit its width and zones (bottom→top stack) in the inspector; click a zone
    *inside the already-selected unit* to drill down to that zone. A shelves zone is sized in
    **compartments**, not boards: *n* compartments are split by *n* − 1 shelves, so `1` is a
@@ -70,11 +72,12 @@ Dark theme and phone layout:
    **front to back (corner)** for a unit boxed into a corner, where a wall-parallel rail cannot
    be reached. The plan shows every rail as a dashed line, so the two read apart.
 7. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in **Room** mode
-   (on a phone: the projects sheet). The **mm | in** toggle beside the language toggle switches every displayed length,
-   including drawings, cut list and PDF; files stay in millimetres.
+   (on a phone: the projects sheet). The **mm | in** toggle (in the top bar on desktop, in the
+   **⋯** menu on a phone) switches every displayed length, including drawings, cut list and PDF;
+   files stay in millimetres. The language (EN · RU) is in the **⋯** menu.
 8. **3D** mode to orbit around the room; **Cut list** mode for the parts; **Export PDF** for the
    scheme (the 3D picture is rendered off-screen if you never opened 3D mode).
-9. **Share link** copies a URL with the whole project packed into the fragment — nothing is
+9. **Share link** (on a phone: in the **⋯** menu) copies a URL with the whole project packed into the fragment — nothing is
    stored on a server. **Export JSON** / **Import JSON** move a project between browsers; an
    imported file always opens as a new project, so whatever you had open stays as it was.
 
