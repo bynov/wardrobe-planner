@@ -8,7 +8,7 @@ import { layoutAll } from '../../geometry/layout';
 import { WALLS, localToWorld, wallFrame, wallLength } from '../../geometry/frames';
 import { rotY, v3, type Vec3 } from '../../geometry/vec';
 import type { Project, Room, Wall } from '../../model/types';
-import { cacheSnapshot, setSnapshotSource } from '../snapshot';
+import { cacheSnapshot, clearSnapshot, setSnapshotSource } from '../snapshot';
 import { PartMesh } from './PartMesh';
 import { RoomMesh } from './RoomMesh';
 import { useT } from '../useT';
@@ -19,20 +19,33 @@ import { LIGHT, sceneColors } from './colors';
 import { formatLen } from '../../units';
 import type { MessageKey } from '../../i18n';
 
-/** Keeps `snapshot.ts` supplied with the live canvas, and refreshes its cache as the model settles. */
-function SnapshotBridge({ version }: { version: unknown }) {
+/**
+ * Keeps `snapshot.ts` supplied with the live canvas, and refreshes its cache as the model settles.
+ *
+ * The PDF picture is always the light scene. So the live canvas is only handed over while it is
+ * drawn LIGHT; in the dark theme the bridge withdraws it and drops the cache, and `takeSnapshot`
+ * falls back to the off-screen render, which forces LIGHT. Otherwise a dark-theme user who opened
+ * 3D once would print a dark picture.
+ */
+function SnapshotBridge({ version, light }: { version: unknown; light: boolean }) {
   const gl = useThree((s) => s.gl);
   useEffect(() => {
+    if (!light) {
+      setSnapshotSource(null);
+      clearSnapshot();
+      return;
+    }
     setSnapshotSource(() => gl.domElement);
     return () => {
-      cacheSnapshot(); // last look at the canvas before the viewport goes away
+      cacheSnapshot(); // last look at the canvas before the viewport goes away (or turns dark)
       setSnapshotSource(null);
     };
-  }, [gl]);
+  }, [gl, light]);
   useEffect(() => {
+    if (!light) return;
     const id = setTimeout(cacheSnapshot, 500); // let the new geometry render first
     return () => clearTimeout(id);
-  }, [version, gl]);
+  }, [version, gl, light]);
   return null;
 }
 
@@ -172,7 +185,7 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
       <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ fov: 45 }} style={{ background: colors.background }}>
         <CameraFit room={room} preset={view.preset} nonce={view.nonce} />
         <FadeTracker room={room} onChange={onFadeChange} />
-        {!snapshotOnly && <SnapshotBridge version={parts} />}
+        {!snapshotOnly && <SnapshotBridge version={parts} light={colors === LIGHT} />}
         <ambientLight intensity={0.75} />
         <directionalLight position={[-2000, 4000, 3000]} intensity={1.1} />
         <directionalLight position={[3000, 2000, -2000]} intensity={0.4} />

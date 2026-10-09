@@ -176,12 +176,17 @@ function swapped<T>(items: T[], i: number, j: number): T[] {
   return next;
 }
 
-/** The slot if it still points at a place a column could go in `project`, otherwise null. */
-function slotFor(project: Project, slot: InsertSlot | null): InsertSlot | null {
+/**
+ * The slot if it still points at the same place in `project` as it did in `prev`, otherwise null.
+ * A slot is a gap between two particular columns, so it goes stale as soon as its segment gains or
+ * loses a column (even one before it), not only when its index runs past the end.
+ */
+function slotFor(project: Project, prev: Project, slot: InsertSlot | null): InsertSlot | null {
   if (!slot) return null;
   const plan = project.wardrobe.walls[slot.wall];
   const cols = plan.enabled ? plan.segments[slot.segment] : undefined;
-  return cols && slot.index <= cols.length ? slot : null;
+  const before = prev.wardrobe.walls[slot.wall].segments[slot.segment];
+  return cols && slot.index <= cols.length && cols.length === before.length ? slot : null;
 }
 
 export function createPlannerStore(
@@ -198,7 +203,7 @@ export function createPlannerStore(
     const commit = (s: PlannerState, project: Project, past: Project[], future: Project[]): Partial<PlannerState> => {
       const errors = validate(project);
       const selection = cleanSelection(project, s.ui.selection);
-      const insertAt = slotFor(project, s.ui.insertAt);
+      const insertAt = slotFor(project, s.project, s.ui.insertAt);
       return {
         project,
         errors,
@@ -384,7 +389,9 @@ export function createPlannerStore(
       applyTemplate: (key) => {
         const s = get();
         const next = key === 'empty' ? emptyProject() : makeTemplate(key, t(s.ui.lang, `template.${key}`));
-        if (s.past.length === 0 && (s.ui.firstRun || isPristineDefault(s.project))) s.setProject(() => next);
+        // Only a project nobody has touched is replaced in place. `firstRun` is not enough: a
+        // shared link opens with it set, and that design must never be overwritten silently.
+        if (s.past.length === 0 && (isPristineDefault(s.project) || isUntouchedStarter(s.project))) s.setProject(() => next);
         else s.createProject(next);
       },
 
@@ -495,6 +502,8 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
 /** Ids are random per build, so "still the stock project" is judged on everything but them. */
 const withoutIds = (p: Project) => JSON.stringify(p, (k, v) => (k === 'id' ? undefined : v));
 const isPristineDefault = (p: Project) => withoutIds(p) === withoutIds(defaultProject());
+/** The L-shape example a first run opens with, as it was made; the name depends on the language then. */
+const isUntouchedStarter = (p: Project) => withoutIds({ ...p, name: '' }) === withoutIds(makeTemplate('lShape', ''));
 
 /**
  * Picks the project to open: the legacy single-project key is adopted into the index first, then

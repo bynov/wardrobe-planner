@@ -808,6 +808,19 @@ describe('store: insert slot', () => {
     s.getState().removeColumn(backCols(s)[0].id);
     expect(s.getState().ui.insertAt).toBeNull();
   });
+  it('is dropped when a column before it is removed, so it never points between other units', () => {
+    const s = createPlannerStore();
+    s.getState().removeColumn(backCols(s)[3].id); // 3 columns left on the back wall
+    s.getState().setInsertAt({ ...slot, index: 2 });
+    s.getState().removeColumn(backCols(s)[0].id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is kept by an edit on another wall', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt({ ...slot, index: 2 });
+    s.getState().removeColumn(s.getState().project.wardrobe.walls.left.segments[0][0].id);
+    expect(s.getState().ui.insertAt).toEqual({ ...slot, index: 2 });
+  });
   it('survives edits that keep it valid', () => {
     const s = createPlannerStore();
     s.getState().setInsertAt(slot);
@@ -877,6 +890,24 @@ describe('store: applyTemplate', () => {
       expect(p.wardrobe.walls[w].segments).toEqual([[], []]);
     }
     expect(validate(emptyProject())).toEqual([]);
+  });
+
+  it('replaces the untouched first-run starter in place, whatever language named it', () => {
+    const s = createPlannerStore(makeTemplate('lShape', t('ru', 'template.lShape')), 'en', 'mm', 'p0', memStorage());
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+  });
+
+  it('never overwrites a shared-link project in place, even with firstRun set', () => {
+    const storage = memStorage();
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', storage);
+    const shared = { ...defaultProject(), room: { ...defaultProject().room, width: 3000 } };
+    const id = s.getState().createProject(shared);
+    s.getState().setUi({ firstRun: true }); // what applyStartupUrl does after opening a link
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe(id);
+    expect(loadProjectById(storage, id)?.room.width).toBe(3000);
   });
 
   it('a renamed default project is not pristine', () => {
