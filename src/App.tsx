@@ -21,6 +21,7 @@ function StaleBanner() {
 export function App() {
   const tab = useStore((s) => s.ui.tab);
   const lang = useStore((s) => s.ui.lang);
+  const { t } = useT();
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -29,6 +30,7 @@ export function App() {
       <TopBar />
       <HintBar />
       <main className="content">
+        {tab === 'setup' && <div className="pane">{t('ui.mode.setup')}</div>}
         {tab === 'design' && <DesignTab />}
         {tab === '3d' && (
           <div className="tabpane">

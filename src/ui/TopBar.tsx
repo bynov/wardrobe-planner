@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useStore, type Tab } from '../store/store';
 import { parseErrorText, parseProjectShape, serializeProject } from '../store/persist';
 import { encodeShare, shareUrl } from '../store/share';
@@ -8,10 +8,15 @@ import { clearSnapshot } from './snapshot';
 import { takeSnapshot } from './three/offscreenSnapshot';
 import { ProjectsMenu } from './ProjectsMenu';
 import { useT } from './useT';
-import { LANGS, type MessageKey } from '../i18n';
+import type { MessageKey } from '../i18n';
 import { UNITS } from '../units';
+import { IconButton, Segmented } from './controls';
+import { Logo } from './Logo';
+import { OverflowMenu } from './OverflowMenu';
+import { nextTheme } from './theme';
 
-const TABS: { key: Tab; labelKey: MessageKey }[] = [
+const MODES: { key: Tab; labelKey: MessageKey }[] = [
+  { key: 'setup', labelKey: 'ui.mode.setup' },
   { key: 'design', labelKey: 'ui.tab.design' },
   { key: '3d', labelKey: 'ui.tab.3d' },
   { key: 'cutlist', labelKey: 'ui.tab.cutlist' },
@@ -25,10 +30,9 @@ export function TopBar() {
   const canRedo = useStore((s) => s.future.length > 0);
   const errorCount = useStore((s) => s.errors.length);
   const { lang, units, t } = useT();
-  const { setName, setUi, createProject, toast, setLang, setUnits, undo, redo } = useStore.getState();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const theme = useStore((s) => s.ui.theme);
+  const { setUi, createProject, toast, setUnits, setTheme, undo, redo } = useStore.getState();
   const [busy, setBusy] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
   const safeName = (project.name || 'wardrobe').replace(/[^\w.-]+/g, '_');
 
   const onExportJson = () => {
@@ -82,70 +86,45 @@ export function TopBar() {
     }
   };
 
+  const fixTitle = errorCount > 0 ? t('ui.fixErrorsFirst') : undefined;
+
   return (
     <header className="topbar">
-      <input className="name" value={project.name} onChange={(e) => setName(e.target.value)} placeholder={t('ui.projectName')} />
-      <nav className="tabs">
-        {TABS.map((tb) => (
-          <button key={tb.key} className={tb.key === tab ? 'active' : ''} onClick={() => setUi({ tab: tb.key })}>
-            {t(tb.labelKey)}
-          </button>
-        ))}
-      </nav>
-      <nav className="tabs lang">
-        {LANGS.map((l) => (
-          <button key={l} className={l === lang ? 'active' : ''} onClick={() => setLang(l)}>{t(`ui.lang.${l}` as MessageKey)}</button>
-        ))}
-      </nav>
-      {/* display only: the project itself is always millimetres */}
-      <nav className="tabs units">
-        {UNITS.map((un) => (
-          <button key={un} className={un === units ? 'active' : ''} onClick={() => setUnits(un)}>{t(`ui.units.${un}` as MessageKey)}</button>
-        ))}
-      </nav>
+      <Logo />
+      <ProjectsMenu />
       <span className="spacer" />
-      {/* below 600px the secondary actions fold away behind this toggle; CSS shows/hides both */}
-      <button
-        className="more"
-        aria-expanded={actionsOpen}
-        aria-controls="topbar-actions"
-        title={t('ui.moreActions')}
-        aria-label={t('ui.moreActions')}
-        onClick={() => setActionsOpen((v) => !v)}
-      >
-        ⋯
+      <Segmented
+        size="md"
+        ariaLabel={t('ui.modes')}
+        value={tab}
+        options={MODES.map((m) => ({ value: m.key, label: t(m.labelKey) }))}
+        onChange={(k) => setUi({ tab: k })}
+      />
+      <span className="spacer" />
+      <IconButton label={t('ui.undo')} onClick={undo} disabled={!canUndo}>↶</IconButton>
+      <IconButton label={t('ui.redo')} onClick={redo} disabled={!canRedo}>↷</IconButton>
+      <span className="divider" />
+      {/* display only: the project itself is always millimetres */}
+      <Segmented
+        size="sm"
+        mono
+        ariaLabel={t('ui.units')}
+        value={units}
+        options={UNITS.map((un) => ({ value: un, label: t(`ui.units.${un}` as MessageKey) }))}
+        onChange={setUnits}
+      />
+      <button type="button" className="btn ghost theme" title={t('ui.themeToggle')} onClick={() => setTheme(nextTheme(theme))}>
+        <span className="theme-glyph" aria-hidden />
+        {t(`ui.theme.${theme}` as MessageKey)}
       </button>
-      <div id="topbar-actions" className={actionsOpen ? 'actions open' : 'actions'}>
-        <button onClick={undo} disabled={!canUndo}>{t('ui.undo')}</button>
-        <button onClick={redo} disabled={!canRedo}>{t('ui.redo')}</button>
-        <ProjectsMenu />
-        <button onClick={() => fileRef.current?.click()}>{t('ui.importJson')}</button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={(e) => {
-            void onImport(e.target.files?.[0]);
-            e.target.value = '';
-          }}
-        />
-        <button onClick={onExportJson}>{t('ui.exportJson')}</button>
-        <button
-          onClick={() => void onShare()}
-          disabled={errorCount > 0}
-          title={errorCount > 0 ? t('ui.fixErrorsFirst') : undefined}
-        >
-          {t('ui.share')}
-        </button>
-        <button
-          onClick={onExportPdf}
-          disabled={busy || errorCount > 0}
-          title={errorCount > 0 ? t('ui.fixErrorsFirst') : undefined}
-        >
-          {busy ? t('ui.exporting') : t('ui.exportPdf')}
-        </button>
-      </div>
+      <span className="divider" />
+      <button type="button" className="btn" onClick={() => void onShare()} disabled={errorCount > 0} title={fixTitle}>
+        {t('ui.share')}
+      </button>
+      <button type="button" className="btn primary" onClick={onExportPdf} disabled={busy || errorCount > 0} title={fixTitle}>
+        {busy ? t('ui.exporting') : t('ui.exportPdf')}
+      </button>
+      <OverflowMenu onImport={(f) => void onImport(f)} onExportJson={onExportJson} />
     </header>
   );
 }
