@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { bootstrap, createPlannerStore, findColumn, startAutosave } from './store';
-import { STORAGE_KEY, loadLang, loadUnits, saveToStorage } from './persist';
+import { STORAGE_KEY, THEME_KEY, loadLang, loadTheme, loadUnits, saveTheme, saveToStorage } from './persist';
 import { getCurrent, listProjects, loadProjectById, projectKey, saveProject, setCurrent } from './projects';
 import { defaultProject } from '../model/defaults';
 import { makeTemplate } from '../model/templates';
@@ -336,6 +336,42 @@ describe('store: ui and settings', () => {
       lang: 'en',
       units: 'mm',
     });
+  });
+});
+
+describe('store: theme and insert state', () => {
+  it('starts with auto theme, no insert slot and a closed sheet', () => {
+    const s = createPlannerStore();
+    expect(s.getState().ui.theme).toBe('auto');
+    expect(s.getState().ui.insertAt).toBeNull();
+    expect(s.getState().ui.sheetOpen).toBe(false);
+  });
+
+  it('setTheme and setInsertAt update ui', () => {
+    const s = createPlannerStore();
+    s.getState().setTheme('dark');
+    expect(s.getState().ui.theme).toBe('dark');
+    s.getState().setInsertAt({ wall: 'back', segment: 0, index: 2 });
+    expect(s.getState().ui.insertAt).toEqual({ wall: 'back', segment: 0, index: 2 });
+    s.getState().setInsertAt(null);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+
+  it('autosave writes the theme when it changes', () => {
+    const storage = memStorage();
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', storage);
+    const stop = startAutosave(s, storage, 100);
+    expect(loadTheme(storage)).toBeNull();
+    s.getState().setTheme('light');
+    expect(storage.mem.get(THEME_KEY)).toBe('light');
+    stop();
+  });
+
+  it('bootstrap picks up a stored theme', () => {
+    const storage = memStorage();
+    expect(bootstrap(storage).theme).toBe('auto');
+    saveTheme(storage, 'dark');
+    expect(bootstrap(storage).theme).toBe('dark');
   });
 });
 

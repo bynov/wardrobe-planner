@@ -3,7 +3,14 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { useStore } from './store/store';
 import { applyStartupUrl } from './store/startup';
+import { applyTheme } from './ui/theme';
 import './styles.css';
+
+// The inline script in <head> already forced light/dark before first paint; this keeps it in step.
+applyTheme(useStore.getState().ui.theme, document.documentElement);
+useStore.subscribe((s, prev) => {
+  if (s.ui.theme !== prev.ui.theme) applyTheme(s.ui.theme, document.documentElement);
+});
 
 const render = () =>
   ReactDOM.createRoot(document.getElementById('root')!).render(

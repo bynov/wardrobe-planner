@@ -7,7 +7,7 @@ import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
 import type { Column, Door, Gap, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
 import { validate } from '../model/validate';
-import { loadLang, loadUnits, saveLang, saveUnits, type StorageLike } from './persist';
+import { loadLang, loadTheme, loadUnits, saveLang, saveTheme, saveUnits, type StorageLike } from './persist';
 import {
   deleteProject as deleteStored,
   getCurrent,
@@ -20,8 +20,16 @@ import {
   type ProjectMeta,
 } from './projects';
 import { detectUnits, type Units } from '../units';
+import type { Theme } from '../ui/theme';
 
-export type Tab = 'design' | '3d' | 'cutlist';
+export type Tab = 'setup' | 'design' | '3d' | 'cutlist';
+
+/** Where the next preset goes: before column `index` of the given wall segment. */
+export interface InsertSlot {
+  wall: Wall;
+  segment: 0 | 1;
+  index: number;
+}
 
 export interface Selection {
   wall: Wall;
@@ -43,6 +51,11 @@ export interface UiState {
   projectId: string;
   /** Nothing was stored when the app started: the hint bar offers the first three steps. */
   firstRun: boolean;
+  theme: Theme;
+  /** Transient: the slot picked with a "+" marker; null means after the selected unit. */
+  insertAt: InsertSlot | null;
+  /** Transient: the mobile bottom sheet. */
+  sheetOpen: boolean;
 }
 
 export interface PlannerState {
@@ -88,6 +101,8 @@ export interface PlannerState {
   toast: (m: Msg | null) => void;
   setLang: (lang: Lang) => void;
   setUnits: (units: Units) => void;
+  setTheme: (theme: Theme) => void;
+  setInsertAt: (slot: InsertSlot | null) => void;
 }
 
 export const HISTORY_LIMIT = 100;
@@ -163,6 +178,7 @@ export function createPlannerStore(
   units: Units = 'mm',
   projectId = 'p0',
   storage: StorageLike | null = null,
+  theme: Theme = 'auto',
 ) {
   const initialErrors = validate(initial);
   return create<PlannerState>()((set, get) => {
@@ -217,7 +233,7 @@ export function createPlannerStore(
       past: [],
       future: [],
       projects: storage ? listProjects(storage) : [],
-      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false },
+      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false, theme, insertAt: null, sheetOpen: false },
 
       setProject: (updater) =>
         set((s) => {
@@ -401,6 +417,8 @@ export function createPlannerStore(
       toast: (m) => set((s) => ({ ui: { ...s.ui, toast: m } })),
       setLang: (l) => set((s) => ({ ui: { ...s.ui, lang: l } })),
       setUnits: (u) => set((s) => ({ ui: { ...s.ui, units: u } })),
+      setTheme: (theme) => set((s) => ({ ui: { ...s.ui, theme } })),
+      setInsertAt: (insertAt) => set((s) => ({ ui: { ...s.ui, insertAt } })),
     };
   });
 }
@@ -425,6 +443,7 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
   const unsub = store.subscribe((s, prev) => {
     if (s.ui.lang !== prev.ui.lang) saveLang(storage, s.ui.lang);
     if (s.ui.units !== prev.ui.units) saveUnits(storage, s.ui.units);
+    if (s.ui.theme !== prev.ui.theme) saveTheme(storage, s.ui.theme);
     if (s.ui.projectId !== prev.ui.projectId) {
       // Another project was opened. A pending debounce belongs to the one being left: firing it
       // later would write the incoming project under the outgoing id, and dropping it would lose
@@ -458,17 +477,18 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
 export function bootstrap(
   storage: StorageLike | null,
   lang: Lang = 'en',
-): { project: Project; projectId: string; firstRun: boolean } {
+): { project: Project; projectId: string; firstRun: boolean; theme: Theme } {
+  const theme = (storage && loadTheme(storage)) ?? 'auto';
   if (storage) {
     migrateLegacy(storage);
     const current = getCurrent(storage);
     const p = current ? loadProjectById(storage, current) : null;
-    if (current && p) return { project: p, projectId: current, firstRun: false };
+    if (current && p) return { project: p, projectId: current, firstRun: false, theme };
     // The index can name a project whose payload is gone; drop the row rather than list a phantom.
     if (current) deleteStored(storage, current);
     for (const m of listProjects(storage)) {
       const newest = loadProjectById(storage, m.id);
-      if (newest) return { project: newest, projectId: m.id, firstRun: false };
+      if (newest) return { project: newest, projectId: m.id, firstRun: false, theme };
     }
   }
   const project = makeTemplate('lShape', t(lang, 'template.lShape'));
@@ -477,7 +497,7 @@ export function bootstrap(
     saveProject(storage, projectId, project);
     setCurrent(storage, projectId);
   }
-  return { project, projectId, firstRun: true };
+  return { project, projectId, firstRun: true, theme };
 }
 
 const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
@@ -486,7 +506,7 @@ const initialLang: Lang = (browserStorage && loadLang(browserStorage)) ?? detect
 const initialUnits: Units = (browserStorage && loadUnits(browserStorage)) ?? detectUnits(navLang);
 
 const boot = bootstrap(browserStorage, initialLang);
-export const useStore = createPlannerStore(boot.project, initialLang, initialUnits, boot.projectId, browserStorage);
+export const useStore = createPlannerStore(boot.project, initialLang, initialUnits, boot.projectId, browserStorage, boot.theme);
 useStore.setState((s) => ({ ui: { ...s.ui, firstRun: boot.firstRun } }));
 if (browserStorage) {
   setCurrent(browserStorage, boot.projectId);

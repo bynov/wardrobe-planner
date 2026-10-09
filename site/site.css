@@ -1,3 +1,4 @@
+@import './tokens.css';
 :root {
   --accent: #2b6cb0;
   --text: #1a202c;

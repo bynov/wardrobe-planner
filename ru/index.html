@@ -2,6 +2,7 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('wardrobe-planner:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Планировщик гардеробной онлайн – Walk-in Planner</title>
     <meta name="description" content="Гардеробная своими руками: 3D-просмотр, план с размерами, развёртки стен, раскрой и PDF. Бесплатно, без регистрации, в мм или дюймах." />
@@ -9,13 +10,17 @@
     <link rel="alternate" hreflang="en" href="https://walkinplanner.com/" />
     <link rel="alternate" hreflang="ru" href="https://walkinplanner.com/ru/" />
     <link rel="alternate" hreflang="x-default" href="https://walkinplanner.com/" />
-    <meta name="theme-color" content="#2b6cb0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fefefd" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2927" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Walk-in Planner – планировщик гардеробной онлайн" />
     <meta property="og:description" content="3D-просмотр, план и развёртки стен, раскрой и PDF. Бесплатно, прямо в браузере." />
     <meta property="og:url" content="https://walkinplanner.com/ru/" />
     <meta property="og:image" content="https://walkinplanner.com/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/site/site.css" />
     <script type="application/ld+json">

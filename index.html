@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('wardrobe-planner:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Walk-in Planner – Free Walk-in Wardrobe & Closet Planner</title>
     <meta name="description" content="Plan a walk-in wardrobe in your browser: 3D preview, dimensioned plan and elevations, cut list and PDF. Free, no account, works in mm or inches." />
@@ -9,13 +10,17 @@
     <link rel="alternate" hreflang="en" href="https://walkinplanner.com/" />
     <link rel="alternate" hreflang="ru" href="https://walkinplanner.com/ru/" />
     <link rel="alternate" hreflang="x-default" href="https://walkinplanner.com/" />
-    <meta name="theme-color" content="#2b6cb0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fefefd" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2927" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Walk-in Planner – free walk-in wardrobe planner" />
     <meta property="og:description" content="3D preview, plan and elevations, cut list and PDF. Free, in the browser." />
     <meta property="og:url" content="https://walkinplanner.com/" />
     <meta property="og:image" content="https://walkinplanner.com/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/site/site.css" />
     <script type="application/ld+json">
