@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { bootstrap, createPlannerStore, findColumn, startAutosave } from './store';
 import { STORAGE_KEY, THEME_KEY, loadLang, loadTheme, loadUnits, saveTheme, saveToStorage } from './persist';
 import { getCurrent, listProjects, loadProjectById, projectKey, saveProject, setCurrent } from './projects';
-import { defaultProject } from '../model/defaults';
+import { defaultProject, emptyProject } from '../model/defaults';
+import { validate } from '../model/validate';
+import { WALLS } from '../geometry/frames';
 import { makeTemplate } from '../model/templates';
 import { t } from '../i18n';
 import { makeGap, makeZone } from '../model/factory';
@@ -843,12 +845,33 @@ describe('store: applyTemplate', () => {
     expect(s.getState().project.name).toBe(t('en', 'template.uShape'));
   });
 
-  it("'empty' applies the default project", () => {
+  it("'empty' applies a project with every wall off and no columns", () => {
     const s = fresh(true);
     s.getState().applyTemplate('oneWall');
     s.getState().setRoom({ width: 1 });
     s.getState().applyTemplate('empty');
-    expect(s.getState().project.name).toBe(defaultProject().name);
-    expect(s.getState().project.room.width).toBe(2400);
+    const p = s.getState().project;
+    expect(p.room.width).toBe(2400);
+    for (const w of WALLS) {
+      expect(p.wardrobe.walls[w].enabled).toBe(false);
+      expect(p.wardrobe.walls[w].segments).toEqual([[], []]);
+    }
+    expect(validate(emptyProject())).toEqual([]);
+  });
+
+  it('a renamed default project is not pristine', () => {
+    const s = createPlannerStore({ ...defaultProject(), name: 'Mine' }, 'en', 'mm', 'p0', memStorage());
+    expect(s.getState().past).toHaveLength(0);
+    const before = s.getState().projects.length;
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
+    expect(s.getState().projects.length).toBe(before + 1);
+  });
+
+  it('creates a new project whenever there is undo history', () => {
+    const s = fresh(true);
+    s.getState().setName('x');
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
   });
 });

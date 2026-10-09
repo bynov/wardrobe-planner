@@ -34,12 +34,12 @@ export function RoomMode() {
         </p>
         <input {...importJson.inputProps} />
       </aside>
-      <main className="room-center canvas">
+      <section className="room-center canvas">
         <div className="room-plan">
           <PlanEditor size="big" />
         </div>
         <div className="meta room-caption">{t('ui.planCaption')}</div>
-      </main>
+      </section>
       <aside className="room-right">
         <div className="room-scroll">
           <RoomForm />

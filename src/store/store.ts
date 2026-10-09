@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { WALLS, minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
 import { detectLang, msg, t, type Lang, type Msg } from '../i18n';
-import { defaultProject } from '../model/defaults';
+import { defaultProject, emptyProject } from '../model/defaults';
 import { makeTemplate, type TemplateKey } from '../model/templates';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
@@ -381,7 +381,7 @@ export function createPlannerStore(
 
       applyTemplate: (key) => {
         const s = get();
-        const next = key === 'empty' ? defaultProject() : makeTemplate(key, t(s.ui.lang, `template.${key}`));
+        const next = key === 'empty' ? emptyProject() : makeTemplate(key, t(s.ui.lang, `template.${key}`));
         if (s.past.length === 0 && (s.ui.firstRun || isPristineDefault(s.project))) s.setProject(() => next);
         else s.createProject(next);
       },
@@ -490,16 +490,16 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
   };
 }
 
+/** Ids are random per build, so "still the stock project" is judged on everything but them. */
+const withoutIds = (p: Project) => JSON.stringify(p, (k, v) => (k === 'id' ? undefined : v));
+const isPristineDefault = (p: Project) => withoutIds(p) === withoutIds(defaultProject());
+
 /**
  * Picks the project to open: the legacy single-project key is adopted into the index first, then
  * the project last open, then the most recently saved one. Nothing stored at all is a first run,
  * which opens the L-shape example — stored and made current straight away, so a reload finds the
  * very same project rather than starting over with a second copy.
  */
-/** Ids are random per build, so "still the stock project" is judged on everything but them. */
-const withoutIds = (p: Project) => JSON.stringify(p, (k, v) => (k === 'id' ? undefined : v));
-const isPristineDefault = (p: Project) => withoutIds(p) === withoutIds(defaultProject());
-
 export function bootstrap(
   storage: StorageLike | null,
   lang: Lang = 'en',
