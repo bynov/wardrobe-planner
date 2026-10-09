@@ -84,7 +84,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .menu-sep { height: 1px; margin: 6px 0; background: var(--line); }
 .menu-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; }
 a.menu-item { text-decoration: none; }
-.scrim { position: fixed; inset: 0; z-index: 20; background: color-mix(in oklch, var(--ink) 40%, transparent); }
+.scrim { position: fixed; inset: 0; z-index: 20; background: var(--scrim); }
 .modal { position: fixed; z-index: 21; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .modal-head h2 { margin: 0; font-size: 16px; }

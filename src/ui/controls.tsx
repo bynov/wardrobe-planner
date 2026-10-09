@@ -6,6 +6,8 @@ import { useNumberInput } from './fields';
 /** Glyphs for the stepper buttons (U+2212 minus, not a hyphen). */
 const MINUS = '−';
 const PLUS = '+';
+/** Menu panel width on desktop, px, when the caller names none. */
+const MENU_DEFAULT_WIDTH = 220;
 
 /** `value + delta` kept inside `[min, max]`; a `max` below `min` yields `min`. */
 export function clampStep(value: number, delta: number, min: number, max: number): number {
@@ -92,8 +94,8 @@ export function IconButton({ label, onClick, disabled, children }: {
  * it first and the click reopening it. Outside mousedown and Escape call `onClose`; the Escape is
  * swallowed in the capture phase so `useKeyboard` (on window) does not also clear the selection.
  */
-export function Menu({ open, onClose, trigger, anchor = 'left', width, children }: {
-  open: boolean; onClose: () => void; trigger: ReactNode; anchor?: 'left' | 'right'; width: number; children: ReactNode;
+export function Menu({ open, onClose, trigger, anchor = 'left', width = MENU_DEFAULT_WIDTH, children }: {
+  open: boolean; onClose: () => void; trigger: ReactNode; anchor?: 'left' | 'right'; width?: number; children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
