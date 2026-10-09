@@ -4,7 +4,7 @@
  *
  * Serves `dist/` and drives the system Chrome over the DevTools Protocol (Node's built-in
  * WebSocket + fetch — no Playwright, no extra dependency, no browser download). Writes
- * `public/screenshots/{design,3d,cutlist,mobile}.png` and `public/og.png`.
+ * `public/screenshots/{design,3d,cutlist,mobile}{,-dark}.png` (light and dark theme) and `public/og.png`.
  *
  *     pnpm build && pnpm screenshots
  *
@@ -37,15 +37,19 @@ const MIME = {
 const OG_TITLE = 'Walk-in Planner';
 const OG_SUB = 'free walk-in wardrobe planner';
 
-/** The og image: design.png cropped (cover, top-aligned) under a dark title band. */
+/**
+ * The og image: design.png cropped (cover, top-aligned) under a title band. The band is coloured
+ * from the dark theme tokens in site/tokens.css; this template is standalone HTML, so the sRGB
+ * approximations are inlined: surface #2a2927, ink #f2f1ee, accent #e2a86a.
+ */
 const ogHtml = `<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;padding:0;width:1200px;height:630px;overflow:hidden;background:#0f172a}
+  html,body{margin:0;padding:0;width:1200px;height:630px;overflow:hidden;background:#2a2927}
   .wrap{position:relative;width:1200px;height:630px}
   img{width:1200px;height:630px;object-fit:cover;object-position:top center;display:block}
   .band{position:absolute;left:0;right:0;bottom:0;padding:52px 44px 34px;
-    background:linear-gradient(to top,#0f172a 0,#0f172a 62%,rgba(15,23,42,0) 100%);
-    font:400 28px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#cbd5e1}
-  .band b{display:block;font-weight:700;font-size:52px;line-height:1.1;color:#fff;letter-spacing:-.5px}
+    background:linear-gradient(to top,#2a2927 0,#2a2927 62%,rgba(42,41,39,0) 100%);
+    font:400 28px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#e2a86a}
+  .band b{display:block;font-weight:700;font-size:52px;line-height:1.1;color:#f2f1ee;letter-spacing:-.5px}
 </style></head><body><div class="wrap">
   <img src="./design.png" alt="">
   <div class="band"><b>${OG_TITLE}</b>${OG_SUB}</div>
@@ -272,70 +276,78 @@ async function main() {
 
     /**
      * Every shot starts from a clean slate so `?template=` decides what is on screen. Units are
-     * pinned to mm: the browser's locale would otherwise pick inches here, and a picture full of
-     * sixteenths reads far worse than round millimetres on both landings.
+     * pinned to mm (the browser's locale would otherwise pick inches), the theme is forced, and the
+     * first-run hint bar is dismissed up front so it never appears in a picture.
      */
-    const freshApp = async (query) => {
+    const freshApp = async (theme, query) => {
       await goto(`${origin}/`);
       await cdp.eval(`(() => {
         localStorage.clear();
         sessionStorage.clear();
         localStorage.setItem('wardrobe-planner:units', 'mm');
         localStorage.setItem('wardrobe-planner:lang', 'en');
+        localStorage.setItem('wardrobe-planner:theme', ${JSON.stringify(theme)});
+        localStorage.setItem('wardrobe-planner:hint-dismissed', '1');
         return true;
       })()`);
       await goto(`${origin}/app/${query}`);
-      await cdp.eval(waitFor("document.querySelector('.design svg')", 'the design drawing'));
-      await cdp.eval(`(() => {
-        const b = document.querySelector('.hintbar button');
-        if (b) b.click();
-        return true;
-      })()`);
+      await cdp.eval(waitFor("document.querySelector('.elevation svg rect.hit') || document.querySelector('.mshell')", 'the design drawing'));
+      await cdp.eval(`document.fonts.ready.then(() => true)`);
       await sleep(300);
     };
 
-    const clickTab = async (i) => {
+    /** Desktop top-bar mode switch: Room, Design, 3D, Cut list. */
+    const clickMode = async (i) => {
       await cdp.eval(`(() => {
-        const nav = document.querySelector('.topbar nav.tabs:not(.lang):not(.units)');
-        if (!nav) throw new Error('tab bar not found');
-        nav.children[${i}].click();
+        const btns = document.querySelectorAll('.topbar [role=radiogroup]')[0]?.querySelectorAll('[role=radio]');
+        if (!btns || !btns[${i}]) throw new Error('mode switcher not found');
+        btns[${i}].click();
         return true;
       })()`);
     };
 
-    // --- desktop: design, 3d, cut list
-    await metrics(1440, 900, false);
-    await freshApp('?template=uShape');
-    // Select a unit so the inspector shows the zone editor rather than the empty-state hint.
-    await cdp.eval(`(() => {
-      const hits = document.querySelectorAll('.elevation svg rect.hit');
-      if (!hits.length) throw new Error('no unit to select');
-      hits[Math.min(3, hits.length - 1)].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      return true;
-    })()`);
-    await sleep(300);
-    await shot(join(shotDir, 'design.png'));
+    const selectUnit = () =>
+      cdp.eval(`(() => {
+        const hits = [...document.querySelectorAll('.elevation svg rect.hit:not(.zonehit)')];
+        if (!hits.length) return false;
+        hits[Math.min(3, hits.length - 1)].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        return true;
+      })()`);
 
-    await clickTab(1);
-    await cdp.eval(waitFor("document.querySelector('.viewport canvas')", 'the 3D canvas'));
-    // The dimension callouts crowd each other from this camera; the clean render reads better.
-    await cdp.eval(`(() => {
-      const dims = document.querySelector('.viewport .controls input[type=checkbox]');
-      if (dims && dims.checked) dims.click();
-      return true;
-    })()`);
-    await sleep(1500); // let the scene draw and the controls settle
-    await shot(join(shotDir, '3d.png'));
+    for (const theme of ['light', 'dark']) {
+      const sfx = theme === 'dark' ? '-dark' : '';
 
-    await clickTab(2);
-    await cdp.eval(waitFor("document.querySelector('table.cutlist tbody tr')", 'the cut list'));
-    await sleep(300);
-    await shot(join(shotDir, 'cutlist.png'));
+      // --- desktop: design, 3d, cut list
+      await metrics(1440, 900, false);
+      await freshApp(theme, '?template=uShape');
+      // Select a unit so the inspector shows the zone editor rather than the empty-state hint.
+      if (!(await selectUnit())) throw new Error('no unit to select');
+      await sleep(300);
+      await shot(join(shotDir, `design${sfx}.png`));
 
-    // --- phone: design
-    await metrics(390, 844, true);
-    await freshApp('?template=uShape');
-    await shot(join(shotDir, 'mobile.png'));
+      await clickMode(2);
+      await cdp.eval(waitFor("document.querySelector('.viewport canvas')", 'the 3D canvas'));
+      // The dimension callouts crowd each other from this camera; the clean render reads better.
+      await cdp.eval(`(() => {
+        const dims = document.querySelector('.viewport .float-toggles input[type=checkbox]');
+        if (dims && dims.checked) dims.click();
+        return true;
+      })()`);
+      await sleep(2000); // let the scene draw and the controls settle
+      await shot(join(shotDir, `3d${sfx}.png`));
+
+      await clickMode(3);
+      await cdp.eval(waitFor("document.querySelector('.cutlist-page table tbody tr')", 'the cut list'));
+      await sleep(300);
+      await shot(join(shotDir, `cutlist${sfx}.png`));
+
+      // --- phone: design with a unit selected and the bottom sheet collapsed
+      await metrics(390, 844, true);
+      await freshApp(theme, '?template=uShape');
+      await selectUnit(); // best effort: falls back to the initial state
+      await sleep(400);
+      await shot(join(shotDir, `mobile${sfx}.png`));
+    }
 
     // --- og image
     await metrics(1200, 630, false);
