@@ -57,7 +57,7 @@ function RailFields({ unit, zone, zl }: { unit: Unit; zone: Zone; zl: ZoneLayout
             <Stepper
               step={RAIL_STEP}
               min={0}
-              max={LENGTH_MAX}
+              max={Math.max(LENGTH_MAX, rod.offset)}
               units={units}
               value={rod.offset}
               ariaLabel={t('ui.rail')}
@@ -108,7 +108,7 @@ export function ZoneCard({ unit, zone, zl, count, active }: { unit: Unit; zone: 
             ariaLabel={t('ui.zoneType')}
             value={zone.type}
             options={ZONE_TYPES.map((z) => ({ value: z, label: t(`zone.${z}`) }))}
-            onChange={(type) => updateZone(unit.id, zone.id, nextZonePatch(zone, type))}
+            onChange={(type) => updateZone(unit.id, zone.id, nextZonePatch(type))}
           />
           <div className="field-row">
             <Switch
@@ -119,7 +119,7 @@ export function ZoneCard({ unit, zone, zl, count, active }: { unit: Unit; zone: 
             <Stepper
               step={ZONE_HEIGHT_STEP}
               min={1}
-              max={LENGTH_MAX}
+              max={Math.max(LENGTH_MAX, zone.height ?? effective)}
               units={units}
               disabled={auto}
               value={zone.height ?? effective}
@@ -136,7 +136,7 @@ export function ZoneCard({ unit, zone, zl, count, active }: { unit: Unit; zone: 
               <Stepper
                 step={1}
                 min={1}
-                max={COUNT_MAX}
+                max={Math.max(COUNT_MAX, zone.count)}
                 value={zone.count}
                 ariaLabel={t(countKey(zone.type))}
                 stepLabels={stepLabels(t(countKey(zone.type)))}

@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ZONE_TYPES, type Zone } from '../model/types';
+import { ZONE_TYPES } from '../model/types';
 import { DEFAULT_COUNT, nextZonePatch, widthRange } from './zonePatch';
-
-const zone = (over: Partial<Zone> = {}): Zone => ({ id: 'z', type: 'shelves', height: null, count: 7, ...over }) as Zone;
 
 describe('nextZonePatch', () => {
   it('resets the count to the new type default', () => {
-    expect(nextZonePatch(zone(), 'drawers')).toEqual({ type: 'drawers', count: 3 });
-    expect(nextZonePatch(zone({ count: 9 }), 'shoes')).toEqual({ type: 'shoes', count: 5 });
+    expect(nextZonePatch('drawers')).toEqual({ type: 'drawers', count: 3 });
+    expect(nextZonePatch('shoes')).toEqual({ type: 'shoes', count: 5 });
   });
   it('has a default for every zone type', () => {
     for (const t of ZONE_TYPES) expect(DEFAULT_COUNT[t]).toBeGreaterThanOrEqual(1);

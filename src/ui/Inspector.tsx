@@ -48,7 +48,7 @@ function GapRailFields({ gap }: { gap: Gap }) {
             <Stepper
               step={RAIL_STEP}
               min={0}
-              max={LENGTH_MAX}
+              max={Math.max(LENGTH_MAX, rail.height)}
               units={units}
               value={rail.height}
               ariaLabel={t('ui.gapRailHeight', { u })}

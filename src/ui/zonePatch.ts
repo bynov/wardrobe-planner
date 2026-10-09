@@ -4,7 +4,7 @@ import type { Column, Zone, ZoneType } from '../model/types';
 export const DEFAULT_COUNT: Record<ZoneType, number> = { open: 1, shelves: 4, drawers: 3, hanging: 1, shoes: 5 };
 
 /** Switching a zone's type also resets its count, since the old number means something else now. */
-export function nextZonePatch(_zone: Zone, type: ZoneType): Partial<Zone> {
+export function nextZonePatch(type: ZoneType): Partial<Zone> {
   return { type, count: DEFAULT_COUNT[type] };
 }
 
