@@ -808,3 +808,47 @@ describe('store: insert slot', () => {
     expect(s.getState().ui.insertAt).toBeNull();
   });
 });
+
+describe('store: applyTemplate', () => {
+  const fresh = (firstRun: boolean) => {
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', memStorage());
+    s.getState().setUi({ firstRun });
+    return s;
+  };
+
+  it('replaces an untouched first-run project in place, undoably', () => {
+    const s = fresh(true);
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+    expect(s.getState().project.name).toBe(t('en', 'template.uShape'));
+    s.getState().undo();
+    expect(s.getState().project.name).toBe(defaultProject().name);
+  });
+
+  it('replaces a pristine default project in place even when not first run', () => {
+    const s = fresh(false);
+    s.getState().applyTemplate('lShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+  });
+
+  it('creates a new project once the current one was edited', () => {
+    const s = fresh(true);
+    s.getState().setRoom({ width: 1 });
+    const before = s.getState().projects.length;
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
+    expect(s.getState().projects.length).toBe(before + 1);
+    expect(s.getState().project.name).toBe(t('en', 'template.uShape'));
+  });
+
+  it("'empty' applies the default project", () => {
+    const s = fresh(true);
+    s.getState().applyTemplate('oneWall');
+    s.getState().setRoom({ width: 1 });
+    s.getState().applyTemplate('empty');
+    expect(s.getState().project.name).toBe(defaultProject().name);
+    expect(s.getState().project.room.width).toBe(2400);
+  });
+});

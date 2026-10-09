@@ -279,6 +279,23 @@ export const en = {
   'shortcut.duplicate': 'Duplicate selected unit',
   'shortcut.deselect': 'Clear selection',
   'shortcut.delete': 'Remove selected unit or zone',
+  'ui.newWalkIn': 'New walk-in',
+  'ui.newWalkInSub': 'Start from a layout or an empty room, then set the room size.',
+  'ui.emptyRoom': 'Empty room',
+  'ui.emptyRoomDesc': 'Just the walls. Add units yourself.',
+  'template.desc.uShape': 'Three walls, door in the fourth.',
+  'template.desc.lShape': 'Back and one side wall.',
+  'template.desc.oneWall': 'A single run along the back wall.',
+  'ui.haveFile': 'Have a file? Import JSON',
+  'ui.planCaption': 'Plan view · updates as you type',
+  'ui.startDesigning': 'Start designing →',
+  'ui.privacyLine': 'Saved in this browser. Nothing is uploaded.',
+  'ui.carcassDefaults': 'Carcass defaults',
+  'ui.carcassSummary': 'Ceiling gap {gap} · plinth {plinth} · panel {panel}',
+  'ui.edit': 'Edit',
+  'ui.confirmTemplate': 'Replace the current design with this template? Your project will be kept as a separate project.',
+  'ui.doorOpens': 'Opens',
+  'ui.hingeFromInside': 'Hinge, from inside',
 } as const;
 
 export type MessageKey = keyof typeof en;

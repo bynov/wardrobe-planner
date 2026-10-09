@@ -3,6 +3,7 @@ import { useStore } from './store/store';
 import { TopBar } from './ui/TopBar';
 import { HintBar } from './ui/HintBar';
 import { Toast } from './ui/Toast';
+import { RoomMode } from './ui/RoomMode';
 import { DesignTab } from './ui/DesignTab';
 import { CutListTable } from './ui/CutListTable';
 import { Viewport3D } from './ui/three/Viewport3D';
@@ -21,7 +22,6 @@ function StaleBanner() {
 export function App() {
   const tab = useStore((s) => s.ui.tab);
   const lang = useStore((s) => s.ui.lang);
-  const { t } = useT();
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -30,7 +30,7 @@ export function App() {
       <TopBar />
       {tab === 'design' && <HintBar />}
       <main className="content">
-        {tab === 'setup' && <div className="pane">{t('ui.mode.setup')}</div>}
+        {tab === 'setup' && <RoomMode />}
         {tab === 'design' && <DesignTab />}
         {tab === '3d' && (
           <div className="tabpane">

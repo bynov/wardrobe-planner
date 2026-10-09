@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useStore, type Tab } from '../store/store';
-import { parseErrorText, parseProjectShape, serializeProject } from '../store/persist';
+import { serializeProject } from '../store/persist';
 import { encodeShare, shareUrl } from '../store/share';
 import { exportPdfBlob } from '../pdf/exportPdf';
 import { downloadBlob } from './download';
-import { clearSnapshot } from './snapshot';
 import { takeSnapshot } from './three/offscreenSnapshot';
 import { ProjectsMenu } from './ProjectsMenu';
 import { useT } from './useT';
@@ -31,27 +30,12 @@ export function TopBar() {
   const errorCount = useStore((s) => s.errors.length);
   const { lang, units, t } = useT();
   const theme = useStore((s) => s.ui.theme);
-  const { setUi, createProject, toast, setUnits, setTheme, undo, redo } = useStore.getState();
+  const { setUi, toast, setUnits, setTheme, undo, redo } = useStore.getState();
   const [busy, setBusy] = useState(false);
   const safeName = (project.name || 'wardrobe').replace(/[^\w.-]+/g, '_');
 
   const onExportJson = () => {
     downloadBlob(new Blob([serializeProject(project)], { type: 'application/json' }), `${safeName}.json`);
-  };
-  const onImport = async (file: File | undefined) => {
-    if (!file) return;
-    // A shape-valid file is always loaded, even when it fails validation: the design tab lists the
-    // errors and the user fixes them there — rejecting the file outright left them nothing to edit.
-    // It lands as a new project: overwriting the open one would let autosave bury it.
-    const r = parseProjectShape(await file.text());
-    if (!r.ok) {
-      toast({ key: 'toast.importFailed', params: { error: parseErrorText(lang, r) } });
-      return;
-    }
-    clearSnapshot();
-    createProject(r.project);
-    const n = useStore.getState().errors.length;
-    toast(n ? { key: 'toast.importedWithErrors', params: { n } } : { key: 'toast.imported' });
   };
   const onShare = async () => {
     let url: string;
@@ -124,7 +108,7 @@ export function TopBar() {
       <button type="button" className="btn primary" onClick={onExportPdf} disabled={busy || errorCount > 0} title={fixTitle}>
         {busy ? t('ui.exporting') : t('ui.exportPdf')}
       </button>
-      <OverflowMenu onImport={(f) => void onImport(f)} onExportJson={onExportJson} />
+      <OverflowMenu onExportJson={onExportJson} />
     </header>
   );
 }

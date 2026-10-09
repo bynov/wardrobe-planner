@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { WALLS, minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
 import { detectLang, msg, t, type Lang, type Msg } from '../i18n';
 import { defaultProject } from '../model/defaults';
-import { makeTemplate } from '../model/templates';
+import { makeTemplate, type TemplateKey } from '../model/templates';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
 import type { Column, Door, Gap, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
@@ -92,6 +92,8 @@ export interface PlannerState {
 
   select: (patch: Partial<Selection>) => void;
   newProject: () => void;
+  /** Room mode's template picker: replaces an untouched project in place (undoable), else opens a new one. */
+  applyTemplate: (key: TemplateKey | 'empty') => void;
   /** Saves `p` under a fresh id (so it is listed at once) and, unless told otherwise, opens it. */
   createProject: (p: Project, opts?: { select?: boolean }) => string;
   switchProject: (id: string) => void;
@@ -377,6 +379,13 @@ export function createPlannerStore(
         get().createProject(defaultProject());
       },
 
+      applyTemplate: (key) => {
+        const s = get();
+        const next = key === 'empty' ? defaultProject() : makeTemplate(key, t(s.ui.lang, `template.${key}`));
+        if (s.past.length === 0 && (s.ui.firstRun || isPristineDefault(s.project))) s.setProject(() => next);
+        else s.createProject(next);
+      },
+
       createProject: (p, opts) => {
         const id = newProjectId();
         // Saved right away, so the new project is listed even before autosave first fires.
@@ -487,6 +496,10 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
  * which opens the L-shape example — stored and made current straight away, so a reload finds the
  * very same project rather than starting over with a second copy.
  */
+/** Ids are random per build, so "still the stock project" is judged on everything but them. */
+const withoutIds = (p: Project) => JSON.stringify(p, (k, v) => (k === 'id' ? undefined : v));
+const isPristineDefault = (p: Project) => withoutIds(p) === withoutIds(defaultProject());
+
 export function bootstrap(
   storage: StorageLike | null,
   lang: Lang = 'en',

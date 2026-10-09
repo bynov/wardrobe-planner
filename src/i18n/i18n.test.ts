@@ -38,6 +38,7 @@ describe('i18n', () => {
     ['wall.abbr.', WALLS],
     ['preset.', PRESET_KEYS],
     ['template.', TEMPLATE_KEYS],
+    ['template.desc.', TEMPLATE_KEYS],
     ['ui.lang.', LANGS],
     ['ui.units.', UNITS],
     ['ui.theme.', THEMES],
