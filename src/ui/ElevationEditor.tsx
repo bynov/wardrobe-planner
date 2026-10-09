@@ -5,11 +5,11 @@ import { unitTag, wallElevation, wallName } from '../drawing/views';
 import { msg } from '../i18n';
 import type { Wall } from '../model/types';
 import { drawingToSvgParts } from '../render/svg';
-import { findColumn, useStore } from '../store/store';
+import { findColumn, useStore, type InsertSlot } from '../store/store';
 import { formatLen } from '../units';
 import { drawable } from './drawable';
 import { useT } from './useT';
-import { NARROW_QUERY, useMediaQuery } from './useMediaQuery';
+import { NARROW_QUERY, PHONE_QUERY, useMediaQuery } from './useMediaQuery';
 
 /** How many `error.segmentOverflow` errors currently name one of `walls`. */
 const overflowsOn = (errors: { message: { key: string; params?: Record<string, string | number> } }[], walls: Wall[]): number =>
@@ -63,6 +63,12 @@ export function ElevationEditor() {
   const plan = project.wardrobe.walls[wall];
   const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
   const narrow = useMediaQuery(NARROW_QUERY);
+  const phone = useMediaQuery(PHONE_QUERY);
+  // On a phone the tray lives in the bottom sheet, so picking a slot also opens it.
+  const pickSlot = (slot: InsertSlot) => {
+    setInsertAt(slot);
+    if (phone) useStore.getState().setUi({ sheetOpen: true, sheetView: 'tray' });
+  };
 
   const view = useMemo(() => {
     const d = wallElevation(project, wall, lang, units);
@@ -220,7 +226,7 @@ export function ElevationEditor() {
                 const cx = x0 + free / 2;
                 const cy = -(topY + plinth) / 2;
                 return (
-                  <g key={`f${seg.index}`} className={`placeholder${slotOn(seg.index, mine.length) ? ' on' : ''}`} onClick={(e) => { e.stopPropagation(); setInsertAt({ wall, segment: seg.index, index: mine.length }); }}>
+                  <g key={`f${seg.index}`} className={`placeholder${slotOn(seg.index, mine.length) ? ' on' : ''}`} onClick={(e) => { e.stopPropagation(); pickSlot({ wall, segment: seg.index, index: mine.length }); }}>
                     <rect x={x0} y={-topY} width={Math.max(0, free)} height={Math.max(0, topY - plinth)} />
                     <text x={cx} y={cy - textSize * 0.8} textAnchor="middle" dominantBaseline="middle" fontSize={textSize * 1.8}>
                       +
@@ -283,7 +289,7 @@ export function ElevationEditor() {
                     className={`plus${slotOn(seg.index, index) ? ' on' : ''}`}
                     // clear of the wall line and its dimension chain when the boundary is the wall end
                     transform={`translate(${x >= wallLen - 1 ? x - r : x} ${-plusY})`}
-                    onClick={(e) => { e.stopPropagation(); setInsertAt({ wall, segment: seg.index, index }); }}
+                    onClick={(e) => { e.stopPropagation(); pickSlot({ wall, segment: seg.index, index }); }}
                   >
                     <circle r={r} />
                     <text textAnchor="middle" dominantBaseline="middle" fontSize={r * 1.4}>+</text>

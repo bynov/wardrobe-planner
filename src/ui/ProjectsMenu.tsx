@@ -3,6 +3,7 @@ import { useStore } from '../store/store';
 import { Menu, MenuItem } from './controls';
 import { clearSnapshot } from './snapshot';
 import { useT } from './useT';
+import { PHONE_QUERY, useMediaQuery } from './useMediaQuery';
 import type { MessageKey, Params } from '../i18n';
 
 const MINUTE = 60_000;
@@ -34,6 +35,7 @@ export function ProjectsMenu() {
   const { t } = useT();
   const { switchProject, newProject, duplicateProject, deleteProject, setName, setUi } = useStore.getState();
   const [open, setOpen] = useState(false);
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const act = (fn: () => void) => {
     clearSnapshot();
@@ -66,6 +68,8 @@ export function ProjectsMenu() {
         placeholder={t('ui.projectName')}
         onChange={(e) => setName(e.target.value)}
       />
+      {/* Room mode has no bottom-nav slot on a phone: it is reached from here. */}
+      {phone && <MenuItem onClick={() => act(() => setUi({ tab: 'setup' }))}>{t('ui.mode.setup')}</MenuItem>}
       <div className="menu-sep" />
       {projects.map((m) => (
         <MenuItem

@@ -304,6 +304,7 @@ export const ru: Record<MessageKey, string> = {
   'ui.privacyLine': 'Сохраняется в браузере. Ничего не загружается.',
   'ui.carcassDefaults': 'Параметры корпуса',
   'ui.carcassSummary': 'Зазор {gap} · цоколь {plinth} · панель {panel}',
+  'ui.sheetMeta': '{w} ширина · {wall}',
   'ui.edit': 'Изменить',
   'ui.confirmTemplate': 'Заменить текущий дизайн шаблоном? Текущий проект будет сохранён отдельно.',
   'ui.doorOpens': 'Открывается',

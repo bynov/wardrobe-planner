@@ -54,8 +54,10 @@ export interface UiState {
   theme: Theme;
   /** Transient: the slot picked with a "+" marker; null means after the selected unit. */
   insertAt: InsertSlot | null;
-  /** Transient: the mobile bottom sheet. */
+  /** Transient: the phone bottom sheet is expanded. Selecting a unit never touches it. */
   sheetOpen: boolean;
+  /** Transient: what the expanded phone sheet shows. */
+  sheetView: 'inspector' | 'tray';
 }
 
 export interface PlannerState {
@@ -223,7 +225,7 @@ export function createPlannerStore(
           past: [],
           future: [],
           projects: storage ? listProjects(storage) : s.projects,
-          ui: { ...s.ui, selection: NO_SELECTION, insertAt: null, projectId: id, firstRun: false },
+          ui: { ...s.ui, selection: NO_SELECTION, insertAt: null, projectId: id, firstRun: false, sheetOpen: false, sheetView: 'inspector' },
         };
       });
     };
@@ -244,7 +246,7 @@ export function createPlannerStore(
       past: [],
       future: [],
       projects: storage ? listProjects(storage) : [],
-      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false, theme, insertAt: null, sheetOpen: false },
+      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false, theme, insertAt: null, sheetOpen: false, sheetView: 'inspector' },
 
       setProject: (updater) =>
         set((s) => {

@@ -7,6 +7,9 @@ import { useEffect, useState } from 'react';
  */
 export const NARROW_QUERY = '(max-width: 820px)';
 
+/** The phone shell (`MobileShell`): wall chips, bottom sheet and bottom nav instead of the top bar. */
+export const PHONE_QUERY = '(max-width: 600px)';
+
 /** True while `query` matches. Safe to call where there is no `window` (tests run in node). */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>

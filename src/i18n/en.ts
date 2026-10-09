@@ -300,6 +300,7 @@ export const en = {
   'ui.privacyLine': 'Saved in this browser. Nothing is uploaded.',
   'ui.carcassDefaults': 'Carcass defaults',
   'ui.carcassSummary': 'Ceiling gap {gap} · plinth {plinth} · panel {panel}',
+  'ui.sheetMeta': '{w} wide · {wall}',
   'ui.edit': 'Edit',
   'ui.confirmTemplate': 'Replace the current design with this template? Your project will be kept as a separate project.',
   'ui.doorOpens': 'Opens',

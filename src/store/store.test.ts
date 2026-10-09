@@ -347,6 +347,17 @@ describe('store: theme and insert state', () => {
     expect(s.getState().ui.theme).toBe('auto');
     expect(s.getState().ui.insertAt).toBeNull();
     expect(s.getState().ui.sheetOpen).toBe(false);
+    expect(s.getState().ui.sheetView).toBe('inspector');
+  });
+
+  it('selecting a column leaves the sheet as it was', () => {
+    const s = createPlannerStore();
+    const [a, b] = s.getState().project.wardrobe.walls.back.segments[0];
+    s.getState().select({ wall: 'back', columnId: a.id, zoneId: null });
+    expect(s.getState().ui.sheetOpen).toBe(false);
+    s.getState().setUi({ sheetOpen: true, sheetView: 'tray' });
+    s.getState().select({ wall: 'back', columnId: b.id, zoneId: null });
+    expect(s.getState().ui).toMatchObject({ sheetOpen: true, sheetView: 'tray' });
   });
 
   it('setTheme and setInsertAt update ui', () => {
@@ -596,6 +607,15 @@ describe('store: projects', () => {
     expect(s.getState().ui.projectId).toBe('p1');
     expect(s.getState().past).toEqual([]);
     expect(getCurrent(storage)).toBe('p1');
+  });
+
+  it('switchProject closes the sheet and returns it to the inspector', () => {
+    const { storage, store } = withStorage('p0');
+    saveProject(storage, 'p1', named('One'), 1000);
+    const s = store();
+    s.getState().setUi({ sheetOpen: true, sheetView: 'tray' });
+    s.getState().switchProject('p1');
+    expect(s.getState().ui).toMatchObject({ sheetOpen: false, sheetView: 'inspector' });
   });
 
   it('switchProject drops an index entry whose payload is missing and toasts', () => {

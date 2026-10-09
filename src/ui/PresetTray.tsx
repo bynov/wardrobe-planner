@@ -8,6 +8,7 @@ import { formatLen } from '../units';
 import { NumberField } from './fields';
 import { PresetGlyph } from './PresetGlyph';
 import { useT } from './useT';
+import { PHONE_QUERY, useMediaQuery } from './useMediaQuery';
 
 /** Smallest depth a wall's units may have; mirrors `error.wallDepth`. */
 const MIN_WALL_DEPTH = 200;
@@ -22,6 +23,7 @@ export function PresetTray() {
   const setInsertAt = useStore((s) => s.setInsertAt);
   const setWall = useStore((s) => s.setWall);
   const { lang, t, u, units } = useT();
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const plan = project.wardrobe.walls[selection.wall];
   const target = insertTarget(project, selection, insertAt);
@@ -38,6 +40,8 @@ export function PresetTray() {
   const pick = (key: PresetKey) => {
     insertPreset(target.wall, target.segment, target.index, key);
     setInsertAt(null);
+    // On a phone the tray is the bottom sheet's content: the insert is done, give the canvas back.
+    if (phone) useStore.getState().setUi({ sheetOpen: false, sheetView: 'inspector' });
   };
 
   return (

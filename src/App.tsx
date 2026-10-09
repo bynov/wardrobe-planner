@@ -7,17 +7,9 @@ import { RoomMode } from './ui/RoomMode';
 import { DesignTab } from './ui/DesignTab';
 import { CutListTable } from './ui/CutListTable';
 import { Viewport3D } from './ui/three/Viewport3D';
-import { useT } from './ui/useT';
-
-/**
- * The 3D view and the cut list are built from `lastValid`, so while the project has validation
- * errors they show something the design tab no longer matches. Say so above them.
- */
-function StaleBanner() {
-  const n = useStore((s) => s.errors.length);
-  const { t } = useT();
-  return n > 0 ? <div className="stale">{t('ui.showingLastValid', { n })}</div> : null;
-}
+import { StaleBanner } from './ui/StaleBanner';
+import { MobileShell } from './ui/MobileShell';
+import { PHONE_QUERY, useMediaQuery } from './ui/useMediaQuery';
 
 export function App() {
   const tab = useStore((s) => s.ui.tab);
@@ -25,6 +17,15 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  const phone = useMediaQuery(PHONE_QUERY);
+  if (phone) {
+    return (
+      <>
+        <MobileShell />
+        <Toast />
+      </>
+    );
+  }
   return (
     <div className="app">
       <TopBar />

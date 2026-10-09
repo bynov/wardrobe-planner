@@ -1,10 +1,7 @@
-import { useState } from 'react';
 import { useStore, type Tab } from '../store/store';
 import { serializeProject } from '../store/persist';
-import { encodeShare, shareUrl } from '../store/share';
-import { exportPdfBlob } from '../pdf/exportPdf';
 import { downloadBlob } from './download';
-import { takeSnapshot } from './three/offscreenSnapshot';
+import { useExport } from './useExport';
 import { ProjectsMenu } from './ProjectsMenu';
 import { useT } from './useT';
 import type { MessageKey } from '../i18n';
@@ -23,53 +20,19 @@ const MODES: { key: Tab; labelKey: MessageKey }[] = [
 
 export function TopBar() {
   const project = useStore((s) => s.project);
-  const lastValid = useStore((s) => s.lastValid);
   const tab = useStore((s) => s.ui.tab);
   const canUndo = useStore((s) => s.past.length > 0);
   const canRedo = useStore((s) => s.future.length > 0);
   const errorCount = useStore((s) => s.errors.length);
   const { lang, units, t } = useT();
   const theme = useStore((s) => s.ui.theme);
-  const { setUi, toast, setUnits, setTheme, undo, redo } = useStore.getState();
-  const [busy, setBusy] = useState(false);
+  const { setUi, setUnits, setTheme, undo, redo } = useStore.getState();
+  const { share, exportPdf, busy } = useExport();
   const safeName = (project.name || 'wardrobe').replace(/[^\w.-]+/g, '_');
 
   const onExportJson = () => {
     downloadBlob(new Blob([serializeProject(project)], { type: 'application/json' }), `${safeName}.json`);
   };
-  const onShare = async () => {
-    let url: string;
-    try {
-      url = shareUrl(window.location, await encodeShare(project));
-    } catch (e) {
-      // Compression or encoding gave way: say so rather than let the rejection vanish.
-      toast({ key: 'toast.shareFailed', params: { error: e instanceof Error ? e.message : String(e) } });
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({ key: 'toast.linkCopied' });
-    } catch {
-      // No clipboard: an insecure origin, or the browser refused. Show the link to copy by hand.
-      window.prompt(t('ui.share'), url);
-    }
-  };
-  const onExportPdf = async () => {
-    setBusy(true);
-    try {
-      await new Promise((r) => setTimeout(r, 0)); // let the button repaint
-      // Off-screen render when nothing is cached, so an export made without ever opening the 3D
-      // tab still carries the picture.
-      const snapshotPng = await takeSnapshot(lastValid);
-      const blob = exportPdfBlob(lastValid, { lang, units, snapshotPng });
-      downloadBlob(blob, `${safeName}.pdf`);
-    } catch (e) {
-      toast({ key: 'toast.pdfFailed', params: { error: e instanceof Error ? e.message : String(e) } });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const fixTitle = errorCount > 0 ? t('ui.fixErrorsFirst') : undefined;
 
   return (
@@ -102,10 +65,10 @@ export function TopBar() {
         {t(`ui.theme.${theme}` as MessageKey)}
       </button>
       <span className="divider" />
-      <button type="button" className="btn" onClick={() => void onShare()} disabled={errorCount > 0} title={fixTitle}>
+      <button type="button" className="btn" onClick={() => void share()} disabled={errorCount > 0} title={fixTitle}>
         {t('ui.share')}
       </button>
-      <button type="button" className="btn primary" onClick={onExportPdf} disabled={busy || errorCount > 0} title={fixTitle}>
+      <button type="button" className="btn primary" onClick={() => void exportPdf()} disabled={busy || errorCount > 0} title={fixTitle}>
         {busy ? t('ui.exporting') : t('ui.exportPdf')}
       </button>
       <OverflowMenu onExportJson={onExportJson} />
