@@ -1,13 +1,11 @@
 import { useEffect, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Units } from '../units';
 import { useNumberInput } from './fields';
 
 /** Glyphs for the stepper buttons (U+2212 minus, not a hyphen). */
 const MINUS = '−';
 const PLUS = '+';
-/** Gap between a trigger and its menu, px. */
-const MENU_GAP = 6;
 
 /** `value + delta` kept inside `[min, max]`; a `max` below `min` yields `min`. */
 export function clampStep(value: number, delta: number, min: number, max: number): number {
@@ -123,7 +121,7 @@ export function Menu({ open, onClose, trigger, anchor = 'left', width, children 
     <div ref={ref} className="menu-anchor">
       {trigger}
       {open && (
-        <div className="menu" role="menu" style={{ width, top: '100%', marginTop: MENU_GAP, [anchor]: 0 }}>
+        <div className={`menu menu-${anchor}`} role="menu" style={{ '--menu-w': `${width}px` } as CSSProperties}>
           {children}
         </div>
       )}

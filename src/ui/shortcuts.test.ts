@@ -8,6 +8,8 @@ describe('SHORTCUTS', () => {
   });
   // One entry per branch of useKeyboard.ts: undo, redo (two chords), duplicate, deselect, delete.
   it('lists exactly what useKeyboard implements', () => {
-    expect(SHORTCUTS).toHaveLength(6);
+    expect(SHORTCUTS.map((s) => s.keys)).toEqual([
+      '⌘/Ctrl+Z', '⇧⌘/Ctrl+Z', '⌘/Ctrl+Y', '⌘/Ctrl+D', 'Esc', 'Delete / Backspace',
+    ]);
   });
 });
