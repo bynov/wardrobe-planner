@@ -7,9 +7,10 @@ import { applyTheme } from './ui/theme';
 import './styles.css';
 
 // The inline script in <head> already forced light/dark before first paint; this keeps it in step.
-applyTheme(useStore.getState().ui.theme, document.documentElement);
+const themeMetas = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')];
+applyTheme(useStore.getState().ui.theme, document.documentElement, themeMetas);
 useStore.subscribe((s, prev) => {
-  if (s.ui.theme !== prev.ui.theme) applyTheme(s.ui.theme, document.documentElement);
+  if (s.ui.theme !== prev.ui.theme) applyTheme(s.ui.theme, document.documentElement, themeMetas);
 });
 
 const render = () =>

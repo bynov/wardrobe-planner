@@ -90,6 +90,7 @@ export const en = {
   'ui.freeWidth': 'free {n} {u}',
   'ui.segment': 'Segment {n}',
   'ui.noRoom': 'No room for units here',
+  'ui.trayWallOff': 'Turn the wall on to add units',
   'ui.noWardrobe': 'No wardrobe on this wall',
   'ui.spawnTitle': 'Insert here',
   'ui.noWardrobeOnWall': 'No wardrobe on this wall',

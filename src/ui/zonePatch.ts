@@ -8,9 +8,9 @@ export function nextZonePatch(type: ZoneType): Partial<Zone> {
   return { type, count: DEFAULT_COUNT[type] };
 }
 
-/** The bounds of the width stepper: a column can grow into the segment's free space, units keep a minimum width. */
+/** The bounds of the width stepper: a column can grow into the segment's free space (an overflowing segment caps at the current width, so + is a no-op and - still steps), units keep a minimum width. */
 export function widthRange(column: Pick<Column, 'kind' | 'width'>, free: number, minUnitWidth: number): { min: number; max: number } {
-  return { min: column.kind === 'unit' ? minUnitWidth : 1, max: column.width + free };
+  return { min: column.kind === 'unit' ? minUnitWidth : 1, max: Math.max(column.width, column.width + free) };
 }
 
 /** Upper bound for the length steppers (zone height, rail offset and height), mm; the layout clamps what is physically possible. */

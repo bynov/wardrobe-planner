@@ -19,4 +19,7 @@ describe('widthRange', () => {
   it('lets a gap shrink to 1', () => {
     expect(widthRange({ kind: 'gap', width: 400 }, 0, 300)).toEqual({ min: 1, max: 400 });
   });
+  it('never lets the cap fall below the current width when the segment overflows', () => {
+    expect(widthRange({ kind: 'unit', width: 600 }, -120, 300)).toEqual({ min: 300, max: 600 });
+  });
 });

@@ -94,6 +94,7 @@ export const ru: Record<MessageKey, string> = {
   'ui.freeWidth': 'свободно {n} {u}',
   'ui.segment': 'Участок {n}',
   'ui.noRoom': 'Здесь нет места для модулей',
+  'ui.trayWallOff': 'Включите стену, чтобы добавлять секции',
   'ui.noWardrobe': 'На этой стене нет гардероба',
   'ui.spawnTitle': 'Вставить здесь',
   'ui.noWardrobeOnWall': 'На этой стене нет гардероба',

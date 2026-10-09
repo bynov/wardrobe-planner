@@ -1,8 +1,9 @@
-import { minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
+import { minUnitWidth } from '../geometry/frames';
 import { unitTag } from '../drawing/views';
 import { PRESET_KEYS, type PresetKey } from '../model/presets';
 import { useStore } from '../store/store';
 import { insertTarget } from './insertTarget';
+import { trayState } from './trayState';
 import { formatLen } from '../units';
 import { NumberField } from './fields';
 import { PresetGlyph } from './PresetGlyph';
@@ -24,8 +25,7 @@ export function PresetTray() {
 
   const plan = project.wardrobe.walls[selection.wall];
   const target = insertTarget(project, selection, insertAt);
-  const seg = wallSegments(project, target.wall)[target.segment];
-  const free = seg ? segmentFree(project, seg) : 0;
+  const { wallOff, free } = trayState(project, target);
 
   const l = target.label;
   const where =
@@ -57,16 +57,16 @@ export function PresetTray() {
               onChange={(depth) => setWall(selection.wall, { depth })}
             />
           )}
-          <span className={`mono tray-free${free < 0 ? ' danger' : ''}`}>
-            {free < 0 ? t('ui.overflowBy', { n: formatLen(Math.round(-free), units), u }) : t('ui.freeWidth', { n: formatLen(Math.round(free), units), u })}
+          <span className={`mono tray-free${!wallOff && free < 0 ? ' danger' : ''}`}>
+            {wallOff ? t('ui.trayWallOff') : free < 0 ? t('ui.overflowBy', { n: formatLen(Math.round(-free), units), u }) : t('ui.freeWidth', { n: formatLen(Math.round(free), units), u })}
           </span>
         </span>
       </div>
       <div className="tray-grid">
         {PRESET_KEYS.map((key) => {
-          const disabled = key === 'gap' ? free <= 0 : free < minUnitWidth(project.wardrobe);
+          const disabled = wallOff || (key === 'gap' ? free <= 0 : free < minUnitWidth(project.wardrobe));
           return (
-            <button key={key} className="preset" disabled={disabled} title={disabled ? t('ui.noRoom') : undefined} onClick={() => pick(key)}>
+            <button key={key} className="preset" disabled={disabled} title={disabled ? (wallOff ? t('ui.trayWallOff') : t('ui.noRoom')) : undefined} onClick={() => pick(key)}>
               <PresetGlyph preset={key} />
               {t(`preset.${key}`)}
             </button>

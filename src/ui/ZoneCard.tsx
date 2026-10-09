@@ -108,7 +108,9 @@ export function ZoneCard({ unit, zone, zl, count, active }: { unit: Unit; zone: 
             ariaLabel={t('ui.zoneType')}
             value={zone.type}
             options={ZONE_TYPES.map((z) => ({ value: z, label: t(`zone.${z}`) }))}
-            onChange={(type) => updateZone(unit.id, zone.id, nextZonePatch(type))}
+            onChange={(type) => {
+              if (type !== zone.type) updateZone(unit.id, zone.id, nextZonePatch(type));
+            }}
           />
           <div className="field-row">
             <Switch
