@@ -43,7 +43,7 @@ export function Segmented<T extends string>({ value, options, onChange, size = '
   );
 }
 
-export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLabel }: {
+export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLabel, stepLabels }: {
   value: number;
   onChange: (v: number) => void;
   step: number;
@@ -51,15 +51,17 @@ export function Stepper({ value, onChange, step, min, max, units = 'mm', ariaLab
   max: number;
   units?: Units;
   ariaLabel: string;
+  /** Accessible names for the − and + buttons; both fall back to `ariaLabel`. */
+  stepLabels?: { down: string; up: string };
 }) {
   const input = useNumberInput(value, onChange, units);
   return (
-    <div className="stepper mono" role="group" aria-label={ariaLabel}>
-      <button type="button" aria-label={`${ariaLabel} ${MINUS}`} onClick={() => onChange(clampStep(value, -step, min, max))}>
+    <div className="stepper mono">
+      <button type="button" aria-label={stepLabels?.down ?? ariaLabel} onClick={() => onChange(clampStep(value, -step, min, max))}>
         {MINUS}
       </button>
       <input type="text" inputMode="decimal" aria-label={ariaLabel} {...input} />
-      <button type="button" aria-label={`${ariaLabel} ${PLUS}`} onClick={() => onChange(clampStep(value, step, min, max))}>
+      <button type="button" aria-label={stepLabels?.up ?? ariaLabel} onClick={() => onChange(clampStep(value, step, min, max))}>
         {PLUS}
       </button>
     </div>
@@ -87,13 +89,13 @@ export function IconButton({ label, onClick, disabled, children }: {
 }
 
 /**
- * A popover that closes on outside mousedown and on Escape. The Escape is swallowed in the capture
- * phase so `useKeyboard` (on window) does not also clear the selection underneath. The parent
- * should wrap the trigger and the menu in a `position: relative` box and treat clicks on the
- * trigger as its own toggle (the trigger is outside the menu, so mousedown on it calls `onClose`).
+ * A trigger plus the popover it opens. `Menu` owns the trigger so that a mousedown on it counts as
+ * "inside": the trigger's own click toggles the menu shut instead of an outside-mousedown closing
+ * it first and the click reopening it. Outside mousedown and Escape call `onClose`; the Escape is
+ * swallowed in the capture phase so `useKeyboard` (on window) does not also clear the selection.
  */
-export function Menu({ open, onClose, anchor, width, children }: {
-  open: boolean; onClose: () => void; anchor: 'left' | 'right'; width: number; children: ReactNode;
+export function Menu({ open, onClose, trigger, anchor = 'left', width, children }: {
+  open: boolean; onClose: () => void; trigger: ReactNode; anchor?: 'left' | 'right'; width: number; children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -117,10 +119,14 @@ export function Menu({ open, onClose, anchor, width, children }: {
     };
   }, [open]);
 
-  if (!open) return null;
   return (
-    <div ref={ref} className="menu" role="menu" style={{ width, top: '100%', marginTop: MENU_GAP, [anchor]: 0 }}>
-      {children}
+    <div ref={ref} className="menu-anchor">
+      {trigger}
+      {open && (
+        <div className="menu" role="menu" style={{ width, top: '100%', marginTop: MENU_GAP, [anchor]: 0 }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
