@@ -43,6 +43,7 @@ describe('i18n', () => {
     ['ui.units.', UNITS],
     ['ui.theme.', THEMES],
     ['ui.mode.', ['setup']],
+    ['ui.view.', ['iso', 'top']],
     ['ui.wallStatus.', WALL_STATUS_KINDS],
     ['ui.swing.', DOOR_SWINGS],
     ['ui.swingOpt.', DOOR_SWINGS],
