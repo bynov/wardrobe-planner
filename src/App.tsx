@@ -28,7 +28,7 @@ export function App() {
   return (
     <div className="app">
       <TopBar />
-      <HintBar />
+      {tab === 'design' && <HintBar />}
       <main className="content">
         {tab === 'setup' && <div className="pane">{t('ui.mode.setup')}</div>}
         {tab === 'design' && <DesignTab />}

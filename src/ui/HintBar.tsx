@@ -36,12 +36,14 @@ export function HintBar() {
   if (!firstRun || edited || dismissed) return null;
   return (
     <div className="hintbar">
-      <ol>
-        {STEPS.map((key) => (
-          <li key={key}>{t(key)}</li>
-        ))}
-      </ol>
+      {STEPS.map((key, i) => (
+        <span className="step" key={key}>
+          <span className="step-n mono">{i + 1}</span>
+          {t(key)}
+        </span>
+      ))}
       <button
+        className="btn ink"
         onClick={() => {
           remember();
           setDismissed(true);
