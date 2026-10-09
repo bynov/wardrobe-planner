@@ -770,3 +770,41 @@ describe('store: projects', () => {
     vi.useRealTimers();
   });
 });
+
+describe('store: insert slot', () => {
+  const slot = { wall: 'back' as const, segment: 0 as const, index: 1 };
+  it('is dropped when its wall is disabled', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    expect(s.getState().ui.insertAt).toEqual(slot);
+    s.getState().setWall('back', { enabled: false });
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is dropped when its index is past the end of the segment', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt({ ...slot, index: backCols(s).length });
+    s.getState().removeColumn(backCols(s)[0].id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('survives edits that keep it valid', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    s.getState().setName('x');
+    expect(s.getState().ui.insertAt).toEqual(slot);
+  });
+  it('is dropped when another wall is selected, kept when the same wall is', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    s.getState().select({ wall: 'back', columnId: null });
+    expect(s.getState().ui.insertAt).toEqual(slot);
+    s.getState().select({ wall: 'right' });
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is dropped when another project is opened', () => {
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', memStorage());
+    const id = s.getState().createProject(defaultProject(), { select: false });
+    s.getState().setInsertAt(slot);
+    s.getState().switchProject(id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+});

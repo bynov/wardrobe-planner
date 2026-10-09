@@ -172,6 +172,14 @@ function swapped<T>(items: T[], i: number, j: number): T[] {
   return next;
 }
 
+/** The slot if it still points at a place a column could go in `project`, otherwise null. */
+function slotFor(project: Project, slot: InsertSlot | null): InsertSlot | null {
+  if (!slot) return null;
+  const plan = project.wardrobe.walls[slot.wall];
+  const cols = plan.enabled ? plan.segments[slot.segment] : undefined;
+  return cols && slot.index <= cols.length ? slot : null;
+}
+
 export function createPlannerStore(
   initial: Project = defaultProject(),
   lang: Lang = 'en',
@@ -186,13 +194,14 @@ export function createPlannerStore(
     const commit = (s: PlannerState, project: Project, past: Project[], future: Project[]): Partial<PlannerState> => {
       const errors = validate(project);
       const selection = cleanSelection(project, s.ui.selection);
+      const insertAt = slotFor(project, s.ui.insertAt);
       return {
         project,
         errors,
         lastValid: errors.length ? s.lastValid : project,
         past,
         future,
-        ui: selection === s.ui.selection ? s.ui : { ...s.ui, selection },
+        ui: selection === s.ui.selection && insertAt === s.ui.insertAt ? s.ui : { ...s.ui, selection, insertAt },
       };
     };
 
@@ -212,7 +221,7 @@ export function createPlannerStore(
           past: [],
           future: [],
           projects: storage ? listProjects(storage) : s.projects,
-          ui: { ...s.ui, selection: NO_SELECTION, projectId: id, firstRun: false },
+          ui: { ...s.ui, selection: NO_SELECTION, insertAt: null, projectId: id, firstRun: false },
         };
       });
     };
@@ -358,7 +367,11 @@ export function createPlannerStore(
           }),
         ),
 
-      select: (patch) => set((s) => ({ ui: { ...s.ui, selection: { ...s.ui.selection, ...patch } } })),
+      select: (patch) =>
+        set((s) => {
+          const dropSlot = patch.wall !== undefined && patch.wall !== s.ui.selection.wall;
+          return { ui: { ...s.ui, selection: { ...s.ui.selection, ...patch }, insertAt: dropSlot ? null : s.ui.insertAt } };
+        }),
 
       newProject: () => {
         get().createProject(defaultProject());

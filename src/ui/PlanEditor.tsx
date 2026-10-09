@@ -25,13 +25,13 @@ function band(W: number, D: number, wall: Wall, depth: number): { x: number; y: 
 const HINT_DEPTH = 150;
 
 export interface PlanEditorProps {
-  /** Fills the pane instead of riding along the top of the left panel. */
-  big?: boolean;
+  /** `thumb` rides in the wall tabs, `panel` is the default plan, `big` fills the pane. */
+  size?: 'thumb' | 'panel' | 'big';
   /** Called after a wall is picked, so the large plan can hand the pane back to the elevation. */
   onPick?: () => void;
 }
 
-export function PlanEditor({ big = false, onPick }: PlanEditorProps = {}) {
+export function PlanEditor({ size = 'panel', onPick }: PlanEditorProps = {}) {
   const project = useStore((s) => s.project);
   const lastValid = useStore((s) => s.lastValid);
   const selected = useStore((s) => s.ui.selection.wall);
@@ -47,7 +47,7 @@ export function PlanEditor({ big = false, onPick }: PlanEditorProps = {}) {
   const textSize = view.d.textSize;
 
   return (
-    <div className={big ? 'plan big' : 'plan'}>
+    <div className={`plan plan-${size}`}>
       <svg viewBox={viewBox} role="img" aria-label={t('drawing.plan')}>
         <g style={{ pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: inner }} />
         <g>

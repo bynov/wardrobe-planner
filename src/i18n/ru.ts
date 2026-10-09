@@ -89,6 +89,8 @@ export const ru: Record<MessageKey, string> = {
   'ui.enableHint': 'Отметьте «Гардероб на этой стене», чтобы начать расстановку модулей.',
   'ui.selectHint': 'Кликните по стене на плане, затем по «+» на развёртке, чтобы разместить модуль.',
   'ui.spawnTitle': 'Вставить здесь',
+  'ui.noWardrobeOnWall': 'На этой стене нет гардероба',
+  'ui.useThisWall': 'Использовать эту стену',
   'ui.spawnWidth': '{n} {u}',
   'ui.overflowBy': 'превышение {n} {u}',
   'ui.bigPlan': 'Крупный план',

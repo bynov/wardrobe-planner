@@ -85,6 +85,8 @@ export const en = {
   'ui.enableHint': 'Tick "Wardrobe on this wall" to start placing units.',
   'ui.selectHint': 'Click a wall in the plan, then a + in the elevation to place a unit.',
   'ui.spawnTitle': 'Insert here',
+  'ui.noWardrobeOnWall': 'No wardrobe on this wall',
+  'ui.useThisWall': 'Use this wall',
   'ui.spawnWidth': '{n} {u}',
   'ui.overflowBy': 'over by {n} {u}',
   'ui.bigPlan': 'Large plan',

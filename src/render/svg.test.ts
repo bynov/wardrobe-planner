@@ -24,8 +24,16 @@ describe('drawingToSvg', () => {
     expect(svg).toContain('y2="-20"');
     expect(svg).toContain('rotate(-90)');
     expect(svg).toContain('a&lt;b');
-    expect(svg).toContain('fill="#e8e2d5"');
+    expect(svg).toContain('fill="var(--wood2)"');
     expect(svg).toContain('stroke-width="2"');
+  });
+  it('colours through theme tokens, never hex', () => {
+    const d = makeDrawing('t', [line(v2(0, 0), v2(10, 20)), text(v2(5, 5), 'x', 4), rectPrim(0, 0, 10, 10)], 4);
+    const svg = drawingToSvg(d);
+    expect(svg).toContain('stroke="var(--draw)"');
+    expect(svg).toMatch(/<text [^>]*fill="var\(--draw\)"/);
+    expect(svg).toMatch(/<text [^>]*font-family="var\(--font-mono\)"/);
+    expect(svg).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
   it("labels dimensions in the drawing's own units", () => {
     const mm = makeDrawing('t', [dim(v2(0, 0), v2(600, 0), -30)], 10);
