@@ -46,7 +46,7 @@ export function ErrorBanner() {
   const shown = hidden > 0 ? all.slice(0, MAX_ERRORS_SHOWN) : all;
   return (
     <div className="errbanner" role="alert">
-      <div className="errhead">{t('ui.issuesHeading', { n: errors.length })}</div>
+      <div className="errhead">{errors.length === 1 ? t('ui.issuesHeadingOne') : t('ui.issuesHeading', { n: errors.length })}</div>
       {shown.map((e) => {
         const target = errorTarget(project, e.path);
         return (

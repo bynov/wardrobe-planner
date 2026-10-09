@@ -12,7 +12,10 @@ describe('wallStatus', () => {
   it('reports a populated wall with room left as free', () => {
     const s = wallStatus(makeTemplate('lShape', 'x'), 'back');
     expect(s.kind).toBe('free');
-    if (s.kind === 'free') expect(s.units).toBeGreaterThan(0);
+    if (s.kind === 'free') {
+      expect(s.units).toBeGreaterThan(0);
+      expect(s.free).toBe(free(makeTemplate('lShape', 'x'), 'back'));
+    }
   });
 
   it('reports a disabled wall as off', () => {
