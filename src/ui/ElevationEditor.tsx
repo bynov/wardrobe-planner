@@ -17,6 +17,8 @@ const overflowsOn = (errors: { message: { key: string; params?: Record<string, s
 
 /** How big the "+" insert target is, as a multiple of the drawing's text size. */
 const PLUS_R_FACTOR = 0.9;
+/** Largest marker radius as a share of the narrowest column, so neighbours stay apart. */
+const PLUS_MAX_SPAN = 0.45;
 /** ...but never smaller than this radius in real screen pixels once a finger is doing the aiming.
  *  The drawing is in millimetres, so the same factor is a different target on every screen. */
 const PLUS_TOUCH_R_PX = 20;
@@ -103,9 +105,12 @@ export function ElevationEditor() {
 
   // The elevation is drawn in millimetres and scaled to fit, so a radius in drawing units says
   // nothing about how big the target is under a fingertip: convert back through the rendered box.
+  // Capped so neighbouring markers never overlap when the drawing is squeezed (a short sheet).
+  const baseR = textSize * PLUS_R_FACTOR;
+  const minWidth = layout.length ? Math.min(...layout.map((c) => c.width)) : Infinity;
   const r = narrow && pxPerMm > 0
-    ? Math.max(textSize * PLUS_R_FACTOR, PLUS_TOUCH_R_PX / pxPerMm)
-    : textSize * PLUS_R_FACTOR;
+    ? Math.max(baseR, Math.min(PLUS_TOUCH_R_PX / pxPerMm, minWidth * PLUS_MAX_SPAN))
+    : baseR;
   // The "+" row rides above the units' top edge, but the drawing's "ceiling gap" label sits
   // mid-gap at the wall end and the gap is often too short for both: lift the row clear of that
   // label when it exists, without pushing it past the drawing's own bounds.

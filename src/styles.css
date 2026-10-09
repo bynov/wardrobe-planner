@@ -401,20 +401,27 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
   .mhead .theme-glyph { width: 16px; height: 16px; color: var(--ink2); }
   .mbody { flex: 1; position: relative; min-height: 0; overflow: auto; background: var(--bg); }
   .mdesign { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
-  .wallchips { flex: none; display: flex; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
+  .wallchips { flex: none; display: flex; gap: 6px; padding: 6px 12px 10px; overflow-x: auto; }
   .wallchip { flex: none; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); text-align: left; }
   .wallchip.on { border-color: var(--accent); background: var(--accent-soft); }
   .wallchip-name { font-size: 13px; font-weight: 600; white-space: nowrap; }
   .wallchip .meta { font-size: 11px; white-space: nowrap; }
   .mcanvas { border-top: 1px solid var(--line); }
-  .mcanvas > .elevation { inset: 14px 10px 158px; transition: inset 0.25s ease; }
-  .mdesign.open .mcanvas > .elevation { inset-block-end: 478px; }
+  .mcanvas > .elevation { inset: 14px 10px min(158px, 45%); transition: inset 0.25s ease; }
+  .mdesign.open .mcanvas > .elevation { inset-block-end: min(478px, 85%); }
   .mplan { position: absolute; top: 10px; right: 10px; z-index: 2; width: 64px; height: 56px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
   .mplan .plan { width: 100%; height: 100%; }
   .mplan .plan svg { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 8px; }
 
-  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: 150px; display: flex; flex-direction: column; border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -10px 30px color-mix(in oklch, var(--ink) 12%, transparent); transition: height 0.25s ease; }
-  .sheet.open { height: 470px; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: 150px; max-height: calc(100% - 8px); display: flex; flex-direction: column; border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -10px 30px color-mix(in oklch, var(--ink) 12%, transparent); transition: height 0.25s ease; }
+  .sheet.open { height: min(470px, calc(100% - 8px)); }
+  .sheet-close { position: absolute; top: 0; right: 4px; }
+  .sheet-close .icon { width: 44px; height: 44px; font-size: 22px; }
+  .hintbar { flex-wrap: nowrap; gap: 8px 12px; padding: 8px 12px; font-size: 0; }
+  .hintbar .step { font-size: 0; gap: 0; }
+  .hintbar .step-n { font-size: 11px; }
+  .hintbar .step + .step::before { content: '·'; font-size: 13px; margin-right: 12px; color: var(--ink3); }
+  .hintbar .btn { font-size: 12px; }
   .grabber { flex: none; display: flex; align-items: center; justify-content: center; height: 22px; padding: 0; border: 0; border-radius: 0; background: transparent; }
   .grabber span { width: 38px; height: 5px; border-radius: 3px; background: var(--line2); }
   .sheet-summary { display: flex; flex-direction: column; gap: 12px; padding: 0 16px 14px; min-height: 0; }
@@ -434,9 +441,22 @@ button.danger { color: #c0392b; border-color: #e0b4ae; }
   .mnav { position: relative; z-index: 4; flex: none; height: 84px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px 8px 0; background: var(--surface); border-top: 1px solid var(--line); }
   .mnav-btn { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; height: 52px; padding: 6px 0 0; border: 0; border-radius: 0; background: transparent; color: var(--ink3); font-size: 11px; font-weight: 500; white-space: nowrap; }
   .mnav-btn.on { color: var(--accent); }
-  .mnav-icon { width: 22px; height: 22px; border: 1.8px solid currentColor; border-radius: 6px; }
-  .mnav-btn.on .mnav-icon { background: color-mix(in oklch, var(--accent) 22%, transparent); }
+  .mnav-icon { flex: none; width: 22px; height: 22px; }
+  .mnav-btn.on .mnav-icon { fill: color-mix(in oklch, var(--accent) 22%, transparent); }
   .toast { bottom: 96px; }
+  @media (max-height: 500px) {
+    .sheet { height: 96px; }
+    .sheet-summary { gap: 6px; padding-bottom: 8px; }
+    .sheet-head .btn { height: 36px; }
+    .sheet-chips { display: none; }
+    .mcanvas > .elevation { inset: 8px 10px min(106px, 45%); }
+    .mhead { padding-bottom: 4px; }
+    .wallchips { padding-bottom: 6px; }
+    .wallchip { height: 40px; }
+    .mnav { height: 60px; }
+    .mnav-btn { height: 48px; flex-direction: row; justify-content: center; align-items: center; padding: 0; gap: 8px; }
+    .toast { bottom: 70px; }
+  }
   /* the 3D view's two floating panels share one narrow row: stack the toggles below the views bar */
   .float-views { top: 10px; left: 10px; right: 10px; overflow-x: auto; }
   .float-toggles { top: 70px; right: 10px; gap: 8px; padding: 10px 14px; }

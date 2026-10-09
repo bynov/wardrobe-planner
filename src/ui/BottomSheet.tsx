@@ -1,6 +1,7 @@
 import { unitTag, wallName } from '../drawing/views';
 import { findColumn, useStore } from '../store/store';
 import { formatLen } from '../units';
+import { IconButton } from './controls';
 import { ErrorBanner } from './ErrorBanner';
 import { Inspector } from './Inspector';
 import { PresetTray } from './PresetTray';
@@ -37,11 +38,12 @@ export function BottomSheet() {
 
   return (
     <div className={`sheet${open ? ' open' : ''}`}>
-      <button type="button" className="grabber" aria-label={t('ui.edit')} aria-expanded={open} onClick={toggle}>
+      <button type="button" className="grabber" aria-label={t(open ? 'ui.close' : 'ui.edit')} aria-expanded={open} onClick={toggle}>
         <span />
       </button>
       {open ? (
         <div className="sheet-body">
+          <div className="sheet-close"><IconButton label={t('ui.close')} onClick={toggle}>×</IconButton></div>
           {view === 'tray' ? (
             <PresetTray />
           ) : (

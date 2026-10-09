@@ -2,6 +2,7 @@ import { useStore } from '../store/store';
 import { BottomSheet } from './BottomSheet';
 import { CutListTable } from './CutListTable';
 import { ElevationEditor } from './ElevationEditor';
+import { HintBar } from './HintBar';
 import { IconButton } from './controls';
 import { Logo } from './Logo';
 import { MobileNav } from './MobileNav';
@@ -35,6 +36,7 @@ export function MobileShell() {
           <span className="theme-glyph" aria-hidden />
         </button>
       </header>
+      {tab === 'design' && <HintBar />}
       <main className="mbody">
         {tab === 'design' && (
           <div className={`mdesign${open ? ' open' : ''}`}>
