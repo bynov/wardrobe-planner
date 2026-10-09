@@ -4,6 +4,7 @@ import { Line } from '@react-three/drei';
 import { doorArc, doorSpan, localToWorld, wallFrame } from '../../geometry/frames';
 import { v3 } from '../../geometry/vec';
 import type { Door, Room } from '../../model/types';
+import type { SceneColors } from './colors';
 
 type P3 = [number, number, number];
 
@@ -11,7 +12,7 @@ const DOOR_OFFSET = 2; // mm proud of the wall, so the leaf never z-fights with 
 const ARC_SEGMENTS = 16;
 const FLOOR_Y = 1; // just above the floor plane, so the sweep lines are not z-fought away
 
-export function RoomMesh({ room, door, showRoom }: { room: Room; door: Door; showRoom: boolean }) {
+export function RoomMesh({ room, door, showRoom, colors }: { room: Room; door: Door; showRoom: boolean; colors: SceneColors }) {
   const { width: W, depth: D, height: H } = room;
 
   // Every wall plane is placed so its normal (planeGeometry faces local +z) points INTO the room;
@@ -46,29 +47,29 @@ export function RoomMesh({ room, door, showRoom }: { room: Room; door: Door; sho
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[W / 2, -1, D / 2]}>
         <planeGeometry args={[W, D]} />
-        <meshStandardMaterial color="#e6e3dd" side={THREE.DoubleSide} />
+        <meshStandardMaterial color={colors.floor} side={THREE.DoubleSide} />
       </mesh>
       {showRoom && (
         <group>
           {walls.map((w) => (
             <mesh key={w.key} position={w.position} rotation={w.rotation}>
               <planeGeometry args={w.size} />
-              <meshStandardMaterial color="#f3f1ec" side={THREE.FrontSide} transparent opacity={0.9} />
+              <meshStandardMaterial color={colors.wall} side={THREE.FrontSide} transparent opacity={0.9} />
             </mesh>
           ))}
-          <Line points={floorRect} color="#777" lineWidth={1} />
-          <Line points={ceilRect} color="#777" lineWidth={1} />
+          <Line points={floorRect} color={colors.lines} lineWidth={1} />
+          <Line points={ceilRect} color={colors.lines} lineWidth={1} />
           {verticals.map((pts, i) => (
-            <Line key={i} points={pts} color="#777" lineWidth={1} />
+            <Line key={i} points={pts} color={colors.lines} lineWidth={1} />
           ))}
           {/* Double-sided and see-through: its wall is culled in the dollhouse view, so an opaque
               leaf would be the one thing standing between the camera and the room. */}
           <mesh position={doorGeom.position} rotation={doorGeom.rotation}>
             <planeGeometry args={[door.width, door.height]} />
-            <meshStandardMaterial color="#c8b7a6" side={THREE.DoubleSide} transparent opacity={0.45} depthWrite={false} />
+            <meshStandardMaterial color={colors.door} side={THREE.DoubleSide} transparent opacity={0.45} depthWrite={false} />
           </mesh>
-          <Line points={doorGeom.arc} color="#777" lineWidth={1} dashed dashSize={40} gapSize={25} />
-          <Line points={doorGeom.leaf} color="#777" lineWidth={1} dashed dashSize={40} gapSize={25} />
+          <Line points={doorGeom.arc} color={colors.lines} lineWidth={1} dashed dashSize={40} gapSize={25} />
+          <Line points={doorGeom.leaf} color={colors.lines} lineWidth={1} dashed dashSize={40} gapSize={25} />
         </group>
       )}
     </group>

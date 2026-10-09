@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { WALLS, minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
 import { detectLang, msg, t, type Lang, type Msg } from '../i18n';
-import { defaultProject } from '../model/defaults';
-import { makeTemplate } from '../model/templates';
+import { defaultProject, emptyProject } from '../model/defaults';
+import { makeTemplate, type TemplateKey } from '../model/templates';
 import { cloneColumn } from '../model/factory';
 import { GAP_DEFAULT_WIDTH, PRESET_DEFAULT_WIDTH, makePreset, type PresetKey } from '../model/presets';
 import type { Column, Door, Gap, Project, Room, ValidationError, Wall, WallPlan, Wardrobe, Zone } from '../model/types';
 import { validate } from '../model/validate';
-import { loadLang, loadUnits, saveLang, saveUnits, type StorageLike } from './persist';
+import { loadLang, loadTheme, loadUnits, saveLang, saveTheme, saveUnits, type StorageLike } from './persist';
 import {
   deleteProject as deleteStored,
   getCurrent,
@@ -20,8 +20,16 @@ import {
   type ProjectMeta,
 } from './projects';
 import { detectUnits, type Units } from '../units';
+import type { Theme } from '../ui/theme';
 
-export type Tab = 'design' | '3d' | 'cutlist';
+export type Tab = 'setup' | 'design' | '3d' | 'cutlist';
+
+/** Where the next preset goes: before column `index` of the given wall segment. */
+export interface InsertSlot {
+  wall: Wall;
+  segment: 0 | 1;
+  index: number;
+}
 
 export interface Selection {
   wall: Wall;
@@ -43,6 +51,13 @@ export interface UiState {
   projectId: string;
   /** Nothing was stored when the app started: the hint bar offers the first three steps. */
   firstRun: boolean;
+  theme: Theme;
+  /** Transient: the slot picked with a "+" marker; null means after the selected unit. */
+  insertAt: InsertSlot | null;
+  /** Transient: the phone bottom sheet is expanded. Selecting a unit never touches it. */
+  sheetOpen: boolean;
+  /** Transient: what the expanded phone sheet shows. */
+  sheetView: 'inspector' | 'tray';
 }
 
 export interface PlannerState {
@@ -79,6 +94,8 @@ export interface PlannerState {
 
   select: (patch: Partial<Selection>) => void;
   newProject: () => void;
+  /** Room mode's template picker: replaces an untouched project in place (undoable), else opens a new one. */
+  applyTemplate: (key: TemplateKey | 'empty') => void;
   /** Saves `p` under a fresh id (so it is listed at once) and, unless told otherwise, opens it. */
   createProject: (p: Project, opts?: { select?: boolean }) => string;
   switchProject: (id: string) => void;
@@ -88,6 +105,8 @@ export interface PlannerState {
   toast: (m: Msg | null) => void;
   setLang: (lang: Lang) => void;
   setUnits: (units: Units) => void;
+  setTheme: (theme: Theme) => void;
+  setInsertAt: (slot: InsertSlot | null) => void;
 }
 
 export const HISTORY_LIMIT = 100;
@@ -157,12 +176,26 @@ function swapped<T>(items: T[], i: number, j: number): T[] {
   return next;
 }
 
+/**
+ * The slot if it still points at the same place in `project` as it did in `prev`, otherwise null.
+ * A slot is a gap between two particular columns, so it goes stale as soon as its segment gains or
+ * loses a column (even one before it), not only when its index runs past the end.
+ */
+function slotFor(project: Project, prev: Project, slot: InsertSlot | null): InsertSlot | null {
+  if (!slot) return null;
+  const plan = project.wardrobe.walls[slot.wall];
+  const cols = plan.enabled ? plan.segments[slot.segment] : undefined;
+  const before = prev.wardrobe.walls[slot.wall].segments[slot.segment];
+  return cols && slot.index <= cols.length && cols.length === before.length ? slot : null;
+}
+
 export function createPlannerStore(
   initial: Project = defaultProject(),
   lang: Lang = 'en',
   units: Units = 'mm',
   projectId = 'p0',
   storage: StorageLike | null = null,
+  theme: Theme = 'auto',
 ) {
   const initialErrors = validate(initial);
   return create<PlannerState>()((set, get) => {
@@ -170,13 +203,14 @@ export function createPlannerStore(
     const commit = (s: PlannerState, project: Project, past: Project[], future: Project[]): Partial<PlannerState> => {
       const errors = validate(project);
       const selection = cleanSelection(project, s.ui.selection);
+      const insertAt = slotFor(project, s.project, s.ui.insertAt);
       return {
         project,
         errors,
         lastValid: errors.length ? s.lastValid : project,
         past,
         future,
-        ui: selection === s.ui.selection ? s.ui : { ...s.ui, selection },
+        ui: selection === s.ui.selection && insertAt === s.ui.insertAt ? s.ui : { ...s.ui, selection, insertAt },
       };
     };
 
@@ -196,7 +230,7 @@ export function createPlannerStore(
           past: [],
           future: [],
           projects: storage ? listProjects(storage) : s.projects,
-          ui: { ...s.ui, selection: NO_SELECTION, projectId: id, firstRun: false },
+          ui: { ...s.ui, selection: NO_SELECTION, insertAt: null, projectId: id, firstRun: false, sheetOpen: false, sheetView: 'inspector' },
         };
       });
     };
@@ -217,7 +251,7 @@ export function createPlannerStore(
       past: [],
       future: [],
       projects: storage ? listProjects(storage) : [],
-      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false },
+      ui: { tab: 'design', selection: NO_SELECTION, showDims: true, showRoom: true, explode: 0, toast: null, lang, units, projectId, firstRun: false, theme, insertAt: null, sheetOpen: false, sheetView: 'inspector' },
 
       setProject: (updater) =>
         set((s) => {
@@ -342,10 +376,23 @@ export function createPlannerStore(
           }),
         ),
 
-      select: (patch) => set((s) => ({ ui: { ...s.ui, selection: { ...s.ui.selection, ...patch } } })),
+      select: (patch) =>
+        set((s) => {
+          const dropSlot = patch.wall !== undefined && patch.wall !== s.ui.selection.wall;
+          return { ui: { ...s.ui, selection: { ...s.ui.selection, ...patch }, insertAt: dropSlot ? null : s.ui.insertAt } };
+        }),
 
       newProject: () => {
         get().createProject(defaultProject());
+      },
+
+      applyTemplate: (key) => {
+        const s = get();
+        const next = key === 'empty' ? emptyProject() : makeTemplate(key, t(s.ui.lang, `template.${key}`));
+        // Only a project nobody has touched is replaced in place. `firstRun` is not enough: a
+        // shared link opens with it set, and that design must never be overwritten silently.
+        if (s.past.length === 0 && (isPristineDefault(s.project) || isUntouchedStarter(s.project))) s.setProject(() => next);
+        else s.createProject(next);
       },
 
       createProject: (p, opts) => {
@@ -401,6 +448,8 @@ export function createPlannerStore(
       toast: (m) => set((s) => ({ ui: { ...s.ui, toast: m } })),
       setLang: (l) => set((s) => ({ ui: { ...s.ui, lang: l } })),
       setUnits: (u) => set((s) => ({ ui: { ...s.ui, units: u } })),
+      setTheme: (theme) => set((s) => ({ ui: { ...s.ui, theme } })),
+      setInsertAt: (insertAt) => set((s) => ({ ui: { ...s.ui, insertAt } })),
     };
   });
 }
@@ -425,6 +474,7 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
   const unsub = store.subscribe((s, prev) => {
     if (s.ui.lang !== prev.ui.lang) saveLang(storage, s.ui.lang);
     if (s.ui.units !== prev.ui.units) saveUnits(storage, s.ui.units);
+    if (s.ui.theme !== prev.ui.theme) saveTheme(storage, s.ui.theme);
     if (s.ui.projectId !== prev.ui.projectId) {
       // Another project was opened. A pending debounce belongs to the one being left: firing it
       // later would write the incoming project under the outgoing id, and dropping it would lose
@@ -449,6 +499,12 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
   };
 }
 
+/** Ids are random per build, so "still the stock project" is judged on everything but them. */
+const withoutIds = (p: Project) => JSON.stringify(p, (k, v) => (k === 'id' ? undefined : v));
+const isPristineDefault = (p: Project) => withoutIds(p) === withoutIds(defaultProject());
+/** The L-shape example a first run opens with, as it was made; the name depends on the language then. */
+const isUntouchedStarter = (p: Project) => withoutIds({ ...p, name: '' }) === withoutIds(makeTemplate('lShape', ''));
+
 /**
  * Picks the project to open: the legacy single-project key is adopted into the index first, then
  * the project last open, then the most recently saved one. Nothing stored at all is a first run,
@@ -458,17 +514,18 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
 export function bootstrap(
   storage: StorageLike | null,
   lang: Lang = 'en',
-): { project: Project; projectId: string; firstRun: boolean } {
+): { project: Project; projectId: string; firstRun: boolean; theme: Theme } {
+  const theme = (storage && loadTheme(storage)) ?? 'auto';
   if (storage) {
     migrateLegacy(storage);
     const current = getCurrent(storage);
     const p = current ? loadProjectById(storage, current) : null;
-    if (current && p) return { project: p, projectId: current, firstRun: false };
+    if (current && p) return { project: p, projectId: current, firstRun: false, theme };
     // The index can name a project whose payload is gone; drop the row rather than list a phantom.
     if (current) deleteStored(storage, current);
     for (const m of listProjects(storage)) {
       const newest = loadProjectById(storage, m.id);
-      if (newest) return { project: newest, projectId: m.id, firstRun: false };
+      if (newest) return { project: newest, projectId: m.id, firstRun: false, theme };
     }
   }
   const project = makeTemplate('lShape', t(lang, 'template.lShape'));
@@ -477,7 +534,7 @@ export function bootstrap(
     saveProject(storage, projectId, project);
     setCurrent(storage, projectId);
   }
-  return { project, projectId, firstRun: true };
+  return { project, projectId, firstRun: true, theme };
 }
 
 const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
@@ -486,7 +543,7 @@ const initialLang: Lang = (browserStorage && loadLang(browserStorage)) ?? detect
 const initialUnits: Units = (browserStorage && loadUnits(browserStorage)) ?? detectUnits(navLang);
 
 const boot = bootstrap(browserStorage, initialLang);
-export const useStore = createPlannerStore(boot.project, initialLang, initialUnits, boot.projectId, browserStorage);
+export const useStore = createPlannerStore(boot.project, initialLang, initialUnits, boot.projectId, browserStorage, boot.theme);
 useStore.setState((s) => ({ ui: { ...s.ui, firstRun: boot.firstRun } }));
 if (browserStorage) {
   setCurrent(browserStorage, boot.projectId);

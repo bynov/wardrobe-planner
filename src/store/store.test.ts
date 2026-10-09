@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { bootstrap, createPlannerStore, findColumn, startAutosave } from './store';
-import { STORAGE_KEY, loadLang, loadUnits, saveToStorage } from './persist';
+import { STORAGE_KEY, THEME_KEY, loadLang, loadTheme, loadUnits, saveTheme, saveToStorage } from './persist';
 import { getCurrent, listProjects, loadProjectById, projectKey, saveProject, setCurrent } from './projects';
-import { defaultProject } from '../model/defaults';
+import { defaultProject, emptyProject } from '../model/defaults';
+import { validate } from '../model/validate';
+import { WALLS } from '../geometry/frames';
 import { makeTemplate } from '../model/templates';
 import { t } from '../i18n';
 import { makeGap, makeZone } from '../model/factory';
@@ -339,6 +341,53 @@ describe('store: ui and settings', () => {
   });
 });
 
+describe('store: theme and insert state', () => {
+  it('starts with auto theme, no insert slot and a closed sheet', () => {
+    const s = createPlannerStore();
+    expect(s.getState().ui.theme).toBe('auto');
+    expect(s.getState().ui.insertAt).toBeNull();
+    expect(s.getState().ui.sheetOpen).toBe(false);
+    expect(s.getState().ui.sheetView).toBe('inspector');
+  });
+
+  it('selecting a column leaves the sheet as it was', () => {
+    const s = createPlannerStore();
+    const [a, b] = s.getState().project.wardrobe.walls.back.segments[0];
+    s.getState().select({ wall: 'back', columnId: a.id, zoneId: null });
+    expect(s.getState().ui.sheetOpen).toBe(false);
+    s.getState().setUi({ sheetOpen: true, sheetView: 'tray' });
+    s.getState().select({ wall: 'back', columnId: b.id, zoneId: null });
+    expect(s.getState().ui).toMatchObject({ sheetOpen: true, sheetView: 'tray' });
+  });
+
+  it('setTheme and setInsertAt update ui', () => {
+    const s = createPlannerStore();
+    s.getState().setTheme('dark');
+    expect(s.getState().ui.theme).toBe('dark');
+    s.getState().setInsertAt({ wall: 'back', segment: 0, index: 2 });
+    expect(s.getState().ui.insertAt).toEqual({ wall: 'back', segment: 0, index: 2 });
+    s.getState().setInsertAt(null);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+
+  it('autosave writes the theme when it changes', () => {
+    const storage = memStorage();
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', storage);
+    const stop = startAutosave(s, storage, 100);
+    expect(loadTheme(storage)).toBeNull();
+    s.getState().setTheme('light');
+    expect(storage.mem.get(THEME_KEY)).toBe('light');
+    stop();
+  });
+
+  it('bootstrap picks up a stored theme', () => {
+    const storage = memStorage();
+    expect(bootstrap(storage).theme).toBe('auto');
+    saveTheme(storage, 'dark');
+    expect(bootstrap(storage).theme).toBe('dark');
+  });
+});
+
 describe('store: autosave', () => {
   it('debounces project writes and persists the language and units immediately', () => {
     vi.useFakeTimers();
@@ -560,6 +609,15 @@ describe('store: projects', () => {
     expect(getCurrent(storage)).toBe('p1');
   });
 
+  it('switchProject closes the sheet and returns it to the inspector', () => {
+    const { storage, store } = withStorage('p0');
+    saveProject(storage, 'p1', named('One'), 1000);
+    const s = store();
+    s.getState().setUi({ sheetOpen: true, sheetView: 'tray' });
+    s.getState().switchProject('p1');
+    expect(s.getState().ui).toMatchObject({ sheetOpen: false, sheetView: 'inspector' });
+  });
+
   it('switchProject drops an index entry whose payload is missing and toasts', () => {
     const { storage, store } = withStorage('p0', named('Here'));
     saveProject(storage, 'ghost', named('Ghost'), 1000);
@@ -732,5 +790,139 @@ describe('store: projects', () => {
     expect(s.getState().ui.toast).toEqual({ key: 'toast.storageFull' });
     stop();
     vi.useRealTimers();
+  });
+});
+
+describe('store: insert slot', () => {
+  const slot = { wall: 'back' as const, segment: 0 as const, index: 1 };
+  it('is dropped when its wall is disabled', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    expect(s.getState().ui.insertAt).toEqual(slot);
+    s.getState().setWall('back', { enabled: false });
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is dropped when its index is past the end of the segment', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt({ ...slot, index: backCols(s).length });
+    s.getState().removeColumn(backCols(s)[0].id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is dropped when a column before it is removed, so it never points between other units', () => {
+    const s = createPlannerStore();
+    s.getState().removeColumn(backCols(s)[3].id); // 3 columns left on the back wall
+    s.getState().setInsertAt({ ...slot, index: 2 });
+    s.getState().removeColumn(backCols(s)[0].id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is kept by an edit on another wall', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt({ ...slot, index: 2 });
+    s.getState().removeColumn(s.getState().project.wardrobe.walls.left.segments[0][0].id);
+    expect(s.getState().ui.insertAt).toEqual({ ...slot, index: 2 });
+  });
+  it('survives edits that keep it valid', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    s.getState().setName('x');
+    expect(s.getState().ui.insertAt).toEqual(slot);
+  });
+  it('is dropped when another wall is selected, kept when the same wall is', () => {
+    const s = createPlannerStore();
+    s.getState().setInsertAt(slot);
+    s.getState().select({ wall: 'back', columnId: null });
+    expect(s.getState().ui.insertAt).toEqual(slot);
+    s.getState().select({ wall: 'right' });
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+  it('is dropped when another project is opened', () => {
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', memStorage());
+    const id = s.getState().createProject(defaultProject(), { select: false });
+    s.getState().setInsertAt(slot);
+    s.getState().switchProject(id);
+    expect(s.getState().ui.insertAt).toBeNull();
+  });
+});
+
+describe('store: applyTemplate', () => {
+  const fresh = (firstRun: boolean) => {
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', memStorage());
+    s.getState().setUi({ firstRun });
+    return s;
+  };
+
+  it('replaces an untouched first-run project in place, undoably', () => {
+    const s = fresh(true);
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+    expect(s.getState().project.name).toBe(t('en', 'template.uShape'));
+    s.getState().undo();
+    expect(s.getState().project.name).toBe(defaultProject().name);
+  });
+
+  it('replaces a pristine default project in place even when not first run', () => {
+    const s = fresh(false);
+    s.getState().applyTemplate('lShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+  });
+
+  it('creates a new project once the current one was edited', () => {
+    const s = fresh(true);
+    s.getState().setRoom({ width: 1 });
+    const before = s.getState().projects.length;
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
+    expect(s.getState().projects.length).toBe(before + 1);
+    expect(s.getState().project.name).toBe(t('en', 'template.uShape'));
+  });
+
+  it("'empty' applies a project with every wall off and no columns", () => {
+    const s = fresh(true);
+    s.getState().applyTemplate('oneWall');
+    s.getState().setRoom({ width: 1 });
+    s.getState().applyTemplate('empty');
+    const p = s.getState().project;
+    expect(p.room.width).toBe(2400);
+    for (const w of WALLS) {
+      expect(p.wardrobe.walls[w].enabled).toBe(false);
+      expect(p.wardrobe.walls[w].segments).toEqual([[], []]);
+    }
+    expect(validate(emptyProject())).toEqual([]);
+  });
+
+  it('replaces the untouched first-run starter in place, whatever language named it', () => {
+    const s = createPlannerStore(makeTemplate('lShape', t('ru', 'template.lShape')), 'en', 'mm', 'p0', memStorage());
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).toBe('p0');
+    expect(s.getState().past).toHaveLength(1);
+  });
+
+  it('never overwrites a shared-link project in place, even with firstRun set', () => {
+    const storage = memStorage();
+    const s = createPlannerStore(defaultProject(), 'en', 'mm', 'p0', storage);
+    const shared = { ...defaultProject(), room: { ...defaultProject().room, width: 3000 } };
+    const id = s.getState().createProject(shared);
+    s.getState().setUi({ firstRun: true }); // what applyStartupUrl does after opening a link
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe(id);
+    expect(loadProjectById(storage, id)?.room.width).toBe(3000);
+  });
+
+  it('a renamed default project is not pristine', () => {
+    const s = createPlannerStore({ ...defaultProject(), name: 'Mine' }, 'en', 'mm', 'p0', memStorage());
+    expect(s.getState().past).toHaveLength(0);
+    const before = s.getState().projects.length;
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
+    expect(s.getState().projects.length).toBe(before + 1);
+  });
+
+  it('creates a new project whenever there is undo history', () => {
+    const s = fresh(true);
+    s.getState().setName('x');
+    s.getState().applyTemplate('uShape');
+    expect(s.getState().ui.projectId).not.toBe('p0');
   });
 });

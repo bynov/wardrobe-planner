@@ -44,7 +44,10 @@ export function useKeyboard(): void {
       if (mod) return;
       if (e.key === 'Escape') {
         e.preventDefault();
-        s.select({ columnId: null, zoneId: null });
+        // Escape peels one layer: an armed insert slot first, then the selection. Open menus and
+        // dialogs handle their own Escape in the capture phase and stop it before it gets here.
+        if (s.ui.insertAt) s.setInsertAt(null);
+        else s.select({ columnId: null, zoneId: null });
         return;
       }
       // Delete follows the highlight: a drilled-down zone selection deletes that zone (never the

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<svg viewBox="{{ vb }}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;user-select:none">
+<line x1="-100" y1="0" x2="{{ floorX2 }}" y2="0" style="stroke:var(--ink3);stroke-width:4;stroke-dasharray:24 18"></line>
+<rect x="-100" y="2500" width="{{ floorW }}" height="40" style="fill:var(--line2)"></rect>
+<rect x="0" y="2400" width="{{ W }}" height="100" style="fill:var(--sunk);stroke:var(--draw);stroke-width:5"></rect>
+<sc-for list="{{ gaps }}" as="g"><rect x="{{ g.x }}" y="150" width="{{ g.w }}" height="2350" style="fill:none;stroke:var(--ink3);stroke-width:5;stroke-dasharray:30 20"></rect><sc-if value="{{ g.rail }}"><line x1="{{ g.x1 }}" y1="2000" x2="{{ g.x2 }}" y2="2000" style="stroke:var(--draw);stroke-width:12;stroke-linecap:round"></line></sc-if></sc-for>
+<sc-for list="{{ carc }}" as="c"><rect x="{{ c.x }}" y="150" width="{{ c.w }}" height="2250" style="fill:var(--wood2);stroke:var(--draw);stroke-width:5"></rect><rect x="{{ c.ix }}" y="168" width="{{ c.iw }}" height="2214" style="fill:var(--wood);stroke:var(--draw);stroke-width:3"></rect></sc-for>
+<sc-for list="{{ boards }}" as="b"><rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="18" style="fill:var(--wood2);stroke:var(--draw);stroke-width:3"></rect></sc-for>
+<sc-for list="{{ shoes }}" as="s"><line x1="{{ s.x1 }}" y1="{{ s.y1 }}" x2="{{ s.x2 }}" y2="{{ s.y2 }}" style="stroke:var(--draw);stroke-width:14"></line></sc-for>
+<sc-for list="{{ fronts }}" as="f"><rect x="{{ f.x }}" y="{{ f.y }}" width="{{ f.w }}" height="{{ f.h }}" rx="6" style="fill:var(--wood2);stroke:var(--draw);stroke-width:4"></rect><line x1="{{ f.hx1 }}" y1="{{ f.hy }}" x2="{{ f.hx2 }}" y2="{{ f.hy }}" style="stroke:var(--draw);stroke-width:12;stroke-linecap:round"></line></sc-for>
+<sc-for list="{{ rails }}" as="r"><line x1="{{ r.x1 }}" y1="{{ r.y }}" x2="{{ r.x2 }}" y2="{{ r.y }}" style="stroke:var(--draw);stroke-width:12;stroke-linecap:round"></line><circle cx="{{ r.x1 }}" cy="{{ r.y }}" r="14" style="fill:var(--draw)"></circle><circle cx="{{ r.x2 }}" cy="{{ r.y }}" r="14" style="fill:var(--draw)"></circle></sc-for>
+<sc-for list="{{ zoneHits }}" as="h"><rect x="{{ h.x }}" y="{{ h.y }}" width="{{ h.w }}" height="{{ h.h }}" onClick="{{ h.onClick }}" style="fill:{{ h.fill }};stroke:{{ h.stroke }};stroke-width:8;cursor:pointer"></rect></sc-for>
+<sc-for list="{{ hits }}" as="h"><rect x="{{ h.x }}" y="2400" width="{{ h.w }}" height="100" onClick="{{ h.onClick }}" style="fill:transparent;cursor:pointer"></rect></sc-for>
+<sc-if value="{{ hasSel }}"><rect x="{{ sel.x }}" y="140" width="{{ sel.w }}" height="2370" rx="10" style="fill:none;stroke:var(--accent);stroke-width:14;pointer-events:none"></rect></sc-if>
+<sc-if value="{{ spawn }}"><sc-for list="{{ spawns }}" as="p"><g onClick="{{ p.onClick }}" style="cursor:pointer"><circle cx="{{ p.x }}" cy="-90" r="54" style="fill:var(--surface);stroke:var(--accent);stroke-width:6"></circle><line x1="{{ p.l }}" y1="-90" x2="{{ p.r }}" y2="-90" style="stroke:var(--accent);stroke-width:10;stroke-linecap:round"></line><line x1="{{ p.x }}" y1="-114" x2="{{ p.x }}" y2="-66" style="stroke:var(--accent);stroke-width:10;stroke-linecap:round"></line></g></sc-for></sc-if>
+<sc-if value="{{ dims }}">
+<sc-for list="{{ dimB }}" as="d"><line x1="{{ d.x1 }}" y1="2640" x2="{{ d.x2 }}" y2="2640" style="stroke:var(--ink3);stroke-width:4"></line><line x1="{{ d.x1 }}" y1="2600" x2="{{ d.x1 }}" y2="2680" style="stroke:var(--ink3);stroke-width:4"></line><line x1="{{ d.x2 }}" y1="2600" x2="{{ d.x2 }}" y2="2680" style="stroke:var(--ink3);stroke-width:4"></line></sc-for>
+<line x1="0" y1="2820" x2="{{ W }}" y2="2820" style="stroke:var(--ink3);stroke-width:4"></line><line x1="0" y1="2780" x2="0" y2="2860" style="stroke:var(--ink3);stroke-width:4"></line><line x1="{{ W }}" y1="2780" x2="{{ W }}" y2="2860" style="stroke:var(--ink3);stroke-width:4"></line>
+<sc-for list="{{ dimR }}" as="d"><line x1="{{ d.x }}" y1="{{ d.y1 }}" x2="{{ d.x }}" y2="{{ d.y2 }}" style="stroke:var(--ink3);stroke-width:4"></line><line x1="{{ d.tl }}" y1="{{ d.y1 }}" x2="{{ d.tr }}" y2="{{ d.y1 }}" style="stroke:var(--ink3);stroke-width:4"></line><line x1="{{ d.tl }}" y1="{{ d.y2 }}" x2="{{ d.tr }}" y2="{{ d.y2 }}" style="stroke:var(--ink3);stroke-width:4"></line></sc-for>
+</sc-if>
+{{ textEl }}
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:560}}">
+const DEF = [
+  { label: 'B1', width: 600, zones: [{ type: 'drawers', h: 600, count: 3 }, { type: 'hanging', h: null, count: 1 }] },
+  { label: 'B2', width: 600, zones: [{ type: 'hanging', h: null, count: 1 }, { type: 'hanging', h: null, count: 1 }] },
+  { label: 'B3', width: 600, zones: [{ type: 'shelves', h: null, count: 6 }] },
+  { label: 'B4', width: 600, zones: [{ type: 'drawers', h: 800, count: 4 }, { type: 'shelves', h: null, count: 4 }] },
+  { label: 'B5', width: 600, zones: [{ type: 'hanging', h: null, count: 1 }] },
+];
+const NAMES = { open: 'Open', shelves: 'Shelves', drawers: 'Drawers', hanging: 'Hanging', shoes: 'Shoes' };
+class Component extends DCLogic {
+  renderVals() {
+    const P = this.props;
+    const cols = P.cols ?? DEF;
+    const sel = P.selected ?? -1, selZ = P.selectedZone ?? -1;
+    const fmt = P.fmt ?? ((n) => String(Math.round(n)));
+    const H = 2500, yTop = 150, yBot = 2400, T = 18;
+    const dims = P.showDims ?? true, spawn = P.spawn ?? false;
+    const W = Math.max(cols.reduce((s, u) => s + u.width, 0), 600);
+    const carc = [], gaps = [], boards = [], fronts = [], rails = [], shoes = [], zl = [], tags = [], hits = [], zoneHits = [], dimB = [], spawns = [];
+    let x = 0;
+    const pick = (i, zi) => () => P.onSelect && P.onSelect(i, zi);
+    cols.forEach((u, i) => {
+      spawns.push({ x, l: x - 24, r: x + 24, onClick: () => P.onSpawn && P.onSpawn(i) });
+      tags.push({ x: x + u.width / 2, text: u.label, fill: i === sel ? 'var(--accent)' : 'var(--ink3)' });
+      dimB.push({ x1: x, x2: x + u.width, mid: x + u.width / 2, text: fmt(u.width) });
+      if (u.gap) {
+        gaps.push({ x, w: u.width, mid: x + u.width / 2, rail: !!u.rail, x1: x + 30, x2: x + u.width - 30 });
+        zoneHits.push({ x, y: yTop, w: u.width, h: H - yTop, onClick: pick(i, -1), fill: 'transparent', stroke: 'none' });
+        x += u.width; return;
+      }
+      const ix = x + T, iw = u.width - 2 * T, interior = yBot - yTop - 2 * T;
+      carc.push({ x, w: u.width, ix, iw });
+      const fixed = u.zones.reduce((s, z) => s + (z.h || 0), 0), na = u.zones.filter((z) => !z.h).length;
+      const ah = na ? Math.max(60, (interior - fixed - (u.zones.length - 1) * T) / na) : 0;
+      let y = yBot - T;
+      u.zones.forEach((z, zi) => {
+        const zh = z.h || ah, zt = y - zh;
+        if (z.type === 'drawers') {
+          const fh = zh / z.count;
+          for (let k = 0; k < z.count; k++) { const fy = zt + k * fh; fronts.push({ x: ix + 8, y: fy + 8, w: iw - 16, h: Math.max(10, fh - 16), hx1: ix + iw / 2 - 60, hx2: ix + iw / 2 + 60, hy: fy + Math.min(70, fh / 2) }); }
+        }
+        if (z.type === 'shelves') for (let k = 1; k < z.count; k++) boards.push({ x: ix, y: zt + (k * zh) / z.count - T / 2, w: iw });
+        if (z.type === 'shoes') for (let k = 1; k <= z.count; k++) { const sy = zt + (k * zh) / (z.count + 0.3); shoes.push({ x1: ix + 10, y1: sy + 30, x2: ix + iw - 10, y2: sy - 30 }); }
+        if (z.type === 'hanging') rails.push({ x1: ix + 24, x2: ix + iw - 24, y: zt + 70 });
+        const lblY = z.type === 'drawers' ? zt + zh / Math.max(1, z.count) / 2 + 60 : zt + zh / 2 + 16;
+        if (zh > 120) zl.push({ x: ix + iw / 2, y: z.type === 'drawers' ? zt + zh - 40 : lblY, text: NAMES[z.type] + ' ' + fmt(zh) });
+        const isSel = i === sel && zi === selZ;
+        zoneHits.push({ x: ix, y: zt, w: iw, h: zh, onClick: pick(i, zi), fill: isSel ? 'color-mix(in oklch, var(--accent) 16%, transparent)' : 'transparent', stroke: isSel ? 'var(--accent)' : 'none' });
+        if (zi < u.zones.length - 1) boards.push({ x: ix, y: zt - T, w: iw });
+        y = zt - T;
+      });
+      hits.push({ x, w: u.width, onClick: pick(i, -1) });
+      x += u.width;
+    });
+    spawns.push({ x, l: x - 24, r: x + 24, onClick: () => P.onSpawn && P.onSpawn(cols.length) });
+    const rx = W + 130, rx2 = W + 300;
+    const dr = (xx, y1, y2, text) => ({ x: xx, y1, y2, tl: xx - 36, tr: xx + 36, tx: xx - 30, mid: (y1 + y2) / 2, rot: `rotate(-90 ${xx - 30} ${(y1 + y2) / 2})`, text });
+    const dimR = [dr(rx, 0, 150, ''), dr(rx, 150, 2400, fmt(2250)), dr(rx, 2400, 2500, ''), dr(rx2, 0, 2500, fmt(2500))];
+    const s = sel >= 0 && cols[sel] ? cols.slice(0, sel).reduce((a, u) => a + u.width, 0) : 0;
+    const top = spawn ? -170 : 30;
+    const vb = dims ? `-160 ${top} ${W + 560} ${2960 - top}` : `-120 ${top} ${W + 240} ${2600 - top}`;
+    const E = React.createElement, txt = [];
+    const tx = (x, y, s, st, ex) => txt.push(E('text', { key: txt.length, x, y, style: { textAnchor: 'middle', pointerEvents: 'none', ...st }, ...(ex || {}) }, s));
+    const halo = { paintOrder: 'stroke', stroke: 'var(--wood)', strokeWidth: '14px', strokeLinejoin: 'round' };
+    zl.forEach((z) => tx(z.x, z.y, z.text, { fontSize: '44px', fill: 'var(--ink2)', ...halo }));
+    gaps.forEach((g) => tx(g.mid, 1300, 'gap', { fontSize: '46px', fill: 'var(--ink3)' }));
+    tags.forEach((t) => tx(t.x, 110, t.text, { fontSize: '52px', fontWeight: 500, fill: t.fill }));
+    if (dims) {
+      dimB.forEach((d) => tx(d.mid, 2720, d.text, { fontSize: '46px', fill: 'var(--ink2)' }));
+      tx(W / 2, 2905, fmt(W), { fontSize: '50px', fontWeight: 500, fill: 'var(--ink)' });
+      dimR.forEach((d) => d.text && tx(d.tx, d.mid, d.text, { fontSize: '44px', fill: 'var(--ink2)' }, { transform: d.rot }));
+    }
+    return {
+      textEl: E('g', null, txt), vb, W, floorX2: W + 100, floorW: W + 200, midW: W / 2, totalW: fmt(W),
+      carc, gaps, boards, fronts, rails, shoes, zl, tags, hits, zoneHits, dimB, dimR, spawns, spawn, dims,
+      hasSel: sel >= 0 && !!cols[sel], sel: { x: s - 10, w: (cols[sel]?.width ?? 0) + 20 },
+    };
+  }
+}
+</script>
+</body>
+</html>

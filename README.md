@@ -2,24 +2,30 @@
 
 **<https://walkinplanner.com>** — free, runs in the browser, no account.
 
-![Design tab: plan, wall elevation and inspector](public/screenshots/design.png)
+![Design mode: wall elevation, preset tray and inspector](public/screenshots/design.png)
 
 Plan a walk-in wardrobe: set the room and the door, pick which walls carry wardrobe, and fill
 each wall with columns of hanging rails, shelves, drawers, shoe racks and open compartments — or
 leave gaps. Out comes a 3D preview, a dimensioned plan with one elevation per wall, a cut list
 every panel of which is tagged to the drawings, and a PDF you can hand to a panel shop.
-Everything runs locally: projects live in your browser's storage, and a share link carries the
+It follows your system's light or dark theme (a button in the top bar forces either), and
+switches to a phone layout with a bottom sheet on narrow screens. Everything runs locally: projects live in your browser's storage, and a share link carries the
 whole design in the URL rather than on a server.
 
 ![3D preview of a walk-in wardrobe](public/screenshots/3d.png)
 
-![Walk-in Planner on a phone](public/screenshots/mobile.png)
+Dark theme and phone layout:
+
+![Design mode, dark theme](public/screenshots/design-dark.png)
+
+<img src="public/screenshots/mobile.png" alt="Walk-in Planner on a phone" width="280">
 
 ## What it does
 
 - Rectangular room, open (doorless) units along any of the four walls, one door opening.
 - Columns of stacked zones: hanging, double hanging, shelves, drawers, shoe rack, open
   compartment — or an empty gap, optionally carrying a wall-mounted rail.
+- Four modes: **Room**, **Design**, **3D**, **Cut list**; light and dark themes.
 - 3D preview, dimensioned plan + per-wall elevations, cut list, PDF export.
 - Millimetres or inches (display only — the model is always mm), English or Russian.
 - Several projects side by side, JSON import/export, share links, undo/redo.
@@ -37,11 +43,14 @@ whole design in the URL rather than on a server.
 
 1. First run opens an example layout and a three-step hint bar (click a wall → press **+** →
    click a unit). Dismiss it once and it stays gone. **Projects ▾** in the top bar lists your
-   projects and creates a new one blank or from a template (One wall, L-shape, U-shape);
-   `/app/?template=uShape` opens straight into one.
-2. **Design** tab: click a wall in the plan (top-left), then click a **+** in the wall elevation
-   to insert a unit preset (long hanging, double hanging, shelves, drawers + hanging,
-   drawers + shelves, shoe rack, open compartment, or an empty gap) at that position.
+   projects; **+ New project** there opens **Room** mode, where you start blank or from a
+   template (One wall, L-shape, U-shape) and size the room and door. `/app/?template=uShape`
+   opens straight into one.
+2. **Design** mode: pick a wall in the wall tabs (or the mini-plan beside them), then click a **+**
+   in the wall elevation to choose the insert position; the preset tray below the drawing adds a
+   unit there (long hanging, double hanging, shelves, drawers + hanging, drawers + shelves, shoe
+   rack, open compartment, or an empty gap). The tray's *Wardrobe on this wall* switch turns the
+   selected wall on or off.
 3. Click a unit to edit its width and zones (bottom→top stack) in the inspector; click a zone
    *inside the already-selected unit* to drill down to that zone. A shelves zone is sized in
    **compartments**, not boards: *n* compartments are split by *n* − 1 shelves, so `1` is a
@@ -62,12 +71,13 @@ whole design in the URL rather than on a server.
 6. A hanging zone's rail runs **along the wall** by default; switch its *Direction* to
    **front to back (corner)** for a unit boxed into a corner, where a wall-parallel rail cannot
    be reached. The plan shows every rail as a dashed line, so the two read apart.
-7. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in the left
-   panel. The **mm | in** toggle beside the language toggle switches every displayed length,
-   including drawings, cut list and PDF; files stay in millimetres.
-8. **3D** tab to orbit around the room; **Cut list** tab for the parts; **Export PDF** for the
-   scheme (the 3D picture is rendered off-screen if you never opened the 3D tab).
-9. **Share link** copies a URL with the whole project packed into the fragment — nothing is
+7. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in **Room** mode
+   (on a phone: the projects sheet). The **mm | in** toggle (in the top bar on desktop, in the
+   **⋯** menu on a phone) switches every displayed length, including drawings, cut list and PDF;
+   files stay in millimetres. The language (EN · RU) is in the **⋯** menu.
+8. **3D** mode to orbit around the room; **Cut list** mode for the parts; **Export PDF** for the
+   scheme (the 3D picture is rendered off-screen if you never opened 3D mode).
+9. **Share link** (on a phone: in the **⋯** menu) copies a URL with the whole project packed into the fragment — nothing is
    stored on a server. **Export JSON** / **Import JSON** move a project between browsers; an
    imported file always opens as a new project, so whatever you had open stays as it was.
 
@@ -80,7 +90,7 @@ The project autosaves to localStorage. The PDF embeds PT Sans (SIL OFL) so Russi
     pnpm test         # vitest
     pnpm typecheck
     pnpm build        # typecheck + vite build -> dist/
-    pnpm screenshots  # needs dist/: rewrites public/screenshots/*.png and public/og.png
+    pnpm screenshots  # needs dist/: rewrites public/screenshots/*.png (light and -dark) and public/og.png
 
 `pnpm screenshots` drives the system Chrome headless over the DevTools protocol (no Playwright,
 no extra dependency); set `CHROME` if Chrome is not at the default macOS path.
@@ -88,7 +98,7 @@ no extra dependency); set `CHROME` if Chrome is not at the default macOS path.
 ## Layout
 
 - `index.html`, `ru/`, `guides/`, `site/` static marketing pages (landing in two languages, four
-  guides) with their shared CSS and the page list a test checks
+  guides) with their shared CSS (`site/tokens.css` holds the design tokens the app shares) and the page list a test checks
 - `app/index.html` the planner itself, served at `/app/`
 - `public/` static assets copied verbatim: `CNAME`, favicon, `robots.txt`, `sitemap.xml`,
   `llms.txt`, `og.png`, `screenshots/`
@@ -100,7 +110,7 @@ no extra dependency); set `CHROME` if Chrome is not at the default macOS path.
 - `src/units.ts` mm/inch formatting and parsing (display only)
 - `src/store` zustand store (history, selection), persistence, `projects.ts` (several projects in
   localStorage), `share.ts` (compressed share links)
-- `src/ui` React components (Design tab editors, 3D viewport under `src/ui/three`,
+- `src/ui` React components (top bar and modes, Design editors, phone shell, 3D viewport under `src/ui/three`,
   `three/offscreenSnapshot.ts` for the PDF picture without a 3D visit)
 - `scripts/screenshots.mjs` the screenshot/og-image generator
 

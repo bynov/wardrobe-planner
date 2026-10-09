@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:oklch(0.972 0.004 80);--surface:oklch(0.995 0.002 80);--surface2:oklch(0.955 0.005 80);--sunk:oklch(0.935 0.006 80);--line:oklch(0.905 0.006 80);--line2:oklch(0.84 0.008 80);--ink:oklch(0.23 0.01 70);--ink2:oklch(0.43 0.01 70);--ink3:oklch(0.56 0.01 70);--accent:oklch(0.55 0.13 48);--accent-ink:oklch(0.99 0.005 60);--accent-soft:oklch(0.94 0.035 60);--wood:oklch(0.94 0.018 78);--wood2:oklch(0.895 0.025 75);--draw:oklch(0.36 0.012 70);--ok:oklch(0.52 0.11 150);--danger:oklch(0.53 0.17 27);--shadow:0 1px 2px oklch(0.3 0.02 70/.06),0 10px 30px oklch(0.3 0.02 70/.08)}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:oklch(0.17 0.005 70);--surface:oklch(0.205 0.006 70);--surface2:oklch(0.24 0.007 70);--sunk:oklch(0.15 0.005 70);--line:oklch(0.29 0.008 70);--line2:oklch(0.37 0.01 70);--ink:oklch(0.95 0.005 80);--ink2:oklch(0.79 0.008 80);--ink3:oklch(0.64 0.008 80);--accent:oklch(0.76 0.12 62);--accent-ink:oklch(0.2 0.03 55);--accent-soft:oklch(0.31 0.05 55);--wood:oklch(0.265 0.012 70);--wood2:oklch(0.315 0.014 70);--draw:oklch(0.8 0.01 80);--ok:oklch(0.76 0.11 150);--danger:oklch(0.72 0.15 27);--shadow:0 1px 2px #0006,0 10px 30px #0005}}
+.wp-light{color-scheme:light;--bg:oklch(0.972 0.004 80);--surface:oklch(0.995 0.002 80);--surface2:oklch(0.955 0.005 80);--sunk:oklch(0.935 0.006 80);--line:oklch(0.905 0.006 80);--line2:oklch(0.84 0.008 80);--ink:oklch(0.23 0.01 70);--ink2:oklch(0.43 0.01 70);--ink3:oklch(0.56 0.01 70);--accent:oklch(0.55 0.13 48);--accent-ink:oklch(0.99 0.005 60);--accent-soft:oklch(0.94 0.035 60);--wood:oklch(0.94 0.018 78);--wood2:oklch(0.895 0.025 75);--draw:oklch(0.36 0.012 70);--ok:oklch(0.52 0.11 150);--danger:oklch(0.53 0.17 27);--shadow:0 1px 2px oklch(0.3 0.02 70/.06),0 10px 30px oklch(0.3 0.02 70/.08)}
+.wp-dark{color-scheme:dark;--bg:oklch(0.17 0.005 70);--surface:oklch(0.205 0.006 70);--surface2:oklch(0.24 0.007 70);--sunk:oklch(0.15 0.005 70);--line:oklch(0.29 0.008 70);--line2:oklch(0.37 0.01 70);--ink:oklch(0.95 0.005 80);--ink2:oklch(0.79 0.008 80);--ink3:oklch(0.64 0.008 80);--accent:oklch(0.76 0.12 62);--accent-ink:oklch(0.2 0.03 55);--accent-soft:oklch(0.31 0.05 55);--wood:oklch(0.265 0.012 70);--wood2:oklch(0.315 0.014 70);--draw:oklch(0.8 0.01 80);--ok:oklch(0.76 0.11 150);--danger:oklch(0.72 0.15 27);--shadow:0 1px 2px #0006,0 10px 30px #0005}
+html,body{margin:0;height:100%}body{font-family:'Schibsted Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--ink)}a{color:var(--accent)}a:hover{color:var(--ink)}input{font:inherit;color:inherit}
+</style>
+</helmet>
+<div class="{{ themeClass }}" style="position:relative;width:100%;height:{{ rootH }};display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Schibsted Grotesk',system-ui,sans-serif;font-size:14px">
+
+<sc-if value="{{ showTopBar }}" hint-placeholder-val="{{ true }}">
+<header style="flex:none;height:56px;display:flex;align-items:center;gap:14px;padding:0 14px 0 16px;border-bottom:1px solid var(--line);background:var(--surface);position:relative;z-index:5">
+<div style="display:flex;align-items:center;gap:10px;flex:none">
+<div style="width:24px;height:24px;border-radius:6px;background:var(--ink);display:flex;align-items:flex-start;justify-content:center;padding-top:6px;box-sizing:border-box"><div style="width:12px;height:10px;border:2.5px solid var(--accent);border-bottom:0;box-sizing:border-box"></div></div>
+<button onClick="{{ toggleProjects }}" style="white-space:nowrap;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:transparent;padding:4px 8px;border-radius:8px;cursor:pointer;color:var(--ink);font-family:inherit" style-hover="background:var(--surface2)"><span style="font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center">U-shape walk-in <span style="font-size:10px;color:var(--ink3)">▼</span></span><span style="font-size:11px;color:var(--ink3)">Saved in this browser</span></button>
+</div>
+<sc-if value="{{ showTabs }}">
+<nav style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface2);margin:0 auto">
+<sc-for list="{{ tabs }}" as="t"><button onClick="{{ t.onClick }}" style="white-space:nowrap;height:30px;padding:0 16px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }};font:500 13px inherit;font-family:inherit;cursor:pointer">{{ t.label }}</button></sc-for>
+</nav>
+</sc-if>
+<sc-if value="{{ showSteps }}">
+<nav style="display:flex;align-items:center;gap:6px;margin:0 auto">
+<sc-for list="{{ steps }}" as="s"><button onClick="{{ s.onClick }}" style="white-space:nowrap;display:flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 6px;border:0;border-radius:16px;background:{{ s.bg }};color:{{ s.fg }};font:500 13px inherit;font-family:inherit;cursor:pointer"><span style="width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 11px 'IBM Plex Mono',monospace;background:{{ s.dotBg }};color:{{ s.dotFg }}">{{ s.n }}</span>{{ s.label }}</button><sc-if value="{{ s.sep }}"><span style="width:18px;height:1px;background:var(--line2)"></span></sc-if></sc-for>
+</nav>
+</sc-if>
+<div style="display:flex;align-items:center;gap:6px;flex:none">
+<button onClick="{{ undo }}" title="Undo" style="white-space:nowrap;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:{{ undoFg }};font-size:17px;cursor:pointer" style-hover="background:var(--surface2)">↶</button>
+<button onClick="{{ redo }}" title="Redo" style="white-space:nowrap;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:{{ redoFg }};font-size:17px;cursor:pointer" style-hover="background:var(--surface2)">↷</button>
+<span style="width:1px;height:20px;background:var(--line);margin:0 4px"></span>
+<div style="display:flex;padding:2px;border-radius:8px;background:var(--surface2)"><sc-for list="{{ unitOpts }}" as="u"><button onClick="{{ u.onClick }}" style="white-space:nowrap;height:26px;padding:0 9px;border:0;border-radius:6px;background:{{ u.bg }};color:{{ u.fg }};box-shadow:{{ u.sh }};font:500 12px 'IBM Plex Mono',monospace;cursor:pointer">{{ u.label }}</button></sc-for></div>
+<button onClick="{{ cycleTheme }}" title="Theme" style="white-space:nowrap;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink2);font:500 12px inherit;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:6px;border:1.5px solid currentColor;background:linear-gradient(90deg,currentColor 50%,transparent 50%);box-sizing:border-box"></span>{{ themeLabel }}</button>
+<span style="width:1px;height:20px;background:var(--line);margin:0 4px"></span>
+<button onClick="{{ share }}" style="white-space:nowrap;height:32px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);font:500 13px inherit;font-family:inherit;cursor:pointer" style-hover="background:var(--surface2)">Share link</button>
+<button onClick="{{ exportPdf }}" title="{{ pdfTitle }}" style="white-space:nowrap;height:32px;padding:0 14px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);opacity:{{ pdfOpacity }};font:600 13px inherit;font-family:inherit;cursor:pointer">Export PDF</button>
+<button onClick="{{ toggleMore }}" title="More" style="white-space:nowrap;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--ink2);font-size:18px;cursor:pointer" style-hover="background:var(--surface2)">⋯</button>
+</div>
+<sc-if value="{{ moreOpen }}">
+<div style="position:absolute;top:52px;right:14px;width:220px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column">
+<sc-for list="{{ moreItems }}" as="m"><button onClick="{{ m.onClick }}" style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:13px inherit;font-family:inherit;cursor:pointer;text-align:left" style-hover="background:var(--surface2)"><span>{{ m.label }}</span><span style="font:11px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ m.hint }}</span></button></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ projectsOpen }}">
+<div style="position:absolute;top:52px;left:44px;width:280px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column">
+<div style="padding:8px 10px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Projects</div>
+<sc-for list="{{ projects }}" as="p"><button onClick="{{ toggleProjects }}" style="white-space:nowrap;display:flex;justify-content:space-between;align-items:center;height:36px;padding:0 10px;border:0;border-radius:8px;background:{{ p.bg }};color:var(--ink);font:13px inherit;font-family:inherit;cursor:pointer"><span>{{ p.name }}</span><span style="font-size:12px;color:var(--ink3)">{{ p.when }}</span></button></sc-for>
+<div style="height:1px;background:var(--line);margin:6px 4px"></div>
+<button onClick="{{ goSetup }}" style="height:34px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--accent);font:600 13px inherit;font-family:inherit;cursor:pointer;text-align:left" style-hover="background:var(--surface2)">+ New project</button>
+</div>
+</sc-if>
+</header>
+</sc-if>
+
+<sc-if value="{{ showHint }}">
+<div style="flex:none;display:flex;align-items:center;gap:18px;padding:10px 18px;background:var(--accent-soft);border-bottom:1px solid var(--line);font-size:13px">
+<sc-for list="{{ hintSteps }}" as="h"><div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font:600 11px 'IBM Plex Mono',monospace">{{ h.n }}</span><span>{{ h.text }}</span></div></sc-for>
+<button onClick="{{ dismissHint }}" style="white-space:nowrap;margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:7px;background:var(--ink);color:var(--bg);font:500 12px inherit;font-family:inherit;cursor:pointer">Got it</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isClassic }}">
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:288px minmax(0,1fr) 340px">
+<aside style="border-right:1px solid var(--line);background:var(--surface);overflow:auto;display:flex;flex-direction:column">
+<div style="padding:16px 16px 6px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)">Plan</span><span style="font-size:12px;color:var(--ink3)">Click a wall</span></div>
+<div style="height:220px;padding:0 10px"><dc-import name="Plan" style="display:block;width:100%;height:100%" active-wall="{{ wall }}" on-wall="{{ onWall }}" hint-size="100%,220px"></dc-import></div>
+<div style="display:flex;flex-direction:column;padding:6px 10px 14px;gap:2px">
+<sc-for list="{{ wallRows }}" as="w"><button onClick="{{ w.onClick }}" style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;border-radius:8px;background:{{ w.bg }};color:var(--ink);font:inherit;font-family:inherit;cursor:pointer;text-align:left"><span style="width:7px;height:7px;border-radius:4px;background:{{ w.dot }}"></span><span style="flex:1;font-weight:{{ w.weight }}">{{ w.name }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:{{ w.statusFg }}">{{ w.status }}</span></button></sc-for>
+</div>
+<div style="border-top:1px solid var(--line);display:flex;flex-direction:column">
+<sc-for list="{{ sections }}" as="s">
+<div style="border-bottom:1px solid var(--line)">
+<button onClick="{{ s.onClick }}" style="width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px;border:0;background:transparent;color:var(--ink);font-family:inherit;cursor:pointer;text-align:left"><span style="display:flex;width:100%;justify-content:space-between;font-size:13px;font-weight:600">{{ s.title }}<span style="color:var(--ink3);font-weight:400">{{ s.chev }}</span></span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ s.summary }}</span></button>
+<sc-if value="{{ s.open }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 10px;padding:0 16px 16px">
+<sc-for list="{{ s.fields }}" as="f"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">{{ f.label }}<input value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:34px;box-sizing:border-box;width:100%;padding:0 10px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font:500 13px 'IBM Plex Mono',monospace;color:var(--ink);outline-color:var(--accent)"></label></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</aside>
+<main style="min-width:0;display:flex;flex-direction:column;position:relative">
+<div style="flex:none;height:52px;display:flex;align-items:center;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--surface)">
+<span style="font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ wallName }}</span>
+<div onClick="{{ toggleWallOn }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)"><span style="width:30px;height:18px;border-radius:9px;background:{{ wallOnBg }};position:relative"><span style="position:absolute;top:2px;left:{{ wallOnKnob }};width:14px;height:14px;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0003"></span></span>Wardrobe on this wall</div>
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)">Depth<span style="height:30px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--line2);border-radius:7px;font:500 13px 'IBM Plex Mono',monospace;color:var(--ink)">{{ depth }}</span></label>
+<span style="height:24px;display:flex;align-items:center;padding:0 10px;border-radius:12px;background:{{ freeBg }};color:{{ freeFg }};font:500 12px 'IBM Plex Mono',monospace">{{ freeText }}</span>
+<div style="margin-left:auto;display:flex;align-items:center;gap:4px">
+<button onClick="{{ toggleDims }}" style="white-space:nowrap;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:{{ dimsBg }};color:var(--ink2);font:500 12px inherit;font-family:inherit;cursor:pointer">Dimensions</button>
+<button onClick="{{ goLargePlan }}" style="white-space:nowrap;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--ink2);font:500 12px inherit;font-family:inherit;cursor:pointer">3D view</button>
+</div>
+</div>
+<div style="flex:1;min-height:0;position:relative;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/20px 20px">
+<sc-if value="{{ wallOn }}"><div style="position:absolute;inset:28px 40px 96px 40px"><dc-import name="Elevation" style="display:block;width:100%;height:100%" cols="{{ cols }}" selected="{{ sel }}" selected-zone="{{ selZ }}" on-select="{{ onSelect }}" spawn="{{ true }}" on-spawn="{{ onSpawn }}" show-dims="{{ dims }}" fmt="{{ fmtN }}" hint-size="100%,100%"></dc-import></div></sc-if>
+<sc-if value="{{ wallOff }}"><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center"><div style="font-size:15px;font-weight:600">No wardrobe on this wall</div><div style="font-size:13px;color:var(--ink2);max-width:280px">Switch on “Wardrobe on this wall” to start placing units.</div><button onClick="{{ toggleWallOn }}" style="white-space:nowrap;margin-top:6px;height:34px;padding:0 14px;border:0;border-radius:8px;background:var(--ink);color:var(--bg);font:500 13px inherit;font-family:inherit;cursor:pointer">Use this wall</button></div></sc-if>
+<sc-if value="{{ wallOn }}">
+<div style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);max-width:calc(100% - 40px);overflow:auto">
+<span style="padding:0 10px 0 8px;font-size:12px;color:var(--ink3);white-space:nowrap">{{ insertLabel }}</span>
+<sc-for list="{{ presets }}" as="p"><button onClick="{{ p.onClick }}" title="{{ p.label }}" style="white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 10px 0 8px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:500 12px inherit;font-family:inherit;cursor:pointer;white-space:nowrap" style-hover="background:var(--surface2)"><span style="width:20px;height:32px;border:1.5px solid {{ p.border }};border-radius:3px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:var(--wood)"><sc-for list="{{ p.segs }}" as="g"><span style="flex:{{ g.flex }};background:{{ g.bg }};border-top:{{ g.bt }}"></span></sc-for></span>{{ p.label }}</button></sc-for>
+</div>
+</sc-if>
+</div>
+</main>
+<aside style="border-left:1px solid var(--line);background:var(--bg);overflow:auto;padding:18px 18px 28px;display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{ hasErrors }}"><div style="display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:10px;background:color-mix(in oklch,var(--danger) 10%,var(--surface));border:1px solid color-mix(in oklch,var(--danger) 35%,transparent)"><span style="font-size:12px;font-weight:600;color:var(--danger)">1 issue · PDF and share are off until it’s fixed</span><span style="font-size:13px;line-height:1.4">{{ errorText }}</span></div></sc-if>
+<dc-import name="Inspector" col="{{ selCol }}" selected-zone="{{ selZ }}" wall-name="{{ wallName }}" fmt="{{ fmt }}" on-select-zone="{{ onSelectZone }}" on-zone="{{ onZone }}" on-add-zone="{{ onAddZone }}" on-remove-zone="{{ onRemoveZone }}" on-move-zone="{{ onMoveZone }}" on-width="{{ onWidth }}" on-move="{{ onMove }}" on-duplicate="{{ onDuplicate }}" on-remove="{{ onRemove }}" on-rail="{{ onRail }}" hint-size="100%,500px"></dc-import>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCanvas }}">
+<div style="flex:1;min-height:0;position:relative;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/20px 20px">
+<div style="position:absolute;top:70px;left:300px;right:380px;bottom:100px"><dc-import name="Elevation" style="display:block;width:100%;height:100%" cols="{{ cols }}" selected="{{ sel }}" selected-zone="{{ selZ }}" on-select="{{ onSelect }}" spawn="{{ true }}" on-spawn="{{ onSpawn }}" show-dims="{{ dims }}" fmt="{{ fmtN }}" hint-size="100%,100%"></dc-import></div>
+<div style="position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)">
+<div style="width:22px;height:22px;border-radius:6px;background:var(--ink);display:flex;align-items:flex-start;justify-content:center;padding-top:5px;box-sizing:border-box"><div style="width:11px;height:9px;border:2.5px solid var(--accent);border-bottom:0;box-sizing:border-box"></div></div>
+<span style="font-weight:600">U-shape walk-in</span>
+<nav style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface2)"><sc-for list="{{ tabs }}" as="t"><button onClick="{{ t.onClick }}" style="white-space:nowrap;height:28px;padding:0 13px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }};font:500 13px inherit;font-family:inherit;cursor:pointer">{{ t.label }}</button></sc-for></nav>
+</div>
+<div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;height:34px;padding:0 14px;border-radius:17px;background:var(--surface);border:1px solid var(--line);font-size:13px"><span style="font-weight:600">{{ wallName }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:{{ freeFg }}">{{ freeText }}</span></div>
+<div style="position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:6px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)">
+<button onClick="{{ undo }}" style="white-space:nowrap;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:{{ undoFg }};font-size:16px;cursor:pointer">↶</button>
+<button onClick="{{ redo }}" style="white-space:nowrap;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:{{ redoFg }};font-size:16px;cursor:pointer">↷</button>
+<div style="display:flex;padding:2px;border-radius:8px;background:var(--surface2)"><sc-for list="{{ unitOpts }}" as="u"><button onClick="{{ u.onClick }}" style="white-space:nowrap;height:26px;padding:0 8px;border:0;border-radius:6px;background:{{ u.bg }};color:{{ u.fg }};box-shadow:{{ u.sh }};font:500 12px 'IBM Plex Mono',monospace;cursor:pointer">{{ u.label }}</button></sc-for></div>
+<button onClick="{{ cycleTheme }}" style="white-space:nowrap;height:30px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--ink2);font:500 12px inherit;font-family:inherit;cursor:pointer">{{ themeLabel }}</button>
+<button onClick="{{ share }}" style="white-space:nowrap;height:30px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);font:500 13px inherit;font-family:inherit;cursor:pointer">Share</button>
+<button onClick="{{ exportPdf }}" style="white-space:nowrap;height:30px;padding:0 14px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);opacity:{{ pdfOpacity }};font:600 13px inherit;font-family:inherit;cursor:pointer">Export PDF</button>
+</div>
+<div style="position:absolute;top:70px;left:14px;width:264px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px">
+<div style="height:190px"><dc-import name="Plan" style="display:block;width:100%;height:100%" active-wall="{{ wall }}" on-wall="{{ onWall }}" hint-size="100%,190px"></dc-import></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><sc-for list="{{ wallRows }}" as="w"><button onClick="{{ w.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px 9px;border:1px solid {{ w.border }};border-radius:9px;background:{{ w.bg }};color:var(--ink);font-family:inherit;cursor:pointer;text-align:left"><span style="font-size:12px;font-weight:600">{{ w.short }}</span><span style="font:11px 'IBM Plex Mono',monospace;color:{{ w.statusFg }}">{{ w.status }}</span></button></sc-for></div>
+<button onClick="{{ goSetup }}" style="white-space:nowrap;display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:0;border-radius:9px;background:var(--surface2);color:var(--ink);font-family:inherit;cursor:pointer"><span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="font-size:12px;font-weight:600">Room &amp; door</span><span style="font:11px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ roomSummary }}</span></span><span style="font-size:12px;color:var(--accent);font-weight:600">Edit</span></button>
+</div>
+<div style="position:absolute;top:70px;right:14px;bottom:14px;width:344px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);overflow:auto;padding:18px;box-sizing:border-box">
+<dc-import name="Inspector" col="{{ selCol }}" selected-zone="{{ selZ }}" wall-name="{{ wallName }}" fmt="{{ fmt }}" on-select-zone="{{ onSelectZone }}" on-zone="{{ onZone }}" on-add-zone="{{ onAddZone }}" on-remove-zone="{{ onRemoveZone }}" on-move-zone="{{ onMoveZone }}" on-width="{{ onWidth }}" on-move="{{ onMove }}" on-duplicate="{{ onDuplicate }}" on-remove="{{ onRemove }}" on-rail="{{ onRail }}" hint-size="100%,500px"></dc-import>
+</div>
+<div style="position:absolute;left:292px;right:372px;bottom:16px;display:flex;justify-content:center"><div style="display:flex;align-items:center;gap:2px;padding:6px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow);max-width:100%;overflow:auto">
+<sc-for list="{{ presets }}" as="p"><button onClick="{{ p.onClick }}" title="{{ p.label }}" style="white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;padding:7px 2px 6px;border:0;border-radius:10px;background:transparent;color:var(--ink2);font:500 10.5px inherit;font-family:inherit;cursor:pointer;line-height:1.15" style-hover="background:var(--surface2)"><span style="width:22px;height:34px;border:1.5px solid var(--draw);border-radius:3px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:var(--wood)"><sc-for list="{{ p.segs }}" as="g"><span style="flex:{{ g.flex }};background:{{ g.bg }};border-top:{{ g.bt }}"></span></sc-for></span>{{ p.short }}</button></sc-for>
+</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isGuided }}">
+<div style="flex:none;display:flex;align-items:stretch;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--surface)">
+<div style="width:84px;height:64px;flex:none"><dc-import name="Plan" style="display:block;width:100%;height:100%" active-wall="{{ wall }}" on-wall="{{ onWall }}" show-labels="{{ false }}" hint-size="84px,64px"></dc-import></div>
+<sc-for list="{{ wallRows }}" as="w"><button onClick="{{ w.onClick }}" style="flex:1;max-width:220px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;padding:0 14px;border:1px solid {{ w.border }};border-radius:12px;background:{{ w.bg }};color:var(--ink);font-family:inherit;cursor:pointer;text-align:left"><span style="font-size:14px;font-weight:600">{{ w.name }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:{{ w.statusFg }}">{{ w.status }}</span></button></sc-for>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 360px">
+<main style="min-width:0;display:flex;flex-direction:column">
+<div style="flex:1;min-height:0;position:relative;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/20px 20px">
+<sc-if value="{{ wallOn }}"><div style="position:absolute;inset:24px 32px 16px"><dc-import name="Elevation" style="display:block;width:100%;height:100%" cols="{{ cols }}" selected="{{ sel }}" selected-zone="{{ selZ }}" on-select="{{ onSelect }}" spawn="{{ true }}" on-spawn="{{ onSpawn }}" show-dims="{{ dims }}" fmt="{{ fmtN }}" hint-size="100%,100%"></dc-import></div></sc-if>
+<sc-if value="{{ wallOff }}"><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><div style="font-size:15px;font-weight:600">No wardrobe on this wall</div><button onClick="{{ toggleWallOn }}" style="white-space:nowrap;height:34px;padding:0 14px;border:0;border-radius:8px;background:var(--ink);color:var(--bg);font:500 13px inherit;font-family:inherit;cursor:pointer">Use this wall</button></div></sc-if>
+</div>
+<div style="flex:none;border-top:1px solid var(--line);background:var(--surface);padding:12px 18px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:600">Add a unit <span style="font-weight:400;color:var(--ink3)">{{ insertLabelShort }}</span></span><span style="font:12px 'IBM Plex Mono',monospace;color:{{ freeFg }}">{{ freeText }}</span></div>
+<div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px">
+<sc-for list="{{ presets }}" as="p"><button onClick="{{ p.onClick }}" style="white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 4px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:500 12px inherit;font-family:inherit;cursor:pointer;line-height:1.2;text-align:center" style-hover="border-color:var(--accent)"><span style="width:28px;height:46px;border:1.5px solid {{ p.border }};border-radius:3px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:var(--wood)"><sc-for list="{{ p.segs }}" as="g"><span style="flex:{{ g.flex }};background:{{ g.bg }};border-top:{{ g.bt }}"></span></sc-for></span>{{ p.label }}</button></sc-for>
+</div>
+</div>
+</main>
+<aside style="border-left:1px solid var(--line);background:var(--bg);overflow:auto;padding:18px">
+<sc-if value="{{ hasErrors }}"><div style="margin-bottom:14px;padding:12px;border-radius:10px;background:color-mix(in oklch,var(--danger) 10%,var(--surface));font-size:13px;color:var(--danger)">{{ errorText }}</div></sc-if>
+<dc-import name="Inspector" col="{{ selCol }}" selected-zone="{{ selZ }}" wall-name="{{ wallName }}" fmt="{{ fmt }}" on-select-zone="{{ onSelectZone }}" on-zone="{{ onZone }}" on-add-zone="{{ onAddZone }}" on-remove-zone="{{ onRemoveZone }}" on-move-zone="{{ onMoveZone }}" on-width="{{ onWidth }}" on-move="{{ onMove }}" on-duplicate="{{ onDuplicate }}" on-remove="{{ onRemove }}" on-rail="{{ onRail }}" hint-size="100%,500px"></dc-import>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSetup }}">
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:300px minmax(0,1fr) 380px">
+<aside style="border-right:1px solid var(--line);background:var(--surface);padding:22px 16px;display:flex;flex-direction:column;gap:12px;overflow:auto">
+<div style="display:flex;flex-direction:column;gap:4px;padding:0 4px 6px"><span style="font-size:20px;font-weight:600;letter-spacing:-0.015em">New walk-in</span><span style="font-size:13px;color:var(--ink2);line-height:1.45">Start from a layout, then type in your room.</span></div>
+<sc-for list="{{ tpls }}" as="t"><button onClick="{{ t.onClick }}" style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid {{ t.border }};border-radius:12px;background:{{ t.bg }};color:var(--ink);font-family:inherit;cursor:pointer;text-align:left"><span style="width:76px;height:62px;flex:none;border-radius:8px;background:var(--bg);display:block"><dc-import name="Plan" style="display:block;width:100%;height:100%" template="{{ t.key }}" interactive="{{ false }}" show-labels="{{ false }}" hint-size="76px,62px"></dc-import></span><span style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14px;font-weight:600">{{ t.name }}</span><span style="font-size:12px;color:var(--ink3);line-height:1.35">{{ t.desc }}</span></span></button></sc-for>
+<div style="margin-top:auto;padding:12px 4px 0;font-size:12px;line-height:1.5;color:var(--ink3)">Have a file? <a href="#" style="color:var(--accent);font-weight:500">Import JSON</a></div>
+</aside>
+<main style="min-width:0;display:flex;flex-direction:column;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/20px 20px">
+<div style="flex:1;min-height:0;padding:40px"><dc-import name="Plan" style="display:block;width:100%;height:100%" template="{{ setupTpl }}" room-w="{{ roomW }}" room-d="{{ roomD }}" interactive="{{ false }}" show-dims="{{ true }}" hint-size="100%,100%"></dc-import></div>
+<div style="flex:none;padding:0 0 22px;text-align:center;font-size:12px;color:var(--ink3)">Plan view · updates as you type</div>
+</main>
+<aside style="border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0">
+<div style="flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 20px;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:600">Room <span style="font-weight:400;color:var(--ink3)">{{ uLabel }}</span></span>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><sc-for list="{{ roomFields }}" as="f"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">{{ f.label }}<input value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:42px;box-sizing:border-box;width:100%;padding:0 10px;border:1px solid var(--line2);border-radius:9px;background:var(--bg);font:500 16px 'IBM Plex Mono',monospace;color:var(--ink);outline-color:var(--accent)"></label></sc-for></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:600">Door</span>
+<div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">On wall<div style="display:grid;grid-template-columns:repeat(4,1fr);padding:3px;border-radius:9px;background:var(--surface2);gap:2px"><sc-for list="{{ doorWalls }}" as="o"><button onClick="{{ o.onClick }}" style="white-space:nowrap;height:30px;border:0;border-radius:7px;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};font:500 12px inherit;font-family:inherit;cursor:pointer">{{ o.label }}</button></sc-for></div></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><sc-for list="{{ doorFields }}" as="f"><label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">{{ f.label }}<input value="{{ f.value }}" readOnly="{{ true }}" style="height:38px;box-sizing:border-box;width:100%;padding:0 10px;border:1px solid var(--line2);border-radius:9px;background:var(--bg);font:500 14px 'IBM Plex Mono',monospace;color:var(--ink)"></label></sc-for></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">Opens<div style="display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:9px;background:var(--surface2)"><button style="white-space:nowrap;height:28px;border:0;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0002;color:var(--ink);font:500 12px inherit;font-family:inherit">Inwards</button><button style="white-space:nowrap;height:28px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font:500 12px inherit;font-family:inherit">Outwards</button></div></div>
+<div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)">Hinge, from inside<div style="display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:9px;background:var(--surface2)"><button style="white-space:nowrap;height:28px;border:0;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0002;color:var(--ink);font:500 12px inherit;font-family:inherit">Left</button><button style="white-space:nowrap;height:28px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font:500 12px inherit;font-family:inherit">Right</button></div></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:12px;background:var(--bg);border:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:600">Carcass defaults</span><span style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">Edit</span></div><span style="font:12px/1.6 'IBM Plex Mono',monospace;color:var(--ink2)">Ceiling gap 150 · Plinth 100<br>Panel 18 · Back 4 · Door margin 80</span></div>
+</div>
+<div style="flex:none;padding:16px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px">
+<button onClick="{{ startDesign }}" style="white-space:nowrap;height:44px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:600 15px inherit;font-family:inherit;cursor:pointer">Start designing →</button>
+<span style="font-size:12px;color:var(--ink3);text-align:center">Saved in this browser. Nothing is uploaded.</span>
+</div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{ is3d }}">
+<div style="flex:1;min-height:0;position:relative;background:repeating-linear-gradient(135deg,var(--surface2) 0 14px,var(--bg) 14px 28px)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="padding:8px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font:12px 'IBM Plex Mono',monospace;color:var(--ink2)">existing three.js viewport · drag to orbit · scroll to zoom</span></div>
+<sc-if value="{{ hasErrors }}"><div style="position:absolute;top:0;left:0;right:0;padding:9px 18px;background:color-mix(in oklch,var(--danger) 14%,var(--surface));color:var(--danger);font-size:13px;text-align:center">Showing the last valid design · 1 validation error</div></sc-if>
+<div style="position:absolute;top:56px;left:18px;display:flex;padding:3px;border-radius:10px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)"><sc-for list="{{ views }}" as="v"><button onClick="{{ v.onClick }}" style="white-space:nowrap;height:30px;padding:0 12px;border:0;border-radius:7px;background:{{ v.bg }};color:{{ v.fg }};font:500 12px inherit;font-family:inherit;cursor:pointer">{{ v.label }}</button></sc-for></div>
+<div style="position:absolute;top:56px;right:18px;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);width:170px"><sc-for list="{{ toggles3d }}" as="g"><button onClick="{{ g.onClick }}" style="white-space:nowrap;display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 8px 0 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:13px inherit;font-family:inherit;cursor:pointer">{{ g.label }}<span style="width:30px;height:18px;border-radius:9px;background:{{ g.bg }};position:relative"><span style="position:absolute;top:2px;left:{{ g.knob }};width:14px;height:14px;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0003"></span></span></button></sc-for></div>
+<div style="position:absolute;bottom:18px;left:18px;width:180px;height:150px;padding:8px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);box-sizing:border-box"><dc-import name="Plan" style="display:block;width:100%;height:100%" interactive="{{ false }}" show-labels="{{ false }}" hint-size="100%,100%"></dc-import></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCut }}">
+<div style="flex:1;min-height:0;overflow:auto;padding:28px">
+<div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px"><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Cut list</span><span style="font-size:13px;color:var(--ink2)">{{ cutSummary }}</span></div><span style="font-size:12px;color:var(--ink3)">Drawer boxes, runners and hardware are not included.</span></div>
+<div style="border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden">
+<div style="display:grid;grid-template-columns:1.2fr 2fr .5fr .8fr .8fr .5fr .9fr;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)"><span>Part</span><span>Location</span><span>Qty</span><span>Length</span><span>Width</span><span>Thk</span><span>Material</span></div>
+<sc-for list="{{ cut }}" as="r"><div style="display:grid;grid-template-columns:1.2fr 2fr .5fr .8fr .8fr .5fr .9fr;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;align-items:center"><span style="font-weight:500">{{ r.part }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.loc }}</span><span style="font:500 13px 'IBM Plex Mono',monospace">{{ r.qty }}</span><span style="font:13px 'IBM Plex Mono',monospace">{{ r.l }}</span><span style="font:13px 'IBM Plex Mono',monospace">{{ r.w }}</span><span style="font:13px 'IBM Plex Mono',monospace;color:var(--ink2)">{{ r.t }}</span><span style="color:var(--ink2)">{{ r.mat }}</span></div></sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}"><div style="position:absolute;left:50%;bottom:90px;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:13px;box-shadow:var(--shadow);z-index:20">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;classic&quot;,&quot;canvas&quot;,&quot;guided&quot;,&quot;modes&quot;],&quot;default&quot;:&quot;classic&quot;,&quot;tsType&quot;:&quot;'classic'|'canvas'|'guided'&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;design&quot;,&quot;setup&quot;,&quot;3d&quot;,&quot;cutlist&quot;],&quot;default&quot;:&quot;design&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;embedded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const Z = (type, h, count) => ({ type, h, count });
+const PRESETS = [
+  { key: 'hanging', label: 'Long hanging', short: 'Long hang', zones: [Z('hanging', null, 1)] },
+  { key: 'doubleHanging', label: 'Double hanging', short: 'Double', zones: [Z('hanging', null, 1), Z('hanging', null, 1)] },
+  { key: 'shelves', label: 'Shelves', short: 'Shelves', zones: [Z('shelves', null, 6)] },
+  { key: 'drawersHanging', label: 'Drawers + hanging', short: 'Drw + hang', zones: [Z('drawers', 600, 3), Z('hanging', null, 1)] },
+  { key: 'drawersShelves', label: 'Drawers + shelves', short: 'Drw + shelf', zones: [Z('drawers', 800, 4), Z('shelves', null, 4)] },
+  { key: 'shoes', label: 'Shoe rack', short: 'Shoes', zones: [Z('shoes', 900, 5), Z('shelves', null, 3)] },
+  { key: 'open', label: 'Open', short: 'Open', zones: [Z('open', null, 1)] },
+  { key: 'gap', label: 'Gap', short: 'Gap', gap: true },
+];
+const P = Object.fromEntries(PRESETS.map((p) => [p.key, p]));
+const mk = (key, width) => (P[key].gap ? { gap: true, width } : { width, zones: JSON.parse(JSON.stringify(P[key].zones)) });
+const WALLS0 = {
+  back: [mk('drawersHanging', 600), mk('doubleHanging', 600), mk('shelves', 600), mk('drawersShelves', 600), mk('hanging', 600)],
+  left: [mk('gap', 500), mk('doubleHanging', 700), mk('shoes', 700)],
+  right: [mk('hanging', 700), mk('drawersShelves', 700), mk('gap', 500)],
+  front: [],
+};
+const LEN = { back: 3000, left: 1900, right: 1900, front: 3000 };
+const WN = { back: 'Back wall', left: 'Left wall', right: 'Right wall', front: 'Front wall' };
+const AB = { back: 'B', left: 'L', right: 'R', front: 'F' };
+const GL = {
+  open: 'transparent', shelves: 'repeating-linear-gradient(to bottom, transparent 0 5px, var(--draw) 5px 6px)',
+  drawers: 'repeating-linear-gradient(to bottom, var(--wood2) 0 5px, var(--draw) 5px 6px)',
+  hanging: 'linear-gradient(var(--draw),var(--draw)) center 3px / 70% 1.5px no-repeat', shoes: 'repeating-linear-gradient(165deg, transparent 0 4px, var(--draw) 4px 5px)',
+};
+const TPLS = [
+  { key: 'uShape', name: 'U-shape', desc: '3000 × 2500 · runs on three walls', w: 3000, d: 2500 },
+  { key: 'lShape', name: 'L-shape', desc: '2500 × 2000 · back and left', w: 2500, d: 2000 },
+  { key: 'oneWall', name: 'One wall', desc: '3000 × 1800 · one 3 m run', w: 3000, d: 1800 },
+  { key: 'blank', name: 'Empty room', desc: 'Start with bare walls', w: 3000, d: 2500 },
+];
+class Component extends DCLogic {
+  state = {
+    walls: JSON.parse(JSON.stringify(WALLS0)), on: { back: true, left: true, right: true, front: false },
+    wall: 'back', sel: 3, selZ: 1, past: [], future: [], tab: null, theme: null, u: 'mm', toast: null,
+    more: false, projects: false, hint: true, sec: 'room', dims: true, insertAt: null,
+    setupTpl: 'uShape', roomW: 3000, roomD: 2500, roomH: 2500, view: 'Iso', t3: { Dimensions: true, Room: true, Explode: false },
+  };
+  mut(fn) {
+    this.setState((s) => {
+      const walls = JSON.parse(JSON.stringify(s.walls));
+      const extra = fn(walls[s.wall], s) || {};
+      if (extra.abort) return { toast: extra.abort };
+      return { walls, past: [...s.past.slice(-40), s.walls], future: [], ...extra };
+    }, () => this.flash());
+  }
+  flash() { if (this.state.toast) { clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: null }), 2400); } }
+  say(msg) { this.setState({ toast: msg }, () => this.flash()); }
+  componentWillUnmount() { clearTimeout(this.tt); }
+  renderVals() {
+    const s = this.state, pr = this.props;
+    const layout = pr.layout ?? 'classic';
+    const tab = s.tab ?? pr.screen ?? 'design';
+    const inch = s.u === 'in';
+    const fmtN = (n) => (inch ? (n / 25.4).toFixed(1) : String(Math.round(n)));
+    const fmt = (n) => fmtN(n) + (inch ? ' in' : ' mm');
+    const cols = (s.walls[s.wall] || []).map((c, i) => ({ ...c, label: AB[s.wall] + (i + 1) }));
+    const used = cols.reduce((a, c) => a + c.width, 0), free = LEN[s.wall] - used;
+    const wallOn = s.on[s.wall];
+    const overWall = Object.keys(LEN).find((w) => s.on[w] && LEN[w] - s.walls[w].reduce((a, c) => a + c.width, 0) < 0);
+    const overBy = overWall ? -(LEN[overWall] - s.walls[overWall].reduce((a, c) => a + c.width, 0)) : 0;
+    const sel = cols[s.sel] ? s.sel : -1;
+    const seg = (active, n) => ({ bg: active ? 'var(--surface)' : 'transparent', fg: active ? 'var(--ink)' : 'var(--ink2)', sh: active ? '0 1px 2px oklch(0.2 0.01 70/.15)' : 'none' });
+    const go = (t) => () => this.setState({ tab: t, more: false, projects: false });
+    const insertAt = s.insertAt ?? (sel >= 0 ? sel + 1 : cols.length);
+    const insert = (key) => () => this.mut((arr, st) => {
+      const f = LEN[st.wall] - arr.reduce((a, c) => a + c.width, 0);
+      if (f < 300) return { abort: 'No room for another unit on this segment' };
+      const w = Math.min(key === 'gap' ? 500 : 600, f);
+      const at = Math.min(insertAt, arr.length);
+      arr.splice(at, 0, mk(key, w));
+      return { sel: at, selZ: -1, insertAt: null };
+    });
+    const zpatch = (zi, patch) => this.mut((arr, st) => {
+      const z = arr[st.sel].zones[zi];
+      if (patch.type && patch.type !== z.type) z.count = { drawers: 3, shelves: 4, shoes: 5 }[patch.type] || 1;
+      Object.assign(z, patch);
+    });
+    const cut = this.cutList(fmtN);
+    const steps = [['Room', 'setup'], ['Walls & units', 'design'], ['Preview', '3d'], ['Cut list', 'cutlist']].map(([label, t], i, a) => {
+      const idx = a.findIndex((x) => x[1] === tab), done = i < idx, cur = i === idx;
+      return { n: done ? '✓' : String(i + 1), label, sep: i < a.length - 1, onClick: go(t), bg: cur ? 'var(--accent-soft)' : 'transparent', fg: cur ? 'var(--ink)' : 'var(--ink2)', dotBg: cur ? 'var(--accent)' : done ? 'var(--ink)' : 'var(--surface2)', dotFg: cur ? 'var(--accent-ink)' : done ? 'var(--bg)' : 'var(--ink3)' };
+    });
+    const roomFieldDefs = [['Width', 'roomW'], ['Depth', 'roomD'], ['Height', 'roomH']];
+    return {
+      themeClass: s.theme ? 'wp-' + s.theme : '', rootH: pr.embedded ? '100%' : '100vh',
+      themeLabel: s.theme ? (s.theme === 'dark' ? 'Dark' : 'Light') : 'Auto',
+      cycleTheme: () => this.setState((st) => ({ theme: st.theme === null ? 'light' : st.theme === 'light' ? 'dark' : null })),
+      showTopBar: !(layout === 'canvas' && tab === 'design'), showTabs: layout !== 'guided', showSteps: layout === 'guided',
+      tabs: (layout === 'modes' ? [['Room', 'setup'], ['Design', 'design'], ['3D', '3d'], ['Cut list', 'cutlist']] : [['Design', 'design'], ['3D', '3d'], ['Cut list', 'cutlist']]).map(([label, t]) => ({ label, onClick: go(t), ...seg(t === tab || (layout !== 'modes' && t === 'design' && tab === 'setup')) })),
+      steps,
+      isClassic: tab === 'design' && layout === 'classic', isCanvas: tab === 'design' && layout === 'canvas', isGuided: tab === 'design' && (layout === 'guided' || layout === 'modes'),
+      isSetup: tab === 'setup', is3d: tab === '3d', isCut: tab === 'cutlist',
+      showHint: (layout === 'guided' || layout === 'modes') && tab === 'design' && s.hint,
+      hintSteps: [{ n: '1', text: 'Click a wall in the plan' }, { n: '2', text: 'Press + in the elevation to add a unit' }, { n: '3', text: 'Click a unit to edit it' }],
+      dismissHint: () => this.setState({ hint: false }),
+      undo: () => this.setState((st) => (st.past.length ? { walls: st.past[st.past.length - 1], past: st.past.slice(0, -1), future: [st.walls, ...st.future] } : null)),
+      redo: () => this.setState((st) => (st.future.length ? { walls: st.future[0], future: st.future.slice(1), past: [...st.past, st.walls] } : null)),
+      undoFg: s.past.length ? 'var(--ink)' : 'var(--line2)', redoFg: s.future.length ? 'var(--ink)' : 'var(--line2)',
+      unitOpts: ['mm', 'in'].map((u) => ({ label: u, onClick: () => this.setState({ u }), ...seg(u === s.u) })),
+      share: () => this.say(overWall ? 'Fix validation errors first' : 'Link copied. Anyone with it opens a copy of this design'),
+      exportPdf: () => this.say(overWall ? 'Fix validation errors first' : 'Exporting U-shape walk-in.pdf'),
+      pdfOpacity: overWall ? 0.45 : 1, pdfTitle: overWall ? 'Fix validation errors first' : 'Plan, elevations and cut list',
+      moreOpen: s.more, toggleMore: () => this.setState((st) => ({ more: !st.more, projects: false })),
+      moreItems: [{ label: 'Import JSON', hint: '' }, { label: 'Export JSON', hint: '' }, { label: 'Language', hint: 'EN · RU' }, { label: 'Keyboard shortcuts', hint: '?' }, { label: 'Source on GitHub', hint: 'MIT' }].map((m) => ({ ...m, onClick: () => this.setState({ more: false }) })),
+      projectsOpen: s.projects, toggleProjects: () => this.setState((st) => ({ projects: !st.projects, more: false })),
+      projects: [{ name: 'U-shape walk-in', when: 'just now', bg: 'var(--surface2)' }, { name: 'Guest room closet', when: '2 d ago', bg: 'transparent' }, { name: 'Loft, option B', when: '5 d ago', bg: 'transparent' }],
+      goSetup: go('setup'), startDesign: go('design'), goLargePlan: go('3d'),
+      wall: s.wall, onWall: (w) => this.setState({ wall: w, sel: s.walls[w].length ? 0 : -1, selZ: -1, insertAt: null }),
+      wallName: WN[s.wall],
+      wallRows: Object.keys(LEN).map((w) => {
+        const f = LEN[w] - s.walls[w].reduce((a, c) => a + c.width, 0), n = s.walls[w].filter((c) => !c.gap).length, act = w === s.wall;
+        const status = !s.on[w] ? 'off' : f < 0 ? `over ${fmt(-f)}` : f === 0 ? `${n} units · full` : `${n} units · ${fmt(f)} free`;
+        return { name: WN[w], short: WN[w].replace(' wall', ''), status, onClick: () => this.setState({ wall: w, sel: s.walls[w].length ? 0 : -1, selZ: -1, insertAt: null }), bg: act ? 'var(--accent-soft)' : 'transparent', border: act ? 'var(--accent)' : 'var(--line)', weight: act ? 600 : 500, dot: !s.on[w] ? 'var(--line2)' : f < 0 ? 'var(--danger)' : 'var(--ok)', statusFg: f < 0 && s.on[w] ? 'var(--danger)' : 'var(--ink3)' };
+      }),
+      sections: [
+        { id: 'room', title: 'Room', summary: `${fmtN(s.roomW)} × ${fmtN(s.roomD)} × ${fmtN(s.roomH)}`, fields: roomFieldDefs.map(([label, k]) => ({ label, value: fmtN(s[k]), onChange: (e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) this.setState({ [k]: inch ? v * 25.4 : v }); } })) },
+        { id: 'door', title: 'Door', summary: 'Front · 900 × 2100 · opens in', fields: [['Offset', 900], ['Width', 900], ['Height', 2100], ['Side margin', 80]].map(([label, v]) => ({ label, value: fmtN(v), onChange: () => {} })) },
+        { id: 'ward', title: 'Carcass', summary: 'Gap 150 · plinth 100 · 18 / 4', fields: [['Ceiling gap', 150], ['Plinth', 100], ['Panel', 18], ['Back', 4]].map(([label, v]) => ({ label, value: fmtN(v), onChange: () => {} })) },
+      ].map((x) => ({ ...x, open: s.sec === x.id, chev: s.sec === x.id ? '−' : '+', onClick: () => this.setState((st) => ({ sec: st.sec === x.id ? null : x.id })) })),
+      roomSummary: `${fmtN(s.roomW)} × ${fmtN(s.roomD)} × ${fmtN(s.roomH)}`,
+      wallOn, wallOff: !wallOn, toggleWallOn: () => this.setState((st) => ({ on: { ...st.on, [st.wall]: !st.on[st.wall] } })),
+      wallOnBg: wallOn ? 'var(--accent)' : 'var(--line2)', wallOnKnob: wallOn ? '14px' : '2px',
+      depth: fmt(600), freeText: free < 0 ? `over by ${fmt(-free)}` : `free ${fmt(free)}`,
+      freeBg: free < 0 ? 'color-mix(in oklch,var(--danger) 14%,transparent)' : 'var(--surface2)', freeFg: free < 0 ? 'var(--danger)' : 'var(--ink2)',
+      dims: s.dims, dimsBg: s.dims ? 'var(--surface2)' : 'transparent', toggleDims: () => this.setState((st) => ({ dims: !st.dims })),
+      cols, sel, selZ: s.selZ, fmt, fmtN,
+      onSelect: (i, zi) => this.setState({ sel: i, selZ: zi ?? -1, insertAt: null }),
+      onSpawn: (i) => this.setState({ insertAt: i }),
+      insertLabel: s.insertAt !== null ? `Insert at slot ${s.insertAt + 1}` : sel >= 0 ? `Insert after ${cols[sel].label}` : 'Insert',
+      insertLabelShort: s.insertAt !== null ? `at slot ${s.insertAt + 1}` : sel >= 0 ? `after ${cols[sel].label}` : '',
+      presets: PRESETS.map((p) => ({ label: p.label, short: p.short, onClick: insert(p.key), border: p.gap ? 'var(--ink3)' : 'var(--draw)', segs: p.gap ? [{ flex: 1, bg: 'repeating-linear-gradient(135deg,transparent 0 3px,var(--line2) 3px 4px)', bt: '0' }] : [...p.zones].reverse().map((z, i) => ({ flex: z.h ? z.h / 600 : 2.2, bg: GL[z.type], bt: i ? '1.5px solid var(--draw)' : '0' })) })),
+      selCol: sel >= 0 ? cols[sel] : null,
+      onSelectZone: (zi) => this.setState({ selZ: zi }), onZone: zpatch,
+      onAddZone: () => this.mut((arr, st) => { arr[st.sel].zones.push(Z('open', 300, 1)); return { selZ: arr[st.sel].zones.length - 1 }; }),
+      onRemoveZone: (zi) => this.mut((arr, st) => { if (arr[st.sel].zones.length <= 1) return { abort: 'A unit needs at least one zone' }; arr[st.sel].zones.splice(zi, 1); return { selZ: -1 }; }),
+      onMoveZone: (zi, d) => this.mut((arr, st) => { const zs = arr[st.sel].zones, j = zi + d; if (j < 0 || j >= zs.length) return { abort: 'Already at the end' }; [zs[zi], zs[j]] = [zs[j], zs[zi]]; return { selZ: j }; }),
+      onWidth: (d) => this.mut((arr, st) => { arr[st.sel].width = Math.max(300, Math.min(1200, arr[st.sel].width + d)); }),
+      onMove: (d) => this.mut((arr, st) => { const j = st.sel + d; if (j < 0 || j >= arr.length) return { abort: 'Already at the end of the wall' }; [arr[st.sel], arr[j]] = [arr[j], arr[st.sel]]; return { sel: j }; }),
+      onDuplicate: () => this.mut((arr, st) => { const f = LEN[st.wall] - arr.reduce((a, c) => a + c.width, 0); if (f < arr[st.sel].width) return { abort: 'No room for another unit on this segment' }; arr.splice(st.sel + 1, 0, JSON.parse(JSON.stringify(arr[st.sel]))); return { sel: st.sel + 1 }; }),
+      onRemove: () => this.mut((arr, st) => { arr.splice(st.sel, 1); return { sel: Math.min(st.sel, arr.length - 1), selZ: -1 }; }),
+      onRail: () => this.mut((arr, st) => { arr[st.sel].rail = !arr[st.sel].rail; }),
+      hasErrors: !!overWall, errorText: overWall ? `${WN[overWall]}: units exceed the available length by ${fmt(overBy)}` : '',
+      tpls: TPLS.map((t) => ({ ...t, onClick: () => this.setState({ setupTpl: t.key, roomW: t.w, roomD: t.d }), border: t.key === s.setupTpl ? 'var(--accent)' : 'var(--line)', bg: t.key === s.setupTpl ? 'var(--accent-soft)' : 'var(--surface)' })),
+      setupTpl: s.setupTpl, roomW: s.roomW, roomD: s.roomD, uLabel: inch ? 'in' : 'mm',
+      roomFields: roomFieldDefs.map(([label, k]) => ({ label, value: fmtN(s[k]), onChange: (e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) this.setState({ [k]: inch ? v * 25.4 : v }); } })),
+      doorWalls: ['Back', 'Right', 'Front', 'Left'].map((l) => ({ label: l, onClick: () => {}, ...seg(l === 'Front') })),
+      doorFields: [['Offset', 900], ['Width', 900], ['Height', 2100]].map(([label, v]) => ({ label, value: fmtN(v) })),
+      views: ['Iso', 'Back', 'Left', 'Right', 'Top'].map((v) => ({ label: v, onClick: () => this.setState({ view: v }), bg: v === s.view ? 'var(--ink)' : 'transparent', fg: v === s.view ? 'var(--bg)' : 'var(--ink2)' })),
+      toggles3d: Object.keys(s.t3).map((k) => ({ label: k, onClick: () => this.setState((st) => ({ t3: { ...st.t3, [k]: !st.t3[k] } })), bg: s.t3[k] ? 'var(--accent)' : 'var(--line2)', knob: s.t3[k] ? '14px' : '2px' })),
+      cut: cut.rows, cutSummary: `${cut.total} parts · ${cut.rows.length} sizes · tags match the drawings`,
+      hasToast: !!s.toast, toast: s.toast,
+    };
+  }
+  cutList(fmtN) {
+    const map = new Map(); let total = 0;
+    const add = (part, loc, qty, l, w, t, mat) => { const k = [part, l, w, t].join('|'); const r = map.get(k) || { part, locs: [], qty: 0, l, w, t, mat }; r.qty += qty; if (!r.locs.includes(loc)) r.locs.push(loc); map.set(k, r); total += qty; };
+    Object.keys(LEN).forEach((wall) => {
+      if (!this.state.on[wall]) return;
+      this.state.walls[wall].forEach((c, i) => {
+        if (c.gap) return;
+        const loc = AB[wall] + (i + 1), iw = c.width - 36;
+        add('Side', loc, 2, 2250, 582, 18, 'Panel'); add('Top / bottom', loc, 2, iw, 582, 18, 'Panel'); add('Back', loc, 1, 2250, c.width, 4, 'Back panel'); add('Plinth', loc, 1, c.width, 100, 18, 'Panel');
+        c.zones.forEach((z, zi) => {
+          if (zi > 0) add('Shelf', loc, 1, iw, 580, 18, 'Panel');
+          if (z.type === 'shelves' && z.count > 1) add('Shelf', loc, z.count - 1, iw, 580, 18, 'Panel');
+          if (z.type === 'shoes') add('Shoe shelf', loc, z.count, iw, 380, 18, 'Panel');
+          if (z.type === 'drawers') add('Drawer front', loc, z.count, iw - 4, Math.round((z.h || 600) / z.count) - 4, 18, 'Panel');
+          if (z.type === 'hanging') add('Rod', loc, 1, iw - 2, 25, 25, 'Rod Ø25');
+        });
+      });
+    });
+    const rows = [...map.values()].map((r) => ({ part: r.part, loc: r.locs.join(', '), qty: r.qty, l: fmtN(r.l), w: fmtN(r.w), t: fmtN(r.t), mat: r.mat }));
+    return { rows, total };
+  }
+}
+</script>
+</body>
+</html>

@@ -8,34 +8,62 @@ import { layoutAll } from '../../geometry/layout';
 import { WALLS, localToWorld, wallFrame, wallLength } from '../../geometry/frames';
 import { rotY, v3, type Vec3 } from '../../geometry/vec';
 import type { Project, Room, Wall } from '../../model/types';
-import { cacheSnapshot, setSnapshotSource } from '../snapshot';
+import { cacheSnapshot, clearSnapshot, setSnapshotSource } from '../snapshot';
 import { PartMesh } from './PartMesh';
 import { RoomMesh } from './RoomMesh';
 import { useT } from '../useT';
+import { useMediaQuery } from '../useMediaQuery';
+import { Segmented, Switch } from '../controls';
+import { PlanEditor } from '../PlanEditor';
+import { LIGHT, sceneColors } from './colors';
 import { formatLen } from '../../units';
 import type { MessageKey } from '../../i18n';
 
-/** Keeps `snapshot.ts` supplied with the live canvas, and refreshes its cache as the model settles. */
-function SnapshotBridge({ version }: { version: unknown }) {
+/**
+ * Keeps `snapshot.ts` supplied with the live canvas, and refreshes its cache as the model settles.
+ *
+ * The PDF picture is always the light scene. So the live canvas is only handed over while it is
+ * drawn LIGHT; in the dark theme the bridge withdraws it and drops the cache, and `takeSnapshot`
+ * falls back to the off-screen render, which forces LIGHT. Otherwise a dark-theme user who opened
+ * 3D once would print a dark picture.
+ */
+function SnapshotBridge({ version, light }: { version: unknown; light: boolean }) {
   const gl = useThree((s) => s.gl);
   useEffect(() => {
+    if (!light) {
+      setSnapshotSource(null);
+      clearSnapshot();
+      return;
+    }
     setSnapshotSource(() => gl.domElement);
     return () => {
-      cacheSnapshot(); // last look at the canvas before the viewport goes away
+      cacheSnapshot(); // last look at the canvas before the viewport goes away (or turns dark)
       setSnapshotSource(null);
     };
-  }, [gl]);
+  }, [gl, light]);
   useEffect(() => {
+    if (!light) return;
     const id = setTimeout(cacheSnapshot, 500); // let the new geometry render first
     return () => clearTimeout(id);
-  }, [version, gl]);
+  }, [version, gl, light]);
   return null;
 }
 
 /** Orbit pivot, and the point the default camera looks at. */
 const cameraTarget = (room: Room): THREE.Vector3 => new THREE.Vector3(room.width / 2, room.height * 0.35, room.depth / 2);
 
-function CameraFit({ room }: { room: Room }) {
+/** Camera presets: the default corner view, a straight look at one wall's inside face, or the plan from above. */
+export type ViewPreset = 'iso' | 'top' | Wall;
+export const VIEW_PRESETS: ViewPreset[] = ['iso', 'back', 'left', 'right', 'top'];
+
+const FIT_MARGIN = 1.05; // breathing room around the fitted room
+const WALL_FIT_MARGIN = 1.15;
+const WALL_EYE_HEIGHT = 0.5; // wall presets: camera height as a fraction of the room height
+/** Top view: a hair of +z so the camera is not exactly on the pole (OrbitControls' singular
+ * direction) and the screen's up stays -z, the back wall at the top as in the plan. */
+const TOP_TILT = 0.001;
+
+function CameraFit({ room, preset, nonce }: { room: Room; preset: ViewPreset; nonce: number }) {
   const camera = useThree((s) => s.camera as THREE.PerspectiveCamera);
   const size = useThree((s) => s.size);
   const { width: W, depth: D, height: H } = room;
@@ -45,25 +73,38 @@ function CameraFit({ room }: { room: Room }) {
     // resize must not snap the camera back and throw away the user's orbit. R3F keeps
     // camera.aspect and the projection matrix in step with the canvas on its own.
     if (!size.width || !size.height) return;
-    const key = `${W}x${D}x${H}`;
+    const key = `${preset}:${nonce}:${W}x${D}x${H}`;
     if (fittedRef.current === key) return;
     fittedRef.current = key;
     const target = new THREE.Vector3(W / 2, H * 0.35, D / 2);
-    // Front-right-above corner: the back run and the left run both face the camera.
-    const base = new THREE.Vector3(W * 1.25, H * 1.5, D * 1.55);
-    const dir = base.clone().sub(target).normalize();
+    const vHalf = (camera.fov * Math.PI) / 360;
+    const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
     // Never crop the room: back off far enough that its bounding sphere (about `target`)
     // fits the narrower of the two frustum half-angles.
     const radius = Math.hypot(W / 2, H * 0.65, D / 2);
-    const vHalf = (camera.fov * Math.PI) / 360;
-    const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
-    const distance = (radius / Math.sin(Math.min(vHalf, hHalf))) * 1.05;
-    camera.position.copy(target).addScaledVector(dir, distance);
+    let distance = (radius / Math.sin(Math.min(vHalf, hHalf))) * FIT_MARGIN;
+    if (preset === 'iso') {
+      // Front-right-above corner: the back run and the left run both face the camera.
+      const base = new THREE.Vector3(W * 1.25, H * 1.5, D * 1.55);
+      camera.position.copy(target).addScaledVector(base.sub(target).normalize(), distance);
+    } else if (preset === 'top') {
+      distance = Math.max(D / 2 / Math.tan(vHalf), W / 2 / Math.tan(hHalf)) * WALL_FIT_MARGIN + H * 0.65;
+      camera.position.set(target.x, target.y + distance, target.z + distance * TOP_TILT);
+    } else {
+      // In front of the wall's inside face, centred on it, looking across the room at the target.
+      const frame = wallFrame(room, preset);
+      const inward = rotY(v3(0, 0, 1), frame.yaw);
+      const mid = localToWorld(frame, v3(wallLength(room, preset) / 2, 0, 0));
+      const wallW = wallLength(room, preset);
+      const fit = Math.max((H * 0.8) / Math.tan(vHalf), wallW / 2 / Math.tan(hHalf)) * WALL_FIT_MARGIN;
+      distance = fit + Math.max(W, D); // `fit` is measured from the wall plane; the far wall is up to a room away
+      camera.position.set(mid.x + inward.x * fit, H * WALL_EYE_HEIGHT, mid.z + inward.z * fit);
+    }
     camera.near = 10;
     camera.far = distance + radius * 8;
     camera.lookAt(target);
     camera.updateProjectionMatrix();
-  }, [camera, W, D, H, size.width, size.height]);
+  }, [camera, room, W, D, H, preset, nonce, size.width, size.height]);
   return null;
 }
 
@@ -118,6 +159,11 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
   const showRoom = useStore((s) => s.ui.showRoom);
   const explode = useStore((s) => s.ui.explode);
   const setUi = useStore((s) => s.setUi);
+  const theme = useStore((s) => s.ui.theme);
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+  // The PDF picture must not change with the screen theme.
+  const colors = snapshotOnly ? LIGHT : sceneColors(theme, prefersDark);
+  const [view, setView] = useState<{ preset: ViewPreset; nonce: number }>({ preset: 'iso', nonce: 0 });
   const { t, units } = useT();
   const { room } = project;
 
@@ -136,16 +182,16 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
 
   return (
     <div className="viewport">
-      <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ fov: 45 }} style={{ background: '#f0f2f5' }}>
-        <CameraFit room={room} />
+      <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ fov: 45 }} style={{ background: colors.background }}>
+        <CameraFit room={room} preset={view.preset} nonce={view.nonce} />
         <FadeTracker room={room} onChange={onFadeChange} />
-        {!snapshotOnly && <SnapshotBridge version={parts} />}
+        {!snapshotOnly && <SnapshotBridge version={parts} light={colors === LIGHT} />}
         <ambientLight intensity={0.75} />
         <directionalLight position={[-2000, 4000, 3000]} intensity={1.1} />
         <directionalLight position={[3000, 2000, -2000]} intensity={0.4} />
-        <RoomMesh room={room} door={project.door} showRoom={showRoom} />
+        <RoomMesh room={room} door={project.door} showRoom={showRoom} colors={colors} />
         {parts.map((p) => (
-          <PartMesh key={p.id} part={p} explode={explode} explodeDir={explodeDirs[p.wall]} faded={fadedWalls.has(p.wall)} />
+          <PartMesh key={p.id} part={p} explode={explode} explodeDir={explodeDirs[p.wall]} colors={colors} faded={fadedWalls.has(p.wall)} />
         ))}
         {showDims && (
           <group>
@@ -174,18 +220,30 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
         {onFirstFrame && <FirstFrame onFirstFrame={onFirstFrame} />}
       </Canvas>
       {!snapshotOnly && (
-        <div className="controls">
-          <label>
-            <input type="checkbox" checked={showDims} onChange={(e) => setUi({ showDims: e.target.checked })} /> {t('ui.dims')}
-          </label>
-          <label>
-            <input type="checkbox" checked={showRoom} onChange={(e) => setUi({ showRoom: e.target.checked })} /> {t('ui.room')}
-          </label>
-          <label>
-            {t('ui.explode')}{' '}
-            <input type="range" min={0} max={1} step={0.05} value={explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} />
-          </label>
-        </div>
+        <>
+          <div className="float float-views">
+            <Segmented
+              ariaLabel={t('ui.view.label')}
+              title={t('ui.viewHint')}
+              value={view.preset}
+              options={VIEW_PRESETS.map((v) => ({ value: v, label: t(v === 'iso' || v === 'top' ? (`ui.view.${v}` as MessageKey) : (`wall.${v}` as MessageKey)) }))}
+              // Bumping the nonce even for the active preset is deliberate: clicking it again re-fits the
+              // camera, throwing away the user's orbit — the "reset the view" affordance (see `ui.viewHint`).
+              onChange={(preset) => setView((v) => ({ preset, nonce: v.nonce + 1 }))}
+            />
+          </div>
+          <div className="float float-toggles">
+            <Switch checked={showDims} onChange={(v) => setUi({ showDims: v })} label={t('ui.dims')} />
+            <Switch checked={showRoom} onChange={(v) => setUi({ showRoom: v })} label={t('ui.room')} />
+            <label className="explode">
+              <span>{t('ui.explode')}</span>
+              <input type="range" min={0} max={1} step={0.05} value={explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} />
+            </label>
+          </div>
+          <div className="float minimap">
+            <PlanEditor size="thumb" />
+          </div>
+        </>
       )}
     </div>
   );

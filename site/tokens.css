@@ -1,0 +1,73 @@
+/* Design tokens shared by the app (src/styles.css) and the static site (site/site.css).
+   Light is the default; dark follows prefers-color-scheme unless <html data-theme="light"> forces
+   light, and <html data-theme="dark"> forces dark whatever the OS says. */
+:root {
+  --font-ui: 'Schibsted Grotesk', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --bg: oklch(0.972 0.004 80);
+  --surface: oklch(0.995 0.002 80); /* sRGB ~ #fefefd (theme-color) */
+  --surface2: oklch(0.955 0.005 80);
+  --sunk: oklch(0.935 0.006 80);
+  --line: oklch(0.905 0.006 80);
+  --line2: oklch(0.84 0.008 80);
+  --ink: oklch(0.23 0.01 70);
+  --ink2: oklch(0.43 0.01 70);
+  --ink3: oklch(0.56 0.01 70);
+  --accent: oklch(0.55 0.13 48);
+  --accent-ink: oklch(0.99 0.005 60);
+  --accent-soft: oklch(0.94 0.035 60);
+  --wood: oklch(0.94 0.018 78);
+  --wood2: oklch(0.895 0.025 75);
+  --draw: oklch(0.36 0.012 70);
+  --ok: oklch(0.52 0.11 150);
+  --danger: oklch(0.53 0.17 27);
+  --shadow: 0 1px 2px oklch(0.3 0.02 70 / 0.06), 0 10px 30px oklch(0.3 0.02 70 / 0.08);
+  --scrim: oklch(0.2 0.01 70 / 0.45); /* modal backdrop */
+  --canvas-dots: radial-gradient(var(--line) 1px, transparent 1.2px) 0 0 / 20px 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.17 0.005 70);
+    --surface: oklch(0.205 0.006 70); /* sRGB ~ #2a2927 (theme-color) */
+    --surface2: oklch(0.24 0.007 70);
+    --sunk: oklch(0.15 0.005 70);
+    --line: oklch(0.29 0.008 70);
+    --line2: oklch(0.37 0.01 70);
+    --ink: oklch(0.95 0.005 80);
+    --ink2: oklch(0.79 0.008 80);
+    --ink3: oklch(0.64 0.008 80);
+    --accent: oklch(0.76 0.12 62);
+    --accent-ink: oklch(0.2 0.03 55);
+    --accent-soft: oklch(0.31 0.05 55);
+    --wood: oklch(0.265 0.012 70);
+    --wood2: oklch(0.315 0.014 70);
+    --draw: oklch(0.8 0.01 80);
+    --ok: oklch(0.76 0.11 150);
+    --danger: oklch(0.72 0.15 27);
+    --shadow: 0 1px 2px #0006, 0 10px 30px #0005;
+    --scrim: oklch(0 0 0 / 0.6); /* modal backdrop */
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.17 0.005 70);
+  --surface: oklch(0.205 0.006 70); /* sRGB ~ #2a2927 (theme-color) */
+  --surface2: oklch(0.24 0.007 70);
+  --sunk: oklch(0.15 0.005 70);
+  --line: oklch(0.29 0.008 70);
+  --line2: oklch(0.37 0.01 70);
+  --ink: oklch(0.95 0.005 80);
+  --ink2: oklch(0.79 0.008 80);
+  --ink3: oklch(0.64 0.008 80);
+  --accent: oklch(0.76 0.12 62);
+  --accent-ink: oklch(0.2 0.03 55);
+  --accent-soft: oklch(0.31 0.05 55);
+  --wood: oklch(0.265 0.012 70);
+  --wood2: oklch(0.315 0.014 70);
+  --draw: oklch(0.8 0.01 80);
+  --ok: oklch(0.76 0.11 150);
+  --danger: oklch(0.72 0.15 27);
+  --shadow: 0 1px 2px #0006, 0 10px 30px #0005;
+  --scrim: oklch(0 0 0 / 0.6); /* modal backdrop */
+}

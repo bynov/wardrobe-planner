@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../store/store';
-import { TEMPLATE_KEYS, makeTemplate } from '../model/templates';
+import { Menu, MenuItem } from './controls';
 import { clearSnapshot } from './snapshot';
 import { useT } from './useT';
+import { PHONE_QUERY, useMediaQuery } from './useMediaQuery';
 import type { MessageKey, Params } from '../i18n';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const MENU_WIDTH = 280;
 
 type Translate = (key: MessageKey, params?: Params) => string;
 
@@ -21,38 +23,19 @@ export function relativeTime(now: number, updatedAt: number, t: Translate): stri
 }
 
 /**
- * The project switcher: every project stored in this browser, newest first, plus the actions that
- * make and remove them. The cached 3D picture belongs to the project being left, so each action
- * drops it before the store swaps the project (the store itself stays DOM-free).
+ * The project switcher: the open project's name and "saved" line as the trigger, and in the menu
+ * the rename field, every project stored in this browser (newest first) and the actions that make
+ * and remove them. The cached 3D picture belongs to the project being left, so each action drops
+ * it before the store swaps the project (the store itself stays DOM-free).
  */
 export function ProjectsMenu() {
   const projects = useStore((s) => s.projects);
   const projectId = useStore((s) => s.ui.projectId);
   const name = useStore((s) => s.project.name);
   const { t } = useT();
-  const { switchProject, newProject, createProject, duplicateProject, deleteProject } = useStore.getState();
+  const { switchProject, newProject, duplicateProject, deleteProject, setName, setUi } = useStore.getState();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      // Closing the menu is all this Escape does: `useKeyboard` (on window) must not also clear
-      // the selection underneath.
-      e.stopPropagation();
-      setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const act = (fn: () => void) => {
     clearSnapshot();
@@ -67,37 +50,42 @@ export function ProjectsMenu() {
   const now = Date.now();
 
   return (
-    <div className="projects" ref={ref}>
-      <button onClick={() => setOpen((o) => !o)}>{t('ui.projects')} ▾</button>
-      {open && (
-        <div className="menu">
-          <div className="title">{t('ui.projects')}</div>
-          {projects.map((m) => (
-            <button
-              key={m.id}
-              className={m.id === projectId ? 'active' : ''}
-              onClick={() => act(() => switchProject(m.id))}
-            >
-              <span>{m.name || t('ui.projectName')}</span>
-              <span className="derived">{relativeTime(now, m.updatedAt, t)}</span>
-            </button>
-          ))}
-          <div className="sep" />
-          <button onClick={() => act(newProject)}>{t('ui.newBlank')}</button>
-          <div className="title">{t('ui.newFromTemplate')}</div>
-          {TEMPLATE_KEYS.map((key) => {
-            const name = t(`template.${key}`);
-            return (
-              <button key={key} onClick={() => act(() => createProject(makeTemplate(key, name)))}>
-                <span>{name}</span>
-              </button>
-            );
-          })}
-          <div className="sep" />
-          <button onClick={() => act(() => duplicateProject(projectId))}>{t('ui.duplicateProject')}</button>
-          <button onClick={onDelete}>{t('ui.deleteProject')}</button>
-        </div>
-      )}
-    </div>
+    <Menu
+      open={open}
+      onClose={() => setOpen(false)}
+      width={MENU_WIDTH}
+      trigger={
+        <button type="button" className="proj" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <span className="proj-name">{name || t('ui.projectName')} <span className="proj-caret">▼</span></span>
+          <span className="proj-sub">{t('ui.savedLocally')}</span>
+        </button>
+      }
+    >
+      <input
+        className="menu-rename"
+        value={name}
+        aria-label={t('ui.rename')}
+        placeholder={t('ui.projectName')}
+        onChange={(e) => setName(e.target.value)}
+      />
+      {/* Room mode has no bottom-nav slot on a phone: it is reached from here. */}
+      {/* Only a tab switch: the project stays, and so does its cached 3D picture. */}
+      {phone && <MenuItem onClick={() => { setUi({ tab: 'setup' }); setOpen(false); }}>{t('ui.mode.setup')}</MenuItem>}
+      <div className="menu-sep" />
+      {projects.map((m) => (
+        <MenuItem
+          key={m.id}
+          active={m.id === projectId}
+          meta={relativeTime(now, m.updatedAt, t)}
+          onClick={() => act(() => switchProject(m.id))}
+        >
+          {m.name || t('ui.projectName')}
+        </MenuItem>
+      ))}
+      <div className="menu-sep" />
+      <MenuItem onClick={() => act(() => { newProject(); setUi({ tab: 'setup' }); })}>{t('ui.newProject')}</MenuItem>
+      <MenuItem onClick={() => act(() => duplicateProject(projectId))}>{t('ui.duplicateProject')}</MenuItem>
+      <MenuItem danger onClick={onDelete}>{t('ui.deleteProject')}</MenuItem>
+    </Menu>
   );
 }

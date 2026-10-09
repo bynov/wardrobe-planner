@@ -3,14 +3,17 @@ import {
   FILE_VERSION,
   LANG_KEY,
   STORAGE_KEY,
+  THEME_KEY,
   UNITS_KEY,
   loadFromStorage,
   loadLang,
+  loadTheme,
   loadUnits,
   parseErrorText,
   parseProjectJson,
   parseProjectShape,
   saveLang,
+  saveTheme,
   saveToStorage,
   saveUnits,
   serializeProject,
@@ -214,6 +217,16 @@ describe('storage', () => {
     expect(loadLang(storage)).toBeNull();
   });
 
+  it('saves and loads the theme, ignoring junk', () => {
+    const storage = memStorage();
+    expect(loadTheme(storage)).toBeNull();
+    saveTheme(storage, 'dark');
+    expect(storage.mem.get(THEME_KEY)).toBe('dark');
+    expect(loadTheme(storage)).toBe('dark');
+    storage.setItem(THEME_KEY, 'blue');
+    expect(loadTheme(storage)).toBeNull();
+  });
+
   it('saves and loads the units, ignoring junk', () => {
     const storage = memStorage();
     expect(loadUnits(storage)).toBeNull();
@@ -233,9 +246,11 @@ describe('storage', () => {
     expect(loadFromStorage(throwing)).toBeNull();
     expect(loadLang(throwing)).toBeNull();
     expect(loadUnits(throwing)).toBeNull();
+    expect(loadTheme(throwing)).toBeNull();
     expect(() => saveToStorage(throwing, defaultProject())).not.toThrow();
     expect(() => saveLang(throwing, 'en')).not.toThrow();
     expect(() => saveUnits(throwing, 'in')).not.toThrow();
+    expect(() => saveTheme(throwing, 'dark')).not.toThrow();
   });
 
   it('uses the wardrobe-planner storage keys', () => {

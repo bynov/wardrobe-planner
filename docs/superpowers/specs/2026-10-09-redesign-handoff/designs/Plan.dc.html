@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<svg viewBox="{{ vb }}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;user-select:none">
+<rect x="0" y="0" width="{{ w }}" height="{{ d }}" style="fill:var(--surface);stroke:var(--draw);stroke-width:40"></rect>
+<sc-for list="{{ cols }}" as="c"><rect x="{{ c.x }}" y="{{ c.y }}" width="{{ c.w }}" height="{{ c.h }}" style="fill:{{ c.fill }};stroke:{{ c.stroke }};stroke-width:10;stroke-dasharray:{{ c.dash }}"></rect></sc-for>
+<rect x="{{ doorX }}" y="{{ doorY }}" width="{{ doorW }}" height="60" style="fill:var(--surface)"></rect>
+<path d="{{ doorPath }}" style="fill:none;stroke:var(--ink3);stroke-width:10"></path>
+<sc-for list="{{ walls }}" as="wl"><rect x="{{ wl.x }}" y="{{ wl.y }}" width="{{ wl.w }}" height="{{ wl.h }}" onClick="{{ wl.onClick }}" style="fill:{{ wl.fill }};stroke:{{ wl.stroke }};stroke-width:18;cursor:pointer"></rect></sc-for>
+<sc-if value="{{ dims }}"><line x1="0" y1="{{ dimY }}" x2="{{ w }}" y2="{{ dimY }}" style="stroke:var(--ink3);stroke-width:8"></line><line x1="{{ dimX }}" y1="0" x2="{{ dimX }}" y2="{{ d }}" style="stroke:var(--ink3);stroke-width:8"></line></sc-if>
+{{ textEl }}
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:320}}">
+const T = {
+  uShape: { w: 3000, d: 2500, door: [900, 900], back: [600, 600, 600, 600, 600], left: [[500, 1], [700], [700]], right: [[700], [700], [500, 1]] },
+  lShape: { w: 2500, d: 2000, door: [850, 800], back: [600, 700, 600], left: [[700], [700]], right: [] },
+  oneWall: { w: 3000, d: 1800, door: [1100, 800], back: [600, 600, 600, 600, 600], left: [], right: [] },
+  blank: { w: 3000, d: 2500, door: [1100, 800], back: [], left: [], right: [] },
+};
+const DEP = 600;
+class Component extends DCLogic {
+  renderVals() {
+    const P = this.props;
+    const t = T[P.template ?? 'uShape'] ?? T.uShape;
+    const w = P.roomW ?? t.w, d = P.roomD ?? t.d;
+    const aw = P.activeWall ?? (P.interactive === false ? null : 'back');
+    const fmt = P.fmt ?? ((n) => String(n));
+    const cols = [];
+    const add = (wall, x, y, cw, ch, label, gap) => {
+      const on = wall === aw;
+      cols.push({ x, y, w: cw, h: ch, cx: x + cw / 2, cy: y + ch / 2, label: gap ? '' : label, fill: gap ? 'none' : on ? 'var(--accent-soft)' : 'var(--wood)', stroke: on ? 'var(--accent)' : 'var(--draw)', ink: on ? 'var(--accent)' : 'var(--ink3)', dash: gap ? '30 22' : 'none' });
+    };
+    let x = 0; t.back.forEach((cw, i) => { add('back', x, 0, cw, DEP, 'B' + (i + 1)); x += cw; });
+    let y = d; t.left.forEach(([cw, g], i) => { add('left', 0, y - cw, DEP, cw, 'L' + (i + 1), g); y -= cw; });
+    y = t.back.length ? DEP : 0; t.right.forEach(([cw, g], i) => { add('right', w - DEP, y, DEP, cw, 'R' + (i + 1), g); y += cw; });
+    const [dO, dW] = t.door;
+    const doorPath = `M${dO} ${d} L${dO} ${d - dW} A${dW} ${dW} 0 0 1 ${dO + dW} ${d}`;
+    const hit = (wall, rx, ry, rw, rh) => ({ x: rx, y: ry, w: rw, h: rh, onClick: () => P.onWall && P.onWall(wall), fill: 'transparent', stroke: wall === aw ? 'var(--accent)' : 'transparent' });
+    const S = 70;
+    const walls = P.interactive === false ? [] : [hit('back', -S, -S, w + 2 * S, S), hit('left', -S, 0, S, d), hit('right', w, 0, S, d), hit('front', -S, d, w + 2 * S, S)];
+    const ink = (k) => (k === aw ? 'var(--accent)' : 'var(--ink2)');
+    const wallLabels = [
+      { x: w / 2, y: -170, text: 'Back', rot: '', ink: ink('back') },
+      { x: w / 2, y: d + 170, text: 'Front', rot: '', ink: ink('front') },
+      { x: -170, y: d / 2, text: 'Left', rot: `rotate(-90 -170 ${d / 2})`, ink: ink('left') },
+      { x: w + 170, y: d / 2, text: 'Right', rot: `rotate(90 ${w + 170} ${d / 2})`, ink: ink('right') },
+    ];
+    const dims = P.showDims ?? false, labels = P.showLabels ?? true;
+    const pad = labels ? 300 : 80, extra = dims ? 260 : 0;
+    const E = React.createElement, txt = [];
+    const tx = (x, y, s, st, ex) => txt.push(E('text', { key: txt.length, x, y, style: { textAnchor: 'middle', dominantBaseline: 'middle', pointerEvents: 'none', ...st }, ...(ex || {}) }, s));
+    if (labels) {
+      cols.forEach((c) => c.label && tx(c.cx, c.cy, c.label, { fontSize: '90px', fill: c.ink }));
+      wallLabels.forEach((t) => tx(t.x, t.y, t.text, { fontSize: '96px', fontWeight: 500, fill: t.ink }, t.rot ? { transform: t.rot } : null));
+    }
+    if (dims) {
+      const pd = labels ? 300 : 80;
+      tx(w / 2, d + pd + 170, fmt(w), { fontSize: '100px', fill: 'var(--ink2)' });
+      tx(w + pd + 170, d / 2, fmt(d), { fontSize: '100px', fill: 'var(--ink2)' }, { transform: `rotate(90 ${w + pd + 170} ${d / 2})` });
+    }
+    return {
+      textEl: E('g', null, txt), vb: `${-pad} ${-pad} ${w + 2 * pad + extra} ${d + 2 * pad + extra}`, w, d, cols, walls, wallLabels, labels, dims, doorPath,
+      doorX: dO, doorY: d - 30, doorW: dW,
+      dimY: d + pad + 60, dimTY: d + pad + 190, midX: w / 2, wTxt: fmt(w), dimX: w + pad + 60, dimTX: w + pad + 190, midY: d / 2, dRot: `rotate(90 ${w + pad + 190} ${d / 2})`, dTxt: fmt(d),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:oklch(0.972 0.004 80);--surface:oklch(0.995 0.002 80);--surface2:oklch(0.955 0.005 80);--sunk:oklch(0.935 0.006 80);--line:oklch(0.905 0.006 80);--line2:oklch(0.84 0.008 80);--ink:oklch(0.23 0.01 70);--ink2:oklch(0.43 0.01 70);--ink3:oklch(0.56 0.01 70);--accent:oklch(0.55 0.13 48);--accent-ink:oklch(0.99 0.005 60);--accent-soft:oklch(0.94 0.035 60);--wood:oklch(0.94 0.018 78);--wood2:oklch(0.895 0.025 75);--draw:oklch(0.36 0.012 70);--ok:oklch(0.52 0.11 150);--danger:oklch(0.53 0.17 27);--shadow:0 1px 2px oklch(0.3 0.02 70/.06),0 10px 30px oklch(0.3 0.02 70/.08)}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:oklch(0.17 0.005 70);--surface:oklch(0.205 0.006 70);--surface2:oklch(0.24 0.007 70);--sunk:oklch(0.15 0.005 70);--line:oklch(0.29 0.008 70);--line2:oklch(0.37 0.01 70);--ink:oklch(0.95 0.005 80);--ink2:oklch(0.79 0.008 80);--ink3:oklch(0.64 0.008 80);--accent:oklch(0.76 0.12 62);--accent-ink:oklch(0.2 0.03 55);--accent-soft:oklch(0.31 0.05 55);--wood:oklch(0.265 0.012 70);--wood2:oklch(0.315 0.014 70);--draw:oklch(0.8 0.01 80);--ok:oklch(0.76 0.11 150);--danger:oklch(0.72 0.15 27);--shadow:0 1px 2px #0006,0 10px 30px #0005}}
+.wp-light{color-scheme:light;--bg:oklch(0.972 0.004 80);--surface:oklch(0.995 0.002 80);--surface2:oklch(0.955 0.005 80);--sunk:oklch(0.935 0.006 80);--line:oklch(0.905 0.006 80);--line2:oklch(0.84 0.008 80);--ink:oklch(0.23 0.01 70);--ink2:oklch(0.43 0.01 70);--ink3:oklch(0.56 0.01 70);--accent:oklch(0.55 0.13 48);--accent-ink:oklch(0.99 0.005 60);--accent-soft:oklch(0.94 0.035 60);--wood:oklch(0.94 0.018 78);--wood2:oklch(0.895 0.025 75);--draw:oklch(0.36 0.012 70);--ok:oklch(0.52 0.11 150);--danger:oklch(0.53 0.17 27);--shadow:0 1px 2px oklch(0.3 0.02 70/.06),0 10px 30px oklch(0.3 0.02 70/.08)}
+.wp-dark{color-scheme:dark;--bg:oklch(0.17 0.005 70);--surface:oklch(0.205 0.006 70);--surface2:oklch(0.24 0.007 70);--sunk:oklch(0.15 0.005 70);--line:oklch(0.29 0.008 70);--line2:oklch(0.37 0.01 70);--ink:oklch(0.95 0.005 80);--ink2:oklch(0.79 0.008 80);--ink3:oklch(0.64 0.008 80);--accent:oklch(0.76 0.12 62);--accent-ink:oklch(0.2 0.03 55);--accent-soft:oklch(0.31 0.05 55);--wood:oklch(0.265 0.012 70);--wood2:oklch(0.315 0.014 70);--draw:oklch(0.8 0.01 80);--ok:oklch(0.76 0.11 150);--danger:oklch(0.72 0.15 27);--shadow:0 1px 2px #0006,0 10px 30px #0005}
+html,body{margin:0}body{font-family:'Schibsted Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--ink)}a{color:var(--accent)}a:hover{color:var(--ink)}
+</style>
+</helmet>
+<div class="{{ themeClass }}" style="background:var(--bg);color:var(--ink);font-family:'Schibsted Grotesk',system-ui,sans-serif">
+
+<nav style="position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)">
+<div style="max-width:1200px;margin:0 auto;padding:0 32px;height:64px;display:flex;align-items:center;gap:28px">
+<a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)"><span style="width:28px;height:28px;border-radius:7px;background:var(--ink);display:flex;align-items:flex-start;justify-content:center;padding-top:8px;box-sizing:border-box"><span style="width:13px;height:11px;border:2.5px solid var(--accent);border-bottom:0;box-sizing:border-box"></span></span><span style="font-size:16px;font-weight:600;letter-spacing:-0.01em">Walk-in Planner</span></a>
+<div style="display:flex;gap:22px;font-size:14px"><a href="#how" style="color:var(--ink2);text-decoration:none" style-hover="color:var(--ink)">How it works</a><a href="#guides" style="color:var(--ink2);text-decoration:none" style-hover="color:var(--ink)">Guides</a><a href="#faq" style="color:var(--ink2);text-decoration:none" style-hover="color:var(--ink)">FAQ</a><a href="https://github.com/bynov/wardrobe-planner" style="color:var(--ink2);text-decoration:none" style-hover="color:var(--ink)">GitHub</a></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+<a href="https://walkinplanner.com/ru/" style="height:34px;display:flex;align-items:center;padding:0 10px;border-radius:8px;color:var(--ink2);text-decoration:none;font:500 13px 'IBM Plex Mono',monospace">RU</a>
+<button onClick="{{ cycleTheme }}" style="white-space:nowrap;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink2);font:500 13px inherit;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px"><span style="width:13px;height:13px;border-radius:7px;border:1.5px solid currentColor;background:linear-gradient(90deg,currentColor 50%,transparent 50%);box-sizing:border-box"></span>{{ themeLabel }}</button>
+<a href="https://walkinplanner.com/app/" style="height:36px;display:flex;align-items:center;padding:0 16px;border-radius:9px;background:var(--ink);color:var(--bg);text-decoration:none;font-size:14px;font-weight:600">Open the planner</a>
+</div>
+</div>
+</nav>
+
+<header style="max-width:1200px;margin:0 auto;padding:88px 32px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:24px">
+<span style="display:flex;align-items:center;gap:8px;height:30px;padding:0 14px;border-radius:15px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--ink2)"><span style="width:7px;height:7px;border-radius:4px;background:var(--ok)"></span>Free and open source · runs in your browser</span>
+<h1 style="margin:0;max-width:880px;font-size:68px;line-height:1.02;font-weight:600;letter-spacing:-0.035em;text-wrap:balance">Plan a walk-in wardrobe you can actually build.</h1>
+<p style="margin:0;max-width:640px;font-size:19px;line-height:1.55;color:var(--ink2);text-wrap:pretty">Type in your room, pick the walls, and stack shelves, hanging rails and drawers column by column. You get a 3D preview, dimensioned drawings and a cut list you can hand to a panel shop.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding-top:4px">
+<a href="https://walkinplanner.com/app/" style="height:50px;display:flex;align-items:center;gap:10px;padding:0 24px;border-radius:12px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-size:16px;font-weight:600">Open the planner <span>→</span></a>
+<a href="#templates" style="height:50px;display:flex;align-items:center;padding:0 22px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);text-decoration:none;font-size:16px;font-weight:500">Start from a template</a>
+</div>
+<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;font-size:13px;color:var(--ink3)"><span>No account</span><span>·</span><span>Saves in your browser</span><span>·</span><span>mm or inches</span></div>
+</header>
+
+<section style="max-width:1200px;margin:0 auto;padding:56px 32px 0">
+<div style="border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden">
+<div style="height:46px;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--line)">
+<div style="display:flex;gap:6px"><span style="width:10px;height:10px;border-radius:5px;background:var(--line2)"></span><span style="width:10px;height:10px;border-radius:5px;background:var(--line2)"></span><span style="width:10px;height:10px;border-radius:5px;background:var(--line2)"></span></div>
+<span style="font-size:13px;font-weight:600;margin-left:8px">U-shape walk-in</span>
+<div style="margin:0 auto;display:flex;gap:2px;padding:3px;border-radius:9px;background:var(--surface2)"><span style="height:26px;display:flex;align-items:center;padding:0 14px;border-radius:7px;background:var(--surface);box-shadow:0 1px 2px #0002;font-size:12px;font-weight:500">Design</span><span style="height:26px;display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--ink2)">3D</span><span style="height:26px;display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--ink2)">Cut list</span></div>
+<span style="height:28px;display:flex;align-items:center;padding:0 12px;border-radius:7px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:600">Export PDF</span>
+</div>
+<div style="display:grid;grid-template-columns:260px minmax(0,1fr) 250px;height:540px">
+<div style="border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:12px">
+<span style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)">Plan</span>
+<div style="height:220px"><dc-import name="Plan" style="display:block;width:100%;height:100%" active-wall="{{ heroWall }}" on-wall="{{ setHeroWall }}" hint-size="100%,220px"></dc-import></div>
+<span style="font-size:12px;color:var(--ink3);line-height:1.45">Click a wall to see its elevation.</span>
+</div>
+<div style="position:relative;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/18px 18px;padding:24px"><dc-import name="Elevation" style="display:block;width:100%;height:100%" cols="{{ heroCols }}" selected="{{ heroSel }}" on-select="{{ setHeroSel }}" hint-size="100%,100%"></dc-import></div>
+<div style="border-left:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--bg)">
+<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:17px;font-weight:600">{{ heroTitle }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ heroSub }}</span></div>
+<sc-for list="{{ heroZones }}" as="z"><div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13px"><span style="font-weight:500">{{ z.name }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink2)">{{ z.h }}</span></div></sc-for>
+</div>
+</div>
+</div>
+<p style="margin:14px 0 0;text-align:center;font-size:13px;color:var(--ink3)">This preview is live. Click walls and units.</p>
+</section>
+
+<section id="how" style="max-width:1200px;margin:0 auto;padding:128px 32px 0">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:48px;align-items:end;margin-bottom:40px"><h2 style="margin:0;font-size:44px;line-height:1.05;font-weight:600;letter-spacing:-0.03em">Three steps from empty room to drawings.</h2><p style="margin:0;font-size:17px;line-height:1.55;color:var(--ink2);max-width:520px;text-wrap:pretty">The planner does the arithmetic: corner claims, door clearance, ceiling gap and plinth. You decide what goes where.</p></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+<div style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden">
+<div style="height:220px;padding:20px;background:var(--bg);border-bottom:1px solid var(--line)"><dc-import name="Plan" style="display:block;width:100%;height:100%" template="blank" interactive="{{ false }}" show-labels="{{ false }}" show-dims="{{ true }}" hint-size="100%,100%"></dc-import></div>
+<div style="padding:22px;display:flex;flex-direction:column;gap:8px"><span style="font:500 12px 'IBM Plex Mono',monospace;color:var(--accent)">01</span><span style="font-size:19px;font-weight:600">Type in the room</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">Width, depth and height, then where the door is and which way it swings.</span></div>
+</div>
+<div style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden">
+<div style="height:220px;padding:20px;background:var(--bg);border-bottom:1px solid var(--line)"><dc-import name="Plan" style="display:block;width:100%;height:100%" template="uShape" active-wall="left" show-labels="{{ false }}" hint-size="100%,100%"></dc-import></div>
+<div style="padding:22px;display:flex;flex-direction:column;gap:8px"><span style="font:500 12px 'IBM Plex Mono',monospace;color:var(--accent)">02</span><span style="font-size:19px;font-weight:600">Pick the walls</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">Build against one, two or three walls. Free length is shown as you go.</span></div>
+</div>
+<div style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden">
+<div style="height:220px;padding:28px 20px;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:flex-end;justify-content:center;gap:8px;box-sizing:border-box">
+<sc-for list="{{ presetGlyphs }}" as="p"><span style="width:38px;height:150px;border:1.5px solid var(--draw);border-radius:3px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:var(--wood)"><sc-for list="{{ p.segs }}" as="g"><span style="flex:{{ g.flex }};background:{{ g.bg }};border-top:{{ g.bt }}"></span></sc-for></span></sc-for>
+</div>
+<div style="padding:22px;display:flex;flex-direction:column;gap:8px"><span style="font:500 12px 'IBM Plex Mono',monospace;color:var(--accent)">03</span><span style="font-size:19px;font-weight:600">Stack the columns</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">Hanging, shelves, drawers and shoe racks, set zone by zone inside each unit.</span></div>
+</div>
+</div>
+</section>
+
+<section style="max-width:1200px;margin:0 auto;padding:128px 32px 0">
+<h2 style="margin:0 0 40px;font-size:44px;line-height:1.05;font-weight:600;letter-spacing:-0.03em">What you take to the workshop</h2>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px">
+<div style="grid-column:span 4;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 260px">
+<div style="height:340px;padding:20px;background:var(--bg);border-right:1px solid var(--line)"><dc-import name="Elevation" style="display:block;width:100%;height:100%" hint-size="100%,100%"></dc-import></div>
+<div style="padding:26px;display:flex;flex-direction:column;gap:10px;justify-content:flex-end"><span style="font-size:19px;font-weight:600">Plan and elevations</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">A dimensioned plan from above and one elevation per wall, every bay measured.</span></div>
+</div>
+<div style="grid-column:span 2;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column">
+<div style="flex:1;min-height:200px;background:repeating-linear-gradient(135deg,var(--surface2) 0 10px,var(--bg) 10px 20px);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)"><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink2);background:var(--surface);padding:6px 10px;border-radius:6px">3D render</span></div>
+<div style="padding:22px;display:flex;flex-direction:column;gap:8px"><span style="font-size:19px;font-weight:600">3D preview</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">Orbit the finished walk-in, or explode it to see each panel.</span></div>
+</div>
+<div style="grid-column:span 3;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:18px 20px;background:var(--bg);border-bottom:1px solid var(--line);display:flex;flex-direction:column;font:12px 'IBM Plex Mono',monospace">
+<div style="display:grid;grid-template-columns:1.4fr 1.4fr .5fr .8fr .8fr;gap:8px;padding:0 0 8px;color:var(--ink3);border-bottom:1px solid var(--line)"><span>Part</span><span>Location</span><span>Qty</span><span>L</span><span>W</span></div>
+<sc-for list="{{ cutRows }}" as="r"><div style="display:grid;grid-template-columns:1.4fr 1.4fr .5fr .8fr .8fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink)"><span>{{ r.p }}</span><span style="color:var(--ink2)">{{ r.l }}</span><span>{{ r.q }}</span><span>{{ r.a }}</span><span>{{ r.b }}</span></div></sc-for>
+</div>
+<div style="padding:22px;display:flex;flex-direction:column;gap:8px"><span style="font-size:19px;font-weight:600">Cut list</span><span style="font-size:14px;line-height:1.55;color:var(--ink2)">Every panel, shelf, divider, drawer front and rod, grouped by size and tagged to match the drawings.</span></div>
+</div>
+<div style="grid-column:span 3;display:grid;grid-template-rows:1fr 1fr;gap:16px">
+<div style="border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:22px;display:flex;gap:18px;align-items:center"><span style="width:52px;height:68px;flex:none;border:1.5px solid var(--line2);border-radius:4px;background:var(--bg);display:flex;flex-direction:column;gap:5px;padding:9px 8px;box-sizing:border-box"><span style="height:18px;border:1px solid var(--line2)"></span><span style="height:2px;background:var(--line2)"></span><span style="height:2px;width:70%;background:var(--line2)"></span><span style="height:2px;background:var(--line2)"></span></span><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:600">PDF</span><span style="font-size:14px;line-height:1.5;color:var(--ink2)">Drawings and cut list in one document, ready to print or send.</span></div></div>
+<div style="border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:12px;justify-content:center"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px;font-weight:600">Share link</span><span style="font-size:13px;color:var(--ink3)">nothing stored on a server</span></div><span style="display:flex;align-items:center;height:38px;padding:0 12px;border-radius:9px;background:var(--bg);border:1px solid var(--line);font:12px 'IBM Plex Mono',monospace;color:var(--ink2);overflow:hidden;white-space:nowrap">walkinplanner.com/app/#s=eJyrVkrOz0lV<span style="color:var(--ink3)">…</span></span></div>
+</div>
+</div>
+</section>
+
+<section style="max-width:1200px;margin:0 auto;padding:128px 32px 0">
+<div style="border-radius:24px;background:oklch(0.235 0.012 65);color:oklch(0.97 0.004 80);border:1px solid var(--line);padding:56px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:56px;--bg:oklch(0.97 0.004 80)">
+<div style="display:flex;flex-direction:column;gap:16px"><span style="font:500 12px 'IBM Plex Mono',monospace;color:oklch(0.78 0.12 62)">PRIVATE BY DESIGN</span><h2 style="margin:0;font-size:40px;line-height:1.08;font-weight:600;letter-spacing:-0.03em">Your design never leaves your device.</h2><p style="margin:0;font-size:16px;line-height:1.6;opacity:.75;text-wrap:pretty">There is no server holding your projects and no account to create. You can read every line of the code.</p></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px 32px">
+<sc-for list="{{ trust }}" as="t"><div style="display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid color-mix(in oklch,var(--bg) 22%,transparent)"><span style="font-size:16px;font-weight:600">{{ t.h }}</span><span style="font-size:14px;line-height:1.55;opacity:.72">{{ t.p }}</span></div></sc-for>
+</div>
+</div>
+</section>
+
+<section id="templates" style="max-width:1200px;margin:0 auto;padding:128px 32px 0">
+<div style="display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:32px"><h2 style="margin:0;font-size:44px;line-height:1.05;font-weight:600;letter-spacing:-0.03em">Start from a layout</h2><span style="font-size:15px;color:var(--ink2)">Every template opens valid and ready to edit.</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+<sc-for list="{{ templates }}" as="t"><a href="{{ t.href }}" style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;text-decoration:none;color:var(--ink)" style-hover="border-color:var(--accent)"><span style="height:230px;padding:24px;background:var(--bg);border-bottom:1px solid var(--line);display:block;box-sizing:border-box"><dc-import name="Plan" style="display:block;width:100%;height:100%" template="{{ t.key }}" interactive="{{ false }}" show-labels="{{ false }}" hint-size="100%,100%"></dc-import></span><span style="padding:20px 22px;display:flex;justify-content:space-between;align-items:center"><span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:18px;font-weight:600">{{ t.name }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ t.size }}</span></span><span style="font-size:14px;font-weight:600;color:var(--accent)">Open →</span></span></a></sc-for>
+</div>
+</section>
+
+<section style="max-width:1200px;margin:0 auto;padding:128px 32px 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:48px">
+<div style="display:flex;flex-direction:column;gap:14px"><h2 style="margin:0;font-size:36px;line-height:1.08;font-weight:600;letter-spacing:-0.03em">What it doesn’t do</h2><p style="margin:0;font-size:15px;line-height:1.6;color:var(--ink2);text-wrap:pretty">It plans an open walk-in: carcasses, shelves, dividers, drawer fronts and hanging rods. If you need hinged fronts, runner specs or an odd-shaped room, this is the wrong tool.</p></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+<sc-for list="{{ nots }}" as="n"><div style="padding:22px;border:1px dashed var(--line2);border-radius:14px;display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">{{ n.h }}</span><span style="font-size:13px;line-height:1.5;color:var(--ink2)">{{ n.p }}</span></div></sc-for>
+</div>
+</section>
+
+<section id="guides" style="max-width:1200px;margin:0 auto;padding:128px 32px 0">
+<div style="display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:32px"><h2 style="margin:0;font-size:44px;line-height:1.05;font-weight:600;letter-spacing:-0.03em">Guides</h2><span style="font-size:15px;color:var(--ink2);max-width:420px;text-align:right">The practical dimensions the planner is built on, written out in full.</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+<sc-for list="{{ guides }}" as="g"><a href="{{ g.href }}" style="display:flex;flex-direction:column;gap:14px;padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--surface);text-decoration:none;color:var(--ink);min-height:200px;box-sizing:border-box" style-hover="border-color:var(--accent)"><span style="font:500 24px 'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:-0.02em">{{ g.num }}</span><span style="font-size:17px;font-weight:600;line-height:1.25">{{ g.title }}</span><span style="font-size:13px;line-height:1.5;color:var(--ink2);margin-top:auto">{{ g.p }}</span></a></sc-for>
+</div>
+</section>
+
+<section id="faq" style="max-width:1200px;margin:0 auto;padding:128px 32px 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:48px">
+<h2 style="margin:0;font-size:44px;line-height:1.05;font-weight:600;letter-spacing:-0.03em">Questions</h2>
+<div style="display:flex;flex-direction:column;border-top:1px solid var(--line)">
+<sc-for list="{{ faq }}" as="q"><div style="border-bottom:1px solid var(--line)"><button onClick="{{ q.onClick }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;border:0;background:transparent;color:var(--ink);font:600 17px inherit;font-family:inherit;cursor:pointer;text-align:left">{{ q.q }}<span style="flex:none;width:28px;height:28px;border-radius:14px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-weight:400;color:var(--ink2)">{{ q.sign }}</span></button><sc-if value="{{ q.open }}"><p style="margin:0;padding:0 48px 24px 0;font-size:15px;line-height:1.65;color:var(--ink2);text-wrap:pretty">{{ q.a }}</p></sc-if></div></sc-for>
+</div>
+</section>
+
+<section style="max-width:1200px;margin:0 auto;padding:128px 32px 96px">
+<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;padding:72px 32px;border:1px solid var(--line);border-radius:24px;background:var(--surface)">
+<h2 style="margin:0;font-size:48px;line-height:1.04;font-weight:600;letter-spacing:-0.035em;max-width:640px;text-wrap:balance">Measure the room. Open the planner.</h2>
+<a href="https://walkinplanner.com/app/" style="height:50px;display:flex;align-items:center;gap:10px;padding:0 24px;border-radius:12px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-size:16px;font-weight:600">Open the planner →</a>
+<span style="font-size:13px;color:var(--ink3)">No account. Saves in your browser. mm or inches.</span>
+</div>
+</section>
+
+<footer style="border-top:1px solid var(--line)"><div style="max-width:1200px;margin:0 auto;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:13px;color:var(--ink3)"><span>Walk-in Planner · MIT licence</span><div style="display:flex;gap:20px"><a href="https://github.com/bynov/wardrobe-planner" style="color:var(--ink2);text-decoration:none">Source on GitHub</a><a href="https://walkinplanner.com/ru/" style="color:var(--ink2);text-decoration:none">Русский</a></div></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const Z = (type, h, count) => ({ type, h, count });
+const WALLS = {
+  back: [{ width: 600, zones: [Z('drawers', 600, 3), Z('hanging', null, 1)] }, { width: 600, zones: [Z('hanging', null, 1), Z('hanging', null, 1)] }, { width: 600, zones: [Z('shelves', null, 6)] }, { width: 600, zones: [Z('drawers', 800, 4), Z('shelves', null, 4)] }, { width: 600, zones: [Z('hanging', null, 1)] }],
+  left: [{ gap: true, width: 500 }, { width: 700, zones: [Z('hanging', null, 1), Z('hanging', null, 1)] }, { width: 700, zones: [Z('shoes', 900, 5), Z('shelves', null, 3)] }],
+  right: [{ width: 700, zones: [Z('hanging', null, 1)] }, { width: 700, zones: [Z('drawers', 800, 4), Z('shelves', null, 4)] }, { gap: true, width: 500 }],
+  front: [],
+};
+const AB = { back: 'B', left: 'L', right: 'R', front: 'F' };
+const WN = { back: 'Back wall', left: 'Left wall', right: 'Right wall', front: 'Front wall' };
+const NM = { open: 'Open', shelves: 'Shelves', drawers: 'Drawers', hanging: 'Hanging rail', shoes: 'Shoe shelves' };
+const GL = { open: 'transparent', shelves: 'repeating-linear-gradient(to bottom, transparent 0 13px, var(--draw) 13px 14.5px)', drawers: 'repeating-linear-gradient(to bottom, var(--wood2) 0 11px, var(--draw) 11px 12.5px)', hanging: 'linear-gradient(var(--draw),var(--draw)) center 7px / 76% 2px no-repeat', shoes: 'repeating-linear-gradient(170deg, transparent 0 9px, var(--draw) 9px 10.5px)' };
+const FAQ = [
+  ['Is it free?', 'Yes. Walk-in Planner is free and open source under the MIT licence. There is no account, no sign-up and no paid tier.'],
+  ['Do I need to install anything?', 'No. It runs in any modern desktop or mobile browser. There is nothing to download and no plugin to install.'],
+  ['Where is my project stored?', "In your browser's localStorage, on the device you are working on. Nothing is uploaded to a server. Export the project as a JSON file to back it up or move it to another machine, and import that file to carry on."],
+  ['What does the cut list include?', 'Every carcass panel — sides, top, bottom, back and plinth — plus shelves, dividers, drawer fronts and hanging rods, with sizes and quantities, tagged (B1, R2, L1) to match the drawings. Drawer boxes, runners and other hardware are not included.'],
+  ['Can I work in inches?', 'Yes. A units toggle switches the whole interface, drawings and cut list between millimetres and inches. The model itself stays in millimetres, so numbers never drift as you switch back and forth.'],
+  ['What can I export?', 'A PDF containing the dimensioned plan, one elevation per wall and the cut list — enough to take to a panel shop — and the project itself as a JSON file you can re-import later.'],
+];
+class Component extends DCLogic {
+  state = { theme: null, faq: 0, wall: 'back', sel: 3 };
+  renderVals() {
+    const s = this.state;
+    const cols = WALLS[s.wall].map((c, i) => ({ ...c, label: AB[s.wall] + (i + 1) }));
+    const c = cols[s.sel];
+    const interior = 2214;
+    const zs = c && c.zones ? c.zones : [];
+    const fixed = zs.reduce((a, z) => a + (z.h || 0), 0), na = zs.filter((z) => !z.h).length;
+    const ah = na ? (interior - fixed - (zs.length - 1) * 18) / na : 0;
+    const glyph = (zones) => ({ segs: [...zones].reverse().map((z, i) => ({ flex: z.h ? z.h / 600 : 2.2, bg: GL[z.type], bt: i ? '1.5px solid var(--draw)' : '0' })) });
+    return {
+      themeClass: s.theme ? 'wp-' + s.theme : '', themeLabel: s.theme ? (s.theme === 'dark' ? 'Dark' : 'Light') : 'Auto',
+      cycleTheme: () => this.setState((st) => ({ theme: st.theme === null ? 'light' : st.theme === 'light' ? 'dark' : null })),
+      heroWall: s.wall, setHeroWall: (w) => this.setState({ wall: w, sel: WALLS[w].findIndex((x) => !x.gap) }),
+      heroCols: cols, heroSel: s.sel, setHeroSel: (i) => this.setState({ sel: i }),
+      heroTitle: c ? (c.gap ? 'Gap ' : 'Unit ') + c.label : 'No wardrobe here', heroSub: c ? `${c.width} mm · ${WN[s.wall]}` : WN[s.wall],
+      heroZones: [...zs].reverse().map((z) => ({ name: NM[z.type] + (z.count > 1 ? ' ×' + z.count : ''), h: Math.round(z.h || ah) + ' mm' })),
+      presetGlyphs: [WALLS.back[0].zones, WALLS.back[1].zones, WALLS.back[2].zones, WALLS.back[3].zones, WALLS.left[2].zones].map(glyph),
+      cutRows: [{ p: 'Side', l: 'B1–B5', q: 10, a: 2250, b: 582 }, { p: 'Shelf', l: 'B3, B4', q: 9, a: 564, b: 580 }, { p: 'Drawer front', l: 'B4', q: 4, a: 560, b: 196 }, { p: 'Rod Ø25', l: 'B1, B2, B5', q: 4, a: 562, b: '—' }],
+      trust: [
+        { h: 'Nothing is uploaded', p: 'The planner runs entirely in your browser. There is no backend to send a design to.' },
+        { h: 'Saved on this device', p: 'Projects live in localStorage and reopen where you left them.' },
+        { h: 'Yours to move', p: 'Export the project as JSON to back it up or carry it to another machine.' },
+        { h: 'Open source, MIT', p: 'The full source is on GitHub. Read it, fork it, or self-host it.' },
+      ],
+      templates: [
+        { key: 'oneWall', name: 'One wall', size: '3000 × 1800 mm', href: 'https://walkinplanner.com/app/?template=oneWall' },
+        { key: 'lShape', name: 'L-shape', size: '2500 × 2000 mm', href: 'https://walkinplanner.com/app/?template=lShape' },
+        { key: 'uShape', name: 'U-shape', size: '3000 × 2500 mm', href: 'https://walkinplanner.com/app/?template=uShape' },
+      ],
+      nots: [{ h: 'No doors on units', p: 'Fronts are drawer fronts only. Units are open.' }, { h: 'No drawer boxes or hardware', p: 'Runners, hinges and brackets are left to you.' }, { h: 'Rectangular rooms only', p: 'Four straight walls, one door.' }],
+      guides: [
+        { num: '01', title: 'Walk-in wardrobe dimensions', p: 'Depth, width, plinth, ceiling gap and board thickness.', href: 'https://walkinplanner.com/guides/wardrobe-dimensions/' },
+        { num: '02', title: 'Hanging rail height', p: 'Single and double hanging, and the 2000 mm reach limit.', href: 'https://walkinplanner.com/guides/hanging-rail-height/' },
+        { num: '03', title: 'Shelf depth and spacing', p: 'Pitch for folded clothes and shoes, and how far a shelf can span.', href: 'https://walkinplanner.com/guides/shelf-depth-and-spacing/' },
+        { num: '04', title: 'Walk-in closet minimum width', p: 'The smallest room that still works, by layout.', href: 'https://walkinplanner.com/guides/walk-in-closet-minimum-width/' },
+      ],
+      faq: FAQ.map(([q, a], i) => ({ q, a, open: s.faq === i, sign: s.faq === i ? '−' : '+', onClick: () => this.setState((st) => ({ faq: st.faq === i ? -1 : i })) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ pnpm test src/geometry/layout.test.ts     # one file
 pnpm test -t "rail"                       # by test name (no `--`)
 pnpm typecheck                            # tsc --noEmit
 pnpm build                                # typecheck + vite build -> dist/
+pnpm screenshots                          # after pnpm build: public/screenshots/*.png (+ -dark) and public/og.png via system Chrome
 pnpm embed-font                           # regenerate src/pdf/fonts/ptsans.ts (only if the TTF changes)
 ```
 
@@ -41,7 +42,11 @@ Project (model/types) ──validate──> errors
           └─ ui/three       Part[] -> R3F meshes
 ```
 
-- `store/store.ts` (zustand): holds `project`, `errors`, `lastValid`, undo/redo history (`past`/`future`, limit 100), and `ui` (tab, selection, lang). Every edit goes through `commit()` which re-validates and keeps `lastValid` as the last error-free project. 3D, cut list and PDF render from `lastValid` (with a stale banner); Design-tab drawings render from the current project when it is still geometrically drawable (`ui/drawable.ts`). No-op edits must not create history entries (structural sharing is checked by identity).
+UI (`src/ui`, React on the store): `TopBar` (project menu, mode switcher Room · Design · 3D · Cut list, undo/units/theme, share, PDF). `DesignTab` = `WallTabs` + canvas (`PlanEditor`/`ElevationEditor`) + `PresetTray` + `ErrorBanner` + `Inspector`; `RoomMode` is the room/door/wardrobe form; `Viewport3D` has floating chrome (view presets, toggles, mini-plan). At ≤600px `App` swaps in `MobileShell` (header, `WallChips`, elevation + mini-plan, `BottomSheet`, `MobileNav`). Breakpoints: 600 phone, 820 tablet (`styles.css`; `useMediaQuery` for JS).
+
+- `store/store.ts` (zustand): holds `project`, `errors`, `lastValid`, undo/redo history (`past`/`future`, limit 100), and `ui` (tab, selection, insert slot, lang, units, theme, sheet state). Every edit goes through `commit()` which re-validates and keeps `lastValid` as the last error-free project. 3D, cut list and PDF render from `lastValid` (with a stale banner); Design-tab drawings render from the current project when it is still geometrically drawable (`ui/drawable.ts`). No-op edits must not create history entries (structural sharing is checked by identity).
+- Insert slot: `ui.insertAt` (a `+` marker in the elevation; reconciled in `commit()` via `slotFor`) says where the next unit goes; `PresetTray` adds a preset there. It replaced the old spawn menu.
+- Theme: `site/tokens.css` is shared by the landing pages and the app. `html[data-theme=light|dark]` forces a theme, otherwise `prefers-color-scheme` decides. `ui.theme` (`auto|light|dark`, persisted as `wardrobe-planner:theme`) goes through `applyTheme` (`ui/theme.ts`, also rewrites the `theme-color` metas); every HTML head carries a tiny inline script that sets `data-theme` before paint. Colours live in CSS variables only: no hex outside `src/ui/three/colors.ts` (the three.js hex table derived from the tokens), the `theme-color` meta values in `src/ui/theme.ts` and `site/site.js`, `public/favicon.svg`, and the OG template in `scripts/screenshots.mjs`.
 - `store/persist.ts`: JSON file format with `FILE_VERSION` and shape validation; older versions are migrated on load. Optional fields (`rod`, `rodDir`, `rail`) are absent by default so old files keep the behaviour they were saved with. Autosaves to localStorage.
 - `i18n`: every user-visible string is a `Msg` (`{key, params}`) translated with `t`/`tm`/`tmDeep`; `en.ts` defines the key set and a test enforces `ru.ts` parity (same keys, same placeholders) plus coverage of every `prefix × union` key built by casting (walls, zone types, presets, part names…). Add both languages together.
 
@@ -59,6 +64,7 @@ Project (model/types) ──validate──> errors
 
 ## Working notes
 
+- `pnpm screenshots` forces a theme via localStorage (`wardrobe-planner:theme`, and `wardrobe-planner:hint-dismissed` = `1` to hide the first-run hint) and writes `{design,3d,cutlist,mobile}{,-dark}.png` plus `public/og.png`; its OG band uses the dark token colours as hex.
 - `.superpowers/sdd/<plan>/` is a gitignored scratch area from the original SDD run (briefs, reports, `progress.md` with the known-open-items list, and `snap-package` for tree-snapshot review diffs). `global-constraints.md` there predates git and is stale on that point; the conventions above supersede it.
 - `src/pdf/fonts/ptsans.ts` is generated (base64 PT Sans, SIL OFL); never hand-edit.
 - `pnpm-workspace.yaml` pins `@types/react-reconciler` to a React-18-compatible version and allowlists the `core-js` postinstall; keep both when touching deps.

@@ -1,3 +1,4 @@
+import { WALLS } from '../geometry/frames';
 import { makePreset } from './presets';
 import type { Project, WallPlan } from './types';
 
@@ -35,4 +36,11 @@ export function defaultProject(): Project {
       walls: { back, right, front, left },
     },
   };
+}
+
+/** Just the room, door and carcass defaults: every wall off and empty, for the user to fill. */
+export function emptyProject(): Project {
+  const p = defaultProject();
+  for (const w of WALLS) p.wardrobe.walls[w] = { ...p.wardrobe.walls[w], enabled: false, segments: [[], []] };
+  return p;
 }

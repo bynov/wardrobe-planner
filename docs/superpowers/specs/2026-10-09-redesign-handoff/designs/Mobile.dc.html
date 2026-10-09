@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div class="{{ themeClass }}" style="position:relative;width:390px;height:844px;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Schibsted Grotesk',system-ui,sans-serif;font-size:14px">
+<div style="flex:none;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:600 14px 'Schibsted Grotesk',system-ui"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:10px;border-radius:2px;background:var(--ink)"></span><span style="width:24px;height:11px;border-radius:3px;border:1.5px solid var(--ink3);box-sizing:border-box;padding:1px"><span style="display:block;width:70%;height:100%;border-radius:1px;background:var(--ink)"></span></span></span></div>
+<header style="flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px 10px 16px">
+<div style="width:26px;height:26px;border-radius:7px;background:var(--ink);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;box-sizing:border-box;flex:none"><div style="width:12px;height:10px;border:2.5px solid var(--accent);border-bottom:0;box-sizing:border-box"></div></div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:16px;font-weight:600">U-shape walk-in <span style="font-size:10px;color:var(--ink3)">▼</span></span><span style="font-size:11px;color:var(--ink3)">Saved in this browser</span></div>
+<button onClick="{{ undo }}" style="white-space:nowrap;width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:{{ undoFg }};font-size:19px">↶</button>
+<button onClick="{{ cycleTheme }}" title="Theme" style="white-space:nowrap;width:44px;height:44px;border:0;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;border-radius:8px;border:1.5px solid var(--ink2);background:linear-gradient(90deg,var(--ink2) 50%,transparent 50%);box-sizing:border-box"></span></button>
+</header>
+<div style="flex:none;display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto">
+<sc-for list="{{ wallChips }}" as="w"><button onClick="{{ w.onClick }}" style="white-space:nowrap;flex:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;height:48px;padding:0 14px;border:1px solid {{ w.border }};border-radius:12px;background:{{ w.bg }};color:var(--ink);font-family:inherit"><span style="font-size:13px;font-weight:600">{{ w.name }}</span><span style="font:11px 'IBM Plex Mono',monospace;color:{{ w.fg }}">{{ w.status }}</span></button></sc-for>
+</div>
+<div style="flex:1;min-height:0;position:relative;background:radial-gradient(var(--line) 1px,transparent 1.2px) 0 0/18px 18px;border-top:1px solid var(--line)">
+<div style="position:absolute;inset:14px 10px {{ elevBottom }}"><dc-import name="Elevation" style="display:block;width:100%;height:100%" cols="{{ cols }}" selected="{{ sel }}" selected-zone="{{ selZ }}" on-select="{{ onSelect }}" show-dims="{{ false }}" hint-size="100%,100%"></dc-import></div>
+<button onClick="{{ togglePlan }}" style="white-space:nowrap;position:absolute;top:10px;right:10px;width:64px;height:56px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);box-sizing:border-box"><dc-import name="Plan" style="display:block;width:100%;height:100%" active-wall="{{ wall }}" interactive="{{ true }}" on-wall="{{ onWall }}" show-labels="{{ false }}" hint-size="100%,100%"></dc-import></button>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:84px;height:{{ sheetH }};display:flex;flex-direction:column;border-radius:20px 20px 0 0;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -10px 30px oklch(0.2 0.01 70/.12);transition:height .25s ease">
+<button onClick="{{ toggleSheet }}" style="white-space:nowrap;flex:none;height:22px;border:0;background:transparent;display:flex;align-items:center;justify-content:center"><span style="width:38px;height:5px;border-radius:3px;background:var(--line2)"></span></button>
+<sc-if value="{{ collapsed }}">
+<div style="display:flex;flex-direction:column;gap:12px;padding:0 16px 14px">
+<div style="display:flex;align-items:center;gap:10px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:17px;font-weight:600">{{ selTitle }}</span><span style="font:12px 'IBM Plex Mono',monospace;color:var(--ink3)">{{ selSub }}</span></div><button onClick="{{ toggleSheet }}" style="white-space:nowrap;height:44px;padding:0 16px;border:0;border-radius:12px;background:var(--ink);color:var(--bg);font:600 14px inherit;font-family:inherit">Edit</button></div>
+<div style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{ zoneChips }}" as="z"><span style="flex:none;display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:15px;background:var(--surface2);font-size:12px;color:var(--ink2)">{{ z.text }}</span></sc-for></div>
+</div>
+</sc-if>
+<sc-if value="{{ expanded }}"><div style="flex:1;min-height:0;overflow:auto;padding:0 16px 16px"><dc-import name="Inspector" col="{{ selCol }}" selected-zone="{{ selZ }}" wall-name="{{ wallName }}" on-select-zone="{{ onSelectZone }}" on-zone="{{ onZone }}" on-width="{{ onWidth }}" hint-size="100%,400px"></dc-import></div></sc-if>
+</div>
+<nav style="position:absolute;left:0;right:0;bottom:0;height:84px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 8px 0;box-sizing:border-box;background:var(--surface);border-top:1px solid var(--line)">
+<sc-for list="{{ nav }}" as="n"><button onClick="{{ n.onClick }}" style="white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;padding-top:6px;height:52px;border:0;background:transparent;color:{{ n.fg }};font:500 11px inherit;font-family:inherit"><span style="width:22px;height:22px;border-radius:6px;border:1.8px solid currentColor;box-sizing:border-box;background:{{ n.fill }}"></span>{{ n.label }}</button></sc-for>
+<span style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink)"></span>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;sheet&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;collapsed&quot;,&quot;expanded&quot;],&quot;default&quot;:&quot;collapsed&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const Z = (type, h, count) => ({ type, h, count });
+const WALLS0 = {
+  back: [{ width: 600, zones: [Z('drawers', 600, 3), Z('hanging', null, 1)] }, { width: 600, zones: [Z('hanging', null, 1), Z('hanging', null, 1)] }, { width: 600, zones: [Z('shelves', null, 6)] }, { width: 600, zones: [Z('drawers', 800, 4), Z('shelves', null, 4)] }, { width: 600, zones: [Z('hanging', null, 1)] }],
+  left: [{ gap: true, width: 500 }, { width: 700, zones: [Z('hanging', null, 1), Z('hanging', null, 1)] }, { width: 700, zones: [Z('shoes', 900, 5), Z('shelves', null, 3)] }],
+  right: [{ width: 700, zones: [Z('hanging', null, 1)] }, { width: 700, zones: [Z('drawers', 800, 4), Z('shelves', null, 4)] }, { gap: true, width: 500 }],
+  front: [],
+};
+const WN = { back: 'Back wall', left: 'Left wall', right: 'Right wall', front: 'Front wall' };
+const AB = { back: 'B', left: 'L', right: 'R', front: 'F' };
+const LEN = { back: 3000, left: 1900, right: 1900, front: 3000 };
+const NM = { open: 'Open', shelves: 'Shelves', drawers: 'Drawers', hanging: 'Hanging', shoes: 'Shoes' };
+class Component extends DCLogic {
+  state = { walls: JSON.parse(JSON.stringify(WALLS0)), wall: 'back', sel: 3, selZ: -1, open: null, theme: null, past: [], tabN: 'Design' };
+  mut(fn) { this.setState((s) => { const walls = JSON.parse(JSON.stringify(s.walls)); fn(walls[s.wall], s); return { walls, past: [...s.past, s.walls] }; }); }
+  renderVals() {
+    const s = this.state, P = this.props;
+    const open = s.open ?? (P.sheet === 'expanded');
+    const cols = s.walls[s.wall].map((c, i) => ({ ...c, label: AB[s.wall] + (i + 1) }));
+    const sel = cols[s.sel] ? s.sel : -1, c = cols[sel];
+    const setWall = (w) => this.setState({ wall: w, sel: s.walls[w].length ? 0 : -1, selZ: -1 });
+    return {
+      themeClass: s.theme ? 'wp-' + s.theme : '',
+      cycleTheme: () => this.setState((st) => ({ theme: st.theme === null ? 'light' : st.theme === 'light' ? 'dark' : null })),
+      undo: () => this.setState((st) => (st.past.length ? { walls: st.past[st.past.length - 1], past: st.past.slice(0, -1) } : null)),
+      undoFg: s.past.length ? 'var(--ink)' : 'var(--line2)',
+      wallChips: Object.keys(WN).map((w) => {
+        const n = s.walls[w].filter((x) => !x.gap).length, f = LEN[w] - s.walls[w].reduce((a, x) => a + x.width, 0), act = w === s.wall;
+        return { name: WN[w].replace(' wall', ''), status: !n ? 'off' : f === 0 ? `${n} · full` : f < 0 ? `over ${-f}` : `${n} · ${f} free`, onClick: () => setWall(w), border: act ? 'var(--accent)' : 'var(--line)', bg: act ? 'var(--accent-soft)' : 'var(--surface)', fg: f < 0 ? 'var(--danger)' : 'var(--ink3)' };
+      }),
+      wall: s.wall, onWall: setWall, togglePlan: () => {},
+      cols, sel, selZ: s.selZ, onSelect: (i, zi) => this.setState({ sel: i, selZ: zi ?? -1 }),
+      elevBottom: open ? '470px' : '170px', sheetH: open ? '470px' : '150px', collapsed: !open, expanded: open,
+      toggleSheet: () => this.setState({ open: !open }),
+      selTitle: c ? (c.gap ? 'Gap ' : 'Unit ') + c.label : 'Tap a unit', selSub: c ? `${c.width} mm wide · ${WN[s.wall]}` : 'to edit it',
+      zoneChips: c && c.zones ? [...c.zones].reverse().map((z) => ({ text: NM[z.type] + (z.count > 1 ? ' ×' + z.count : '') + (z.h ? ' · ' + z.h : ' · auto') })) : [],
+      selCol: c || null, wallName: WN[s.wall],
+      onSelectZone: (zi) => this.setState({ selZ: zi }),
+      onZone: (zi, patch) => this.mut((arr, st) => { const z = arr[st.sel].zones[zi]; if (patch.type && patch.type !== z.type) z.count = { drawers: 3, shelves: 4, shoes: 5 }[patch.type] || 1; Object.assign(z, patch); }),
+      onWidth: (d) => this.mut((arr, st) => { arr[st.sel].width = Math.max(300, Math.min(1200, arr[st.sel].width + d)); }),
+      nav: ['Design', '3D', 'Cut list', 'Export'].map((l) => ({ label: l, onClick: () => this.setState({ tabN: l }), fg: l === s.tabN ? 'var(--accent)' : 'var(--ink3)', fill: l === s.tabN ? 'color-mix(in oklch,var(--accent) 22%,transparent)' : 'transparent' })),
+    };
+  }
+}
+</script>
+</body>
+</html>

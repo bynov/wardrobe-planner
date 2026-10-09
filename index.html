@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('wardrobe-planner:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Walk-in Planner – Free Walk-in Wardrobe & Closet Planner</title>
     <meta name="description" content="Plan a walk-in wardrobe in your browser: 3D preview, dimensioned plan and elevations, cut list and PDF. Free, no account, works in mm or inches." />
@@ -9,13 +10,17 @@
     <link rel="alternate" hreflang="en" href="https://walkinplanner.com/" />
     <link rel="alternate" hreflang="ru" href="https://walkinplanner.com/ru/" />
     <link rel="alternate" hreflang="x-default" href="https://walkinplanner.com/" />
-    <meta name="theme-color" content="#2b6cb0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fefefd" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2927" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Walk-in Planner – free walk-in wardrobe planner" />
     <meta property="og:description" content="3D preview, plan and elevations, cut list and PDF. Free, in the browser." />
     <meta property="og:url" content="https://walkinplanner.com/" />
     <meta property="og:image" content="https://walkinplanner.com/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/site/site.css" />
     <script type="application/ld+json">
@@ -87,125 +92,190 @@
       }
     </script>
     <script data-goatcounter="https://walkinplanner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <script type="module" src="/site/site.js"></script>
   </head>
   <body>
     <header class="nav">
-      <a class="brand" href="/">Walk-in Planner</a>
-      <nav>
-        <a href="/ru/">RU</a>
-        <a class="cta" href="/app/">Open the planner</a>
-      </nav>
+      <div class="nav-in">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"><i></i></span><span>Walk-in Planner</span></a>
+        <nav class="nav-links" aria-label="Main"><a href="#how">How it works</a><a href="#guides">Guides</a><a href="#faq">FAQ</a><a href="https://github.com/bynov/wardrobe-planner">GitHub</a></nav>
+        <div class="nav-end">
+          <a class="lang" href="/ru/" hreflang="ru" lang="ru">RU</a>
+          <button class="theme" type="button" title="Colour theme" data-auto="Auto" data-light="Light" data-dark="Dark"><span class="theme-dot" aria-hidden="true"></span><span class="theme-label">Auto</span></button>
+          <a class="btn ink" href="/app/">Open the planner</a>
+        </div>
+      </div>
     </header>
-    <main>
-      <section class="hero">
-        <h1>Free walk-in wardrobe planner</h1>
-        <p>
-          Type in your room, pick the walls you want to build against, and stack shelves, hanging rails and drawers
-          column by column. Walk-in Planner turns that into a 3D preview, a dimensioned plan, an elevation for every
-          wall and a cut list you can hand to a panel shop — all in the browser, with nothing to install and nothing
-          sent to a server.
-        </p>
-        <a class="cta big" href="/app/">Open the planner</a>
-        <p class="sub">No account. Saves in your browser. mm or inches.</p>
-        <img src="/screenshots/design.png" alt="Walk-in Planner design tab: plan, wall elevation and inspector" width="1440" height="900" />
-      </section>
-      <section class="features">
-        <h2>What you get</h2>
-        <ul>
-          <li><strong>3D preview</strong> — orbit around the finished walk-in and see how the columns sit together.</li>
-          <li>
-            <strong>Plan and elevations</strong> — a dimensioned plan from above plus one elevation per wall, every
-            shelf bay measured.
-          </li>
-          <li>
-            <strong>Cut list</strong> — every panel, shelf, divider, drawer front and rod, grouped by size and tagged to
-            match the drawings.
-          </li>
-          <li><strong>PDF</strong> — drawings and cut list in one document, ready to print or send to a shop.</li>
-          <li><strong>Templates</strong> — start from a ready layout instead of an empty room.</li>
-          <li><strong>Share link</strong> — pass a design to someone else as a URL; nothing is stored on a server.</li>
-        </ul>
-        <div class="shots">
-          <img src="/screenshots/3d.png" alt="3D preview of a walk-in wardrobe" width="1440" height="900" />
-          <img src="/screenshots/mobile.png" alt="Walk-in Planner on a phone" width="390" height="844" />
+    <main class="landing">
+      <header class="hero">
+        <span class="pill"><span class="dot" aria-hidden="true"></span>Free and open source · runs in your browser</span>
+        <h1>Plan a walk-in wardrobe you can actually build.</h1>
+        <p class="lead">Type in your room, pick the walls, and stack shelves, hanging rails and drawers column by column. You get a 3D preview, dimensioned drawings and a cut list you can hand to a panel shop.</p>
+        <div class="hero-cta">
+          <a class="btn accent lg" href="/app/">Open the planner <span aria-hidden="true">→</span></a>
+          <a class="btn line lg" href="#templates">Start from a template</a>
+        </div>
+        <p class="meta"><span>No account</span><span class="sep">·</span><span>Saves in your browser</span><span class="sep">·</span><span>mm or inches</span></p>
+      </header>
+
+      <section class="sec preview" aria-label="U-shape walk-in">
+        <div class="window">
+          <div class="window-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="window-title">U-shape walk-in</span></div>
+          <img class="shot shot-light " src="/screenshots/design.png" alt="Walk-in Planner design tab: plan, wall elevation and inspector" width="1440" height="900" />
+            <img class="shot shot-dark " src="/screenshots/design-dark.png" alt="Walk-in Planner design tab: plan, wall elevation and inspector" width="1440" height="900" aria-hidden="true" />
         </div>
       </section>
-      <section class="not">
-        <h2>What it is not</h2>
-        <p>
-          No doors on units, no drawer boxes or hardware, rectangular rooms only. It plans an open walk-in: carcasses,
-          shelves, dividers, drawer fronts and hanging rods. If you need hinged fronts, runner specs or a room with an
-          odd footprint, this is the wrong tool.
-        </p>
+
+      <section class="sec" id="how">
+        <div class="sec-head split"><h2>Three steps from empty room to drawings.</h2><p>The planner does the arithmetic: corner claims, door clearance, ceiling gap and plinth. You decide what goes where.</p></div>
+        <div class="grid3">
+          <div class="card step">
+            <div class="card-vis"><span class="room sized"><i class="dim w">3000</i><i class="dim h">1800</i><i class="door"></i></span></div>
+            <div class="card-body"><span class="num sm">01</span><h3>Type in the room</h3><p>Width, depth and height, then where the door is and which way it swings.</p></div>
+          </div>
+          <div class="card step">
+            <div class="card-vis"><span class="room"><i class="u t"></i><i class="u l hl"></i><i class="u r"></i><i class="door"></i></span></div>
+            <div class="card-body"><span class="num sm">02</span><h3>Pick the walls</h3><p>Build against one, two or three walls. Free length is shown as you go.</p></div>
+          </div>
+          <div class="card step">
+            <div class="card-vis cols"><span class="col"><i class="seg hang" style="flex:2.2"></i><i class="seg drawers" style="flex:1"></i></span><span class="col"><i class="seg hang" style="flex:2.2"></i><i class="seg hang" style="flex:2.2"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i><i class="seg drawers" style="flex:1.33"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i><i class="seg shoes" style="flex:1.5"></i></span></div>
+            <div class="card-body"><span class="num sm">03</span><h3>Stack the columns</h3><p>Hanging, shelves, drawers and shoe racks, set zone by zone inside each unit.</p></div>
+          </div>
+        </div>
       </section>
-      <section class="guides">
-        <h2>Guides</h2>
-        <p>The practical dimensions the planner is built on, written out in full.</p>
-        <ul>
-          <li>
-            <a href="/guides/wardrobe-dimensions/">Walk-in wardrobe dimensions</a> — depth, width, plinth, ceiling gap
-            and board thickness.
-          </li>
-          <li>
-            <a href="/guides/hanging-rail-height/">Hanging rail height</a> — single and double hanging, and the 2000 mm
-            reach limit.
-          </li>
-          <li>
-            <a href="/guides/shelf-depth-and-spacing/">Shelf depth and spacing</a> — pitch for folded clothes and shoes,
-            and how far a shelf can span.
-          </li>
-          <li>
-            <a href="/guides/walk-in-closet-minimum-width/">Walk-in closet minimum width</a> — the smallest room that
-            still works, by layout.
-          </li>
-        </ul>
+
+      <section class="sec" id="features">
+        <h2 class="solo">What you take to the workshop</h2>
+        <div class="bento">
+          <div class="card b-plan">
+            <div class="card-vis elev"><span class="ceil"></span><span class="col"><i class="seg hang" style="flex:2.2"></i><i class="seg drawers" style="flex:1"></i></span><span class="col"><i class="seg hang" style="flex:2.2"></i><i class="seg hang" style="flex:2.2"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i><i class="seg drawers" style="flex:1.33"></i></span><span class="col"><i class="seg shelves" style="flex:2.2"></i><i class="seg shoes" style="flex:1.5"></i></span><span class="plinth"></span></div>
+            <div class="card-body end"><h3>Plan and elevations</h3><p>A dimensioned plan from above and one elevation per wall, every bay measured.</p></div>
+          </div>
+          <div class="card b-3d">
+            <div class="card-vis hatch"><span class="mono tag">3D</span></div>
+            <div class="card-body"><h3>3D preview</h3><p>Orbit the finished walk-in, or explode it to see each panel.</p></div>
+          </div>
+          <div class="card b-cut">
+            <div class="card-vis flat"><table class="mini-cut"><thead><tr><th scope="col">Part</th><th scope="col">Location</th><th scope="col">Qty</th><th scope="col">L</th><th scope="col">W</th></tr></thead><tbody><tr><td>Side</td><td>B1–B5</td><td>10</td><td>2250</td><td>582</td></tr><tr><td>Shelf</td><td>B3, B4</td><td>9</td><td>564</td><td>580</td></tr><tr><td>Drawer front</td><td>B4</td><td>4</td><td>560</td><td>196</td></tr><tr><td>Rod Ø25</td><td>B1, B2, B5</td><td>4</td><td>562</td><td>—</td></tr></tbody></table></div>
+            <div class="card-body"><h3>Cut list</h3><p>Every panel, shelf, divider, drawer front and rod, grouped by size and tagged to match the drawings.</p></div>
+          </div>
+          <div class="b-stack">
+            <div class="card row"><span class="pdf-icon" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i><i class="b"></i></span><div><h3>PDF</h3><p>Drawings and cut list in one document, ready to print or send.</p></div></div>
+            <div class="card share"><div class="share-head"><h3>Share link</h3><span class="muted">nothing stored on a server</span></div><span class="url mono">walkinplanner.com/app/#s=eJyrVkrOz0lV<span class="muted">…</span></span></div>
+          </div>
+        </div>
       </section>
-      <section class="faq">
-        <h2>FAQ</h2>
-        <details>
-          <summary>Is it free?</summary>
-          <p>
-            Yes. Walk-in Planner is free and open source under the MIT licence. There is no account, no sign-up and no
-            paid tier.
-          </p>
-        </details>
-        <details>
-          <summary>Do I need to install anything?</summary>
-          <p>
-            No. It runs in any modern desktop or mobile browser. There is nothing to download and no plugin to install.
-          </p>
-        </details>
-        <details>
-          <summary>Where is my project stored?</summary>
-          <p>
-            In your browser's localStorage, on the device you are working on. Nothing is uploaded to a server. Export
-            the project as a JSON file to back it up or move it to another machine, and import that file to carry on.
-          </p>
-        </details>
-        <details>
-          <summary>What does the cut list include?</summary>
-          <p>
-            Every carcass panel — sides, top, bottom, back and plinth — plus shelves, dividers, drawer fronts and
-            hanging rods, with sizes and quantities, tagged (B1, R2, L1) to match the drawings. Drawer boxes, runners
-            and other hardware are not included.
-          </p>
-        </details>
-        <details>
-          <summary>Can I work in inches?</summary>
-          <p>
-            Yes. A units toggle switches the whole interface, drawings and cut list between millimetres and inches. The
-            model itself stays in millimetres, so numbers never drift as you switch back and forth.
-          </p>
-        </details>
-        <details>
-          <summary>What can I export?</summary>
-          <p>
-            A PDF containing the dimensioned plan, one elevation per wall and the cut list — enough to take to a panel
-            shop — and the project itself as a JSON file you can re-import later.
-          </p>
-        </details>
+
+      <section class="sec">
+        <div class="private">
+          <div class="private-lead"><span class="mono kicker">PRIVATE BY DESIGN</span><h2>Your design never leaves your device.</h2><p>There is no server holding your projects and no account to create. You can read every line of the code.</p></div>
+          <div class="trust-grid">
+          <div class="trust"><b>Nothing is uploaded</b><span>The planner runs entirely in your browser. There is no backend to send a design to.</span></div>
+          <div class="trust"><b>Saved on this device</b><span>Projects live in localStorage and reopen where you left them.</span></div>
+          <div class="trust"><b>Yours to move</b><span>Export the project as JSON to back it up or carry it to another machine.</span></div>
+          <div class="trust"><b>Open source, MIT</b><span>The full source is on GitHub. Read it, fork it, or self-host it.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec" id="templates">
+        <div class="sec-head between"><h2>Start from a layout</h2><p>Every template opens valid and ready to edit.</p></div>
+        <div class="grid3">
+          <a class="card tpl" href="/app/?template=oneWall">
+            <span class="card-vis"><span class="room"><i class="u t"></i><i class="door"></i></span></span>
+            <span class="tpl-row"><span class="tpl-name"><b>One wall</b><span class="mono">3000 × 1800 mm</span></span><span class="open">Open →</span></span>
+          </a>
+          <a class="card tpl" href="/app/?template=lShape">
+            <span class="card-vis"><span class="room"><i class="u t"></i><i class="u l"></i><i class="door"></i></span></span>
+            <span class="tpl-row"><span class="tpl-name"><b>L-shape</b><span class="mono">2500 × 2000 mm</span></span><span class="open">Open →</span></span>
+          </a>
+          <a class="card tpl" href="/app/?template=uShape">
+            <span class="card-vis"><span class="room"><i class="u t"></i><i class="u l"></i><i class="u r"></i><i class="door"></i></span></span>
+            <span class="tpl-row"><span class="tpl-name"><b>U-shape</b><span class="mono">3000 × 2500 mm</span></span><span class="open">Open →</span></span>
+          </a>
+        </div>
+      </section>
+
+      <section class="sec not-sec">
+        <div class="not-lead"><h2 class="h2s">What it doesn’t do</h2><p>It plans an open walk-in: carcasses, shelves, dividers, drawer fronts and hanging rods. If you need hinged fronts, runner specs or an odd-shaped room, this is the wrong tool.</p></div>
+        <div class="not-grid">
+          <div class="not-card"><b>No doors on units</b><span>Fronts are drawer fronts only. Units are open.</span></div>
+          <div class="not-card"><b>No drawer boxes or hardware</b><span>Runners, hinges and brackets are left to you.</span></div>
+          <div class="not-card"><b>Rectangular rooms only</b><span>Four straight walls, one door.</span></div>
+        </div>
+      </section>
+
+      <section class="sec" id="guides">
+        <div class="sec-head between"><h2>Guides</h2><p class="right">The practical dimensions the planner is built on, written out in full.</p></div>
+        <div class="grid4">
+          <a class="card guide" href="/guides/wardrobe-dimensions/"><span class="num">01</span><b>Walk-in wardrobe dimensions</b><span class="g-p">Depth, width, plinth, ceiling gap and board thickness.</span></a>
+          <a class="card guide" href="/guides/hanging-rail-height/"><span class="num">02</span><b>Hanging rail height</b><span class="g-p">Single and double hanging, and the 2000 mm reach limit.</span></a>
+          <a class="card guide" href="/guides/shelf-depth-and-spacing/"><span class="num">03</span><b>Shelf depth and spacing</b><span class="g-p">Pitch for folded clothes and shoes, and how far a shelf can span.</span></a>
+          <a class="card guide" href="/guides/walk-in-closet-minimum-width/"><span class="num">04</span><b>Walk-in closet minimum width</b><span class="g-p">The smallest room that still works, by layout.</span></a>
+        </div>
+      </section>
+
+      <section class="sec faq" id="faq">
+        <h2>Questions</h2>
+        <div class="faq-list">
+          <details>
+            <summary>Is it free?</summary>
+            <p>
+              Yes. Walk-in Planner is free and open source under the MIT licence. There is no account, no sign-up and no
+              paid tier.
+            </p>
+          </details>
+          <details>
+            <summary>Do I need to install anything?</summary>
+            <p>
+              No. It runs in any modern desktop or mobile browser. There is nothing to download and no plugin to install.
+            </p>
+          </details>
+          <details>
+            <summary>Where is my project stored?</summary>
+            <p>
+              In your browser's localStorage, on the device you are working on. Nothing is uploaded to a server. Export
+              the project as a JSON file to back it up or move it to another machine, and import that file to carry on.
+            </p>
+          </details>
+          <details>
+            <summary>What does the cut list include?</summary>
+            <p>
+              Every carcass panel — sides, top, bottom, back and plinth — plus shelves, dividers, drawer fronts and
+              hanging rods, with sizes and quantities, tagged (B1, R2, L1) to match the drawings. Drawer boxes, runners
+              and other hardware are not included.
+            </p>
+          </details>
+          <details>
+            <summary>Can I work in inches?</summary>
+            <p>
+              Yes. A units toggle switches the whole interface, drawings and cut list between millimetres and inches. The
+              model itself stays in millimetres, so numbers never drift as you switch back and forth.
+            </p>
+          </details>
+          <details>
+            <summary>What can I export?</summary>
+            <p>
+              A PDF containing the dimensioned plan, one elevation per wall and the cut list — enough to take to a panel
+              shop — and the project itself as a JSON file you can re-import later.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="sec last">
+        <div class="end-card">
+          <h2>Measure the room. Open the planner.</h2>
+          <a class="btn accent lg" href="/app/">Open the planner →</a>
+          <span class="meta">No account. Saves in your browser. mm or inches.</span>
+        </div>
       </section>
     </main>
-    <footer><a href="https://github.com/bynov/wardrobe-planner">Source on GitHub</a> · MIT</footer>
+    <footer class="site-foot">
+      <div class="foot-in">
+        <span>Walk-in Planner · MIT licence</span>
+        <div class="foot-links"><a href="https://github.com/bynov/wardrobe-planner">Source on GitHub</a><a href="/ru/" hreflang="ru" lang="ru">Русский</a></div>
+      </div>
+    </footer>
   </body>
 </html>

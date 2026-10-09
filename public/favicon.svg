@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="6" fill="#2b6cb0" />
-  <g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M6 22h20" />
-    <path d="M16 22V13a3 3 0 1 1 3-3" />
-  </g>
+  <!-- Favicons cannot read CSS variables: light-theme hex equivalents of --ink (#2f2d2a) and --accent (#a4603a). -->
+  <rect width="32" height="32" rx="8" fill="#2f2d2a" />
+  <!-- the 24px logo (12 x 10 U, 2.5 stroke) scaled by 32/24 -->
+  <path d="M9.65 10.95v4.05a6.35 6.35 0 0 0 12.7 0v-4.05" fill="none" stroke="#a4603a" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

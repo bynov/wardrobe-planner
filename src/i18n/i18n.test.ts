@@ -3,6 +3,8 @@ import { en } from './en';
 import { ru } from './ru';
 import { LANGS, detectLang, msg, t, tm } from './index';
 import { UNITS } from '../units';
+import { THEMES } from '../ui/theme';
+import { WALL_STATUS_KINDS } from '../ui/wallStatus';
 import { WALLS } from '../geometry/frames';
 import { MATERIALS, PART_NAME_KEYS } from '../geometry/parts';
 import { PRESET_KEYS } from '../model/presets';
@@ -36,8 +38,13 @@ describe('i18n', () => {
     ['wall.abbr.', WALLS],
     ['preset.', PRESET_KEYS],
     ['template.', TEMPLATE_KEYS],
+    ['template.desc.', TEMPLATE_KEYS],
     ['ui.lang.', LANGS],
     ['ui.units.', UNITS],
+    ['ui.theme.', THEMES],
+    ['ui.mode.', ['setup']],
+    ['ui.view.', ['iso', 'top']],
+    ['ui.wallStatus.', WALL_STATUS_KINDS],
     ['ui.swing.', DOOR_SWINGS],
     ['ui.swingOpt.', DOOR_SWINGS],
     ['ui.hinge.', DOOR_HINGES],

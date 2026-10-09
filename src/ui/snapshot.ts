@@ -1,5 +1,8 @@
-/** Viewport background, painted under the (possibly transparent) WebGL frame before encoding. */
-const BACKDROP = '#f0f2f5';
+import { LIGHT } from './three/colors';
+
+/** Viewport background, painted under the (possibly transparent) WebGL frame before encoding.
+ *  The PDF picture is always the light scene (see `SnapshotBridge`), so this is its background. */
+const BACKDROP = LIGHT.background;
 export const SNAPSHOT_MAX_WIDTH = 900;
 export const SNAPSHOT_QUALITY = 0.85;
 

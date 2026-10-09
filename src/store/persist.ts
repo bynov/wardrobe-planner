@@ -1,3 +1,4 @@
+import { isTheme, type Theme } from '../ui/theme';
 import { isLang, msg, t, tmDeep, type Lang, type Msg } from '../i18n';
 import { WALLS } from '../geometry/frames';
 import { defaultProject } from '../model/defaults';
@@ -7,6 +8,7 @@ import { DOOR_HINGES, DOOR_SWINGS, ROD_DIRS, ROD_REFS, ZONE_TYPES, type Column, 
 
 export const STORAGE_KEY = 'wardrobe-planner:project';
 export const LANG_KEY = 'wardrobe-planner:lang';
+export const THEME_KEY = 'wardrobe-planner:theme';
 export const UNITS_KEY = 'wardrobe-planner:units';
 export const FILE_VERSION = 2;
 /** Versions this build can still read; anything older is migrated up to `FILE_VERSION`. */
@@ -190,6 +192,23 @@ export function loadUnits(storage: StorageLike): Units | null {
 export function saveUnits(storage: StorageLike, units: Units): void {
   try {
     storage.setItem(UNITS_KEY, units);
+  } catch {
+    // best-effort
+  }
+}
+
+export function loadTheme(storage: StorageLike): Theme | null {
+  try {
+    const v = storage.getItem(THEME_KEY);
+    return isTheme(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveTheme(storage: StorageLike, theme: Theme): void {
+  try {
+    storage.setItem(THEME_KEY, theme);
   } catch {
     // best-effort
   }
