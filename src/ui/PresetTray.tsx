@@ -6,6 +6,8 @@ import { insertTarget } from './insertTarget';
 import { trayState } from './trayState';
 import { formatLen } from '../units';
 import { NumberField } from './fields';
+import { Switch } from './controls';
+import { useToggleWall } from './useToggleWall';
 import { PresetGlyph } from './PresetGlyph';
 import { useT } from './useT';
 import { PHONE_QUERY, useMediaQuery } from './useMediaQuery';
@@ -24,6 +26,7 @@ export function PresetTray() {
   const setWall = useStore((s) => s.setWall);
   const { lang, t, u, units } = useT();
   const phone = useMediaQuery(PHONE_QUERY);
+  const toggleWall = useToggleWall();
 
   const plan = project.wardrobe.walls[selection.wall];
   const target = insertTarget(project, selection, insertAt);
@@ -51,6 +54,7 @@ export function PresetTray() {
           {t('ui.addUnit')} <span className="tray-where">{where}</span>
         </span>
         <span className="tray-right">
+          <Switch checked={plan.enabled} onChange={(on) => toggleWall(selection.wall, on)} label={t('ui.wallEnabled')} />
           {plan.enabled && (
             <NumberField
               label={t('ui.wallDepth', { u })}

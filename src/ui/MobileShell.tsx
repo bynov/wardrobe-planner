@@ -6,6 +6,7 @@ import { HintBar } from './HintBar';
 import { IconButton } from './controls';
 import { Logo } from './Logo';
 import { MobileNav } from './MobileNav';
+import { OverflowMenu } from './OverflowMenu';
 import { PlanEditor } from './PlanEditor';
 import { ProjectsMenu } from './ProjectsMenu';
 import { RoomMode } from './RoomMode';
@@ -35,6 +36,8 @@ export function MobileShell() {
         <button type="button" className="icon" aria-label={t('ui.themeToggle')} title={t('ui.themeToggle')} onClick={() => setTheme(nextTheme(theme))}>
           <span className="theme-glyph" aria-hidden />
         </button>
+        {/* Share, Redo, units, language and the JSON file actions: no room for them up here */}
+        <OverflowMenu />
       </header>
       {tab === 'design' && <HintBar />}
       <main className="mbody">

@@ -1,6 +1,4 @@
 import { useStore, type Tab } from '../store/store';
-import { serializeProject } from '../store/persist';
-import { downloadBlob } from './download';
 import { useExport } from './useExport';
 import { ProjectsMenu } from './ProjectsMenu';
 import { useT } from './useT';
@@ -19,7 +17,6 @@ const MODES: { key: Tab; labelKey: MessageKey }[] = [
 ];
 
 export function TopBar() {
-  const project = useStore((s) => s.project);
   const tab = useStore((s) => s.ui.tab);
   const canUndo = useStore((s) => s.past.length > 0);
   const canRedo = useStore((s) => s.future.length > 0);
@@ -28,11 +25,6 @@ export function TopBar() {
   const theme = useStore((s) => s.ui.theme);
   const { setUi, setUnits, setTheme, undo, redo } = useStore.getState();
   const { share, exportPdf, busy } = useExport();
-  const safeName = (project.name || 'wardrobe').replace(/[^\w.-]+/g, '_');
-
-  const onExportJson = () => {
-    downloadBlob(new Blob([serializeProject(project)], { type: 'application/json' }), `${safeName}.json`);
-  };
   const fixTitle = errorCount > 0 ? t('ui.fixErrorsFirst') : undefined;
 
   return (
@@ -71,7 +63,7 @@ export function TopBar() {
       <button type="button" className="btn primary" onClick={() => void exportPdf()} disabled={busy || errorCount > 0} title={fixTitle}>
         {busy ? t('ui.exporting') : t('ui.exportPdf')}
       </button>
-      <OverflowMenu onExportJson={onExportJson} />
+      <OverflowMenu />
     </header>
   );
 }

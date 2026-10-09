@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useStore } from '../store/store';
+import { ErrorBanner } from './ErrorBanner';
 import { PlanEditor } from './PlanEditor';
 import { RoomForm } from './RoomForm';
+import { clearSnapshot } from './snapshot';
 import { TemplateCards, type TemplatePick } from './TemplateCards';
 import { useImportJson } from './useImportJson';
 import { useT } from './useT';
@@ -18,6 +20,8 @@ export function RoomMode() {
     const { past, applyTemplate } = useStore.getState();
     if (past.length > 0 && !window.confirm(t('ui.confirmTemplate'))) return;
     applyTemplate(key);
+    // The cached 3D picture shows the layout just replaced; a PDF must not carry it.
+    clearSnapshot();
     setPicked({ key, projectId: useStore.getState().ui.projectId });
   };
 
@@ -42,6 +46,8 @@ export function RoomMode() {
       </section>
       <aside className="room-right">
         <div className="room-scroll">
+          {/* room and door errors are caused here, so they are shown here */}
+          <ErrorBanner />
           <RoomForm />
         </div>
         <div className="room-foot">

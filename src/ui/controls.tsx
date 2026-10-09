@@ -134,11 +134,11 @@ export function Menu({ open, onClose, trigger, anchor = 'left', width = MENU_DEF
   );
 }
 
-export function MenuItem({ onClick, children, meta, danger, active }: {
-  onClick: () => void; children: ReactNode; meta?: ReactNode; danger?: boolean; active?: boolean;
+export function MenuItem({ onClick, children, meta, danger, active, disabled }: {
+  onClick: () => void; children: ReactNode; meta?: ReactNode; danger?: boolean; active?: boolean; disabled?: boolean;
 }) {
   return (
-    <button type="button" role="menuitem" className={cx('menu-item', danger && 'danger', active && 'on')} onClick={onClick}>
+    <button type="button" role="menuitem" className={cx('menu-item', danger && 'danger', active && 'on')} onClick={onClick} disabled={disabled}>
       <span>{children}</span>
       {meta !== undefined && <span className="meta">{meta}</span>}
     </button>

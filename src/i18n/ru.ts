@@ -6,9 +6,6 @@ export const ru: Record<MessageKey, string> = {
   'ui.tab.3d': '3D',
   'ui.tab.cutlist': 'Раскрой',
   'ui.projectName': 'Название проекта',
-  'ui.projects': 'Проекты',
-  'ui.newBlank': 'Новый (пустой)',
-  'ui.newFromTemplate': 'Создать из шаблона',
   // example rooms: the first-run project, the "New from template" list and ?template= links
   'template.oneWall': 'Одна стена',
   'template.lShape': 'Г-образная',
@@ -54,7 +51,6 @@ export const ru: Record<MessageKey, string> = {
   // forms
   'ui.section.room': 'Комната, {u}',
   'ui.section.door': 'Дверь, {u}',
-  'ui.section.wardrobe': 'Гардеробная, {u}',
   'ui.width': 'Ширина',
   'ui.depth': 'Глубина',
   'ui.height': 'Высота',
@@ -99,7 +95,6 @@ export const ru: Record<MessageKey, string> = {
   'ui.wallStatus.free': '{n} секц. · свободно {free}',
   'ui.wallStatus.over': 'перебор {over}',
   'ui.freeWidth': 'свободно {n} {u}',
-  'ui.segment': 'Участок {n}',
   'ui.noRoom': 'Здесь нет места для модулей',
   'ui.trayWallOff': 'Включите стену, чтобы добавлять секции',
   'ui.noWardrobe': 'На этой стене нет гардероба',

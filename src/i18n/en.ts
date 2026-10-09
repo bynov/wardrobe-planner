@@ -4,9 +4,6 @@ export const en = {
   'ui.tab.3d': '3D',
   'ui.tab.cutlist': 'Cut list',
   'ui.projectName': 'Project name',
-  'ui.projects': 'Projects',
-  'ui.newBlank': 'New (blank)',
-  'ui.newFromTemplate': 'New from template',
   // example rooms: the first-run project, the "New from template" list and ?template= links
   'template.oneWall': 'One wall',
   'template.lShape': 'L-shape',
@@ -52,7 +49,6 @@ export const en = {
   // forms
   'ui.section.room': 'Room, {u}',
   'ui.section.door': 'Door, {u}',
-  'ui.section.wardrobe': 'Wardrobe, {u}',
   'ui.width': 'Width',
   'ui.depth': 'Depth',
   'ui.height': 'Height',
@@ -95,7 +91,6 @@ export const en = {
   'ui.wallStatus.free': '{n} units · {free} free',
   'ui.wallStatus.over': 'over {over}',
   'ui.freeWidth': 'free {n} {u}',
-  'ui.segment': 'Segment {n}',
   'ui.noRoom': 'No room for units here',
   'ui.trayWallOff': 'Turn the wall on to add units',
   'ui.noWardrobe': 'No wardrobe on this wall',

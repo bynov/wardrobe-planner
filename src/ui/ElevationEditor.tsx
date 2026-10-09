@@ -1,19 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { leftOf, minUnitWidth, rightOf, segmentUsed, wallLength, wallSegments } from '../geometry/frames';
+import { minUnitWidth, segmentUsed, wallLength, wallSegments } from '../geometry/frames';
 import { heights, layoutWall } from '../geometry/layout';
 import { unitTag, wallElevation, wallName } from '../drawing/views';
-import { msg } from '../i18n';
-import type { Wall } from '../model/types';
 import { drawingToSvgParts } from '../render/svg';
 import { findColumn, useStore, type InsertSlot } from '../store/store';
 import { formatLen } from '../units';
 import { drawable } from './drawable';
 import { useT } from './useT';
+import { useToggleWall } from './useToggleWall';
 import { NARROW_QUERY, PHONE_QUERY, useMediaQuery } from './useMediaQuery';
-
-/** How many `error.segmentOverflow` errors currently name one of `walls`. */
-const overflowsOn = (errors: { message: { key: string; params?: Record<string, string | number> } }[], walls: Wall[]): number =>
-  errors.filter((e) => e.message.key === 'error.segmentOverflow' && walls.some((w) => e.message.params?.wall === `wall.${w}`)).length;
 
 /** How big the "+" insert target is, as a multiple of the drawing's text size. */
 const PLUS_R_FACTOR = 0.9;
@@ -56,10 +51,10 @@ export function ElevationEditor() {
   const lastValid = useStore((s) => s.lastValid);
   const selection = useStore((s) => s.ui.selection);
   const select = useStore((s) => s.select);
-  const setWall = useStore((s) => s.setWall);
   const insertAt = useStore((s) => s.ui.insertAt);
   const setInsertAt = useStore((s) => s.setInsertAt);
   const { lang, t, u, units } = useT();
+  const toggleWall = useToggleWall();
 
   const wall = selection.wall;
   const plan = project.wardrobe.walls[wall];
@@ -87,20 +82,6 @@ export function ElevationEditor() {
   const slotOn = (segment: number, index: number) =>
     insertAt?.wall === wall && insertAt.segment === segment && insertAt.index === index;
 
-  /**
-   * Enabling a wall makes it claim the corners, which shortens both side walls' usable runs —
-   * their existing units can end up overflowing without the user touching them. Say so.
-   */
-  const onToggleWall = (enabled: boolean) => {
-    const neighbours = [leftOf(wall), rightOf(wall)];
-    const before = overflowsOn(useStore.getState().errors, neighbours);
-    setWall(wall, { enabled });
-    if (!enabled) return;
-    if (overflowsOn(useStore.getState().errors, neighbours) > before) {
-      useStore.getState().toast(msg('toast.neighbourOverflow', { wall: `wall.${wall}` }));
-    }
-  };
-
   const pxPerMm = useSvgScale(svgEl, drawn.viewBox);
 
   // The elevation is drawn in millimetres and scaled to fit, so a radius in drawing units says
@@ -125,7 +106,7 @@ export function ElevationEditor() {
       {!enabled ? (
         <div className="empty">
           <p>{t('ui.noWardrobeOnWall')}</p>
-          <button className="btn primary" onClick={() => onToggleWall(true)}>{t('ui.useThisWall')}</button>
+          <button className="btn primary" onClick={() => toggleWall(wall, true)}>{t('ui.useThisWall')}</button>
         </div>
       ) : (
         <div className="body">

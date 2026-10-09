@@ -69,7 +69,8 @@ export function ProjectsMenu() {
         onChange={(e) => setName(e.target.value)}
       />
       {/* Room mode has no bottom-nav slot on a phone: it is reached from here. */}
-      {phone && <MenuItem onClick={() => act(() => setUi({ tab: 'setup' }))}>{t('ui.mode.setup')}</MenuItem>}
+      {/* Only a tab switch: the project stays, and so does its cached 3D picture. */}
+      {phone && <MenuItem onClick={() => { setUi({ tab: 'setup' }); setOpen(false); }}>{t('ui.mode.setup')}</MenuItem>}
       <div className="menu-sep" />
       {projects.map((m) => (
         <MenuItem
