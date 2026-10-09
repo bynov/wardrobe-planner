@@ -35,6 +35,7 @@ export const en = {
   'ui.fixErrorsFirst': 'Fix validation errors first',
   'ui.view.iso': 'Iso',
   'ui.view.top': 'Top',
+  'ui.viewHint': 'Click again to reset the view',
   'ui.view.label': 'View',
   'ui.cutlistTitle': 'Cut list',
   'ui.cutlistSummary': '{parts} parts · {sizes} sizes · tags match the drawings',

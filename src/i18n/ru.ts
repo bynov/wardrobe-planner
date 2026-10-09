@@ -37,6 +37,7 @@ export const ru: Record<MessageKey, string> = {
   'ui.fixErrorsFirst': 'Сначала исправьте ошибки проверки',
   'ui.view.iso': 'Изо',
   'ui.view.top': 'Сверху',
+  'ui.viewHint': 'Нажмите ещё раз, чтобы сбросить вид',
   'ui.view.label': 'Вид',
   'ui.cutlistTitle': 'Список деталей',
   'ui.cutlistSummary': '{parts} деталей · {sizes} размеров · метки совпадают с чертежами',

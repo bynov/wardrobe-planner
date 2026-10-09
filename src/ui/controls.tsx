@@ -16,16 +16,18 @@ export function clampStep(value: number, delta: number, min: number, max: number
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ');
 
-export function Segmented<T extends string>({ value, options, onChange, size = 'md', mono, ariaLabel }: {
+export function Segmented<T extends string>({ value, options, onChange, size = 'md', mono, ariaLabel, title }: {
   value: T;
   options: { value: T; label: string; title?: string }[];
   onChange: (v: T) => void;
   size?: 'sm' | 'md';
   mono?: boolean;
   ariaLabel: string;
+  /** Hover text for the whole group. */
+  title?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className={cx('seg', `seg-${size}`, mono && 'mono')}>
+    <div role="radiogroup" aria-label={ariaLabel} title={title} className={cx('seg', `seg-${size}`, mono && 'mono')}>
       {options.map((o) => (
         <button
           key={o.value}

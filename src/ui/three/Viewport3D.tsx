@@ -211,8 +211,11 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
           <div className="float float-views">
             <Segmented
               ariaLabel={t('ui.view.label')}
+              title={t('ui.viewHint')}
               value={view.preset}
               options={VIEW_PRESETS.map((v) => ({ value: v, label: t(v === 'iso' || v === 'top' ? (`ui.view.${v}` as MessageKey) : (`wall.${v}` as MessageKey)) }))}
+              // Bumping the nonce even for the active preset is deliberate: clicking it again re-fits the
+              // camera, throwing away the user's orbit — the "reset the view" affordance (see `ui.viewHint`).
               onChange={(preset) => setView((v) => ({ preset, nonce: v.nonce + 1 }))}
             />
           </div>
