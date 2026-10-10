@@ -16,9 +16,9 @@ const dicts: Record<Lang, Record<MessageKey, string>> = { en, ru };
 
 export const msg = (key: MessageKey, params?: Params): Msg => (params ? { key, params } : { key });
 
-/** Inches carry their own ″ suffix; millimetres get the unit spelled out. */
-export const fmtLenParam = (v: Len, units: Units): string =>
-  units === 'in' ? formatLen(v.mm, 'in', { suffix: true }) : `${formatLen(v.mm, 'mm')} mm`;
+/** Inches carry their own ″ suffix; millimetres get the unit name in `lang` spelled out. */
+export const fmtLenParam = (lang: Lang, v: Len, units: Units): string =>
+  units === 'in' ? formatLen(v.mm, 'in', { suffix: true }) : `${formatLen(v.mm, 'mm')} ${t(lang, 'ui.units.mm')}`;
 
 export function t(lang: Lang, key: MessageKey, params?: Params, units: Units = 'mm'): string {
   const s = dicts[lang][key] ?? dicts.en[key] ?? key;
@@ -26,7 +26,7 @@ export function t(lang: Lang, key: MessageKey, params?: Params, units: Units = '
   return s.replace(/\{(\w+)\}/g, (m, k: string) => {
     if (!(k in params)) return m;
     const v = params[k];
-    return isLen(v) ? fmtLenParam(v, units) : String(v);
+    return isLen(v) ? fmtLenParam(lang, v, units) : String(v);
   });
 }
 

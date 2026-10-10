@@ -35,6 +35,7 @@ describe('i18n', () => {
     expect(tmDeep('en', m)).toBe('Back wall: units exceed the available length by 600 mm');
     expect(tmDeep('en', m, 'in')).toBe('Back wall: units exceed the available length by 23 5/8″');
     expect(tmDeep('ru', m, 'in')).toContain('23 5/8″');
+    expect(tmDeep('ru', m)).toBe('Задняя стена: модули превышают доступную длину на 600 мм');
   });
 
   // Each of these is looked up by building the key from a union value and casting, so a gap
