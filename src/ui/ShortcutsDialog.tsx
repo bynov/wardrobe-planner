@@ -3,6 +3,8 @@ import { nextFocusIndex } from './focusTrap';
 import { SHORTCUTS } from './shortcuts';
 import { useT } from './useT';
 
+const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
 export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
   const { t } = useT();
   const onCloseRef = useRef(onClose);
@@ -19,7 +21,7 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
-        const items = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])') ?? []);
+        const items = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
         const next = nextFocusIndex(items.length, items.indexOf(document.activeElement as HTMLElement), e.shiftKey);
         if (next === null) return;
         e.preventDefault();
