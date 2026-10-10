@@ -5,93 +5,131 @@ import type { Project, Wall } from '../../model/types';
 import { formatLen, type Units } from '../../units';
 
 /**
- * Where the 3D view's dimension callouts go, and which of them show. DOM-free: `Viewport3D` only
- * maps the result to drei `<Html>` elements.
+ * Where the 3D view's dimension callouts go, and which of them show. DOM-free: `Viewport3D`
+ * projects the anchors to the screen each time the camera moves and hands the resulting
+ * rectangles to `declutter`.
  *
- * The width callouts are world-sized (drei's `distanceFactor`, see `labelDistanceFactor`): one CSS
- * pixel of one covers `LABEL_MM_PER_PX` mm of the scene whatever the zoom, so their footprint is
- * known here in millimetres and they shrink with the room instead of piling up as it recedes.
- * Wall names keep a fixed pixel size (see `Viewport3D`).
+ * Callouts are a fixed pixel size, so whether two collide depends on the view; it is decided on
+ * the screen (`declutter`), not here in world space. A width that drops out is still printed in
+ * the elevation drawing.
  */
 
-/** World size of one CSS pixel of a callout. The `.dim3d` font is `LABEL_FONT_PX` high. */
-export const LABEL_MM_PER_PX = 7;
-/** Mirrors `.dim3d` in styles.css: font size and horizontal padding, in CSS pixels. */
-const LABEL_FONT_PX = 12;
-const LABEL_PAD_PX = 4;
-/** Advance of a character as a fraction of the font size: a digit, and the narrow space and
- * slash of an inch fraction (`23 5/8`). Slightly generous, so a callout is never underestimated. */
-const DIGIT_EM = 0.6;
-const NARROW_EM = 0.3;
-const NARROW = new Set([' ', '/']);
+/** The callout box, applied inline by `Viewport3D` (`LABEL_STYLE`) so these are the only copy. */
+export const LABEL_FONT_PX = 12;
+const LABEL_LINE_HEIGHT = 1.25;
+const LABEL_PAD_X_PX = 4;
+const LABEL_PAD_Y_PX = 1;
+export const LABEL_STYLE = {
+  fontSize: LABEL_FONT_PX,
+  lineHeight: LABEL_LINE_HEIGHT,
+  padding: `${LABEL_PAD_Y_PX}px ${LABEL_PAD_X_PX}px`,
+} as const;
+/** Clear space two callouts must keep between them on screen. */
+const LABEL_GAP_PX = 2;
 /** Width callouts sit just below the floor and just proud of the unit's front edge. */
 const WIDTH_LABEL_DROP = 60;
 const WIDTH_LABEL_PROUD = 80;
 /** Wall names float this far above the ceiling line, over the middle of the run. */
 const WALL_LABEL_RISE = 80;
+/** How far a corner shift may take a callout off its unit's centre, as a fraction of the unit's
+ * width: it stays over the middle half of its own unit. */
+const MAX_SHIFT = 0.25;
 /** Slack for the float sums behind a column's `s0`/`s1` when telling whether it meets a corner. */
 const CORNER_EPS = 0.5;
+/** `declutter` ranks: wall names always stay, then back/front widths, then side-wall widths;
+ * within a rank the wider unit wins (unit widths are far below `RANK_STEP` mm). */
+const RANK_STEP = 1e6;
+const RANK_WALL = 3;
+const RANK_BACK_FRONT = 2;
+const RANK_SIDE = 1;
 
 export interface DimLabel {
   key: string;
   text: string;
   /** World position of the label's centre. */
   at: Vec3;
+  /** Higher wins when two collide on screen. */
+  priority: number;
 }
 
-/** drei `distanceFactor` that makes one CSS pixel of a callout `LABEL_MM_PER_PX` mm of the scene in
- * a canvas `heightPx` tall. drei scales a callout by `distanceFactor / (2·tan(fov/2)·distance)`,
- * and the scene there shows `heightPx / (2·tan(fov/2)·distance)` pixels per mm. */
-export const labelDistanceFactor = (heightPx: number): number => heightPx * LABEL_MM_PER_PX;
+/** Screen rectangle of a callout, in CSS pixels. */
+export interface LabelRect {
+  key: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  priority: number;
+}
 
-/** Estimated rendered width of a callout reading `text`, in mm of the scene. */
-export function labelWidthMm(text: string): number {
-  const em = [...text].reduce((sum, c) => sum + (NARROW.has(c) ? NARROW_EM : DIGIT_EM), 0);
-  return (em * LABEL_FONT_PX + 2 * LABEL_PAD_PX) * LABEL_MM_PER_PX;
+/** Estimated on-screen size of a callout reading `text`, in CSS pixels: digits and letters at
+ * 0.6 em, the space and slash of an inch fraction (`23 5/8`) at 0.3 em. Slightly generous. */
+export function labelSizePx(text: string): { width: number; height: number } {
+  const em = [...text].reduce((sum, c) => sum + (c === ' ' || c === '/' ? 0.3 : 0.6), 0);
+  return {
+    width: em * LABEL_FONT_PX + 2 * LABEL_PAD_X_PX,
+    height: LABEL_FONT_PX * LABEL_LINE_HEIGHT + 2 * LABEL_PAD_Y_PX,
+  };
 }
 
 /**
- * One width callout per unit, centred on its front edge. A callout wider than its unit is left
- * out (it would run into the neighbour's; the elevation still carries the number).
+ * The callouts to show: greedily, highest priority first, each one that keeps `LABEL_GAP_PX`
+ * clear of every callout already kept. Ties keep the input order.
+ */
+export function declutter(rects: LabelRect[]): Set<string> {
+  const kept: LabelRect[] = [];
+  const order = rects.map((r, i) => ({ r, i })).sort((a, b) => b.r.priority - a.r.priority || a.i - b.i);
+  for (const { r } of order) {
+    const hits = kept.some(
+      (k) => r.x0 < k.x1 + LABEL_GAP_PX && k.x0 < r.x1 + LABEL_GAP_PX && r.y0 < k.y1 + LABEL_GAP_PX && k.y0 < r.y1 + LABEL_GAP_PX,
+    );
+    if (!hits) kept.push(r);
+  }
+  return new Set(kept.map((r) => r.key));
+}
+
+/**
+ * One width callout per unit, centred on its front edge.
  *
  * At an inner corner the side run's end unit moves its callout away from the corner by the depth
- * of the back/front run that claims it (`cornerClaim`), as far as its own unit allows: centred,
- * it sits about 450 mm from the corner unit's callout and the two touch from the default corner
- * view and from the back-wall preset. Only the side callout moves; sliding the back run's corner
- * callout towards its neighbour as well stacks that run's callouts where a side-wall preset sees
- * the run end-on.
+ * of the back/front run that claims it (`cornerClaim`), but no further than `MAX_SHIFT` of its
+ * own width: centred, it sits about 450 mm from the corner unit's callout, nearly in line with
+ * the default corner view. Only the side callout moves; sliding the back run's corner callout
+ * towards its neighbour stacks that run's callouts where a side-wall preset sees it end-on.
  */
 export function widthLabels(project: Project, columns: ColumnLayout[], units: Units): DimLabel[] {
   const { room } = project;
   const out: DimLabel[] = [];
   for (const L of columns) {
     if (L.kind !== 'unit') continue;
-    const text = formatLen(Math.round(L.width), units);
-    const w = labelWidthMm(text);
-    if (w > L.width) continue;
-    let s = (L.s0 + L.s1) / 2;
-    if (isSideWall(L.wall)) {
+    const mid = (L.s0 + L.s1) / 2;
+    let s = mid;
+    const side = isSideWall(L.wall);
+    if (side) {
       const claimStart = cornerClaim(project, L.wall, 'start');
       const claimEnd = cornerClaim(project, L.wall, 'end');
       if (claimStart > 0 && L.s0 - claimStart < CORNER_EPS) s += claimStart;
       if (claimEnd > 0 && wallLength(room, L.wall) - claimEnd - L.s1 < CORNER_EPS) s -= claimEnd;
+      const reach = MAX_SHIFT * L.width;
+      s = Math.min(Math.max(s, mid - reach), mid + reach);
     }
-    s = Math.min(Math.max(s, L.s0 + w / 2), L.s1 - w / 2);
     out.push({
       key: `${L.wall}-${L.segment}-${L.columnIndex}`,
-      text,
+      text: formatLen(Math.round(L.width), units),
       at: localToWorld(wallFrame(room, L.wall), v3(s, -WIDTH_LABEL_DROP, L.depth + WIDTH_LABEL_PROUD)),
+      priority: (side ? RANK_SIDE : RANK_BACK_FRONT) * RANK_STEP + L.width,
     });
   }
   return out;
 }
 
-/** A name over each enabled wall's run, above the ceiling line and so clear of the width callouts. */
+/** A name over each enabled wall's run, above the ceiling line. */
 export function wallLabels(project: Project, name: (w: Wall) => string): DimLabel[] {
   const { room } = project;
   return WALLS.filter((w) => project.wardrobe.walls[w].enabled).map((w) => ({
     key: w,
     text: name(w),
     at: localToWorld(wallFrame(room, w), v3(wallLength(room, w) / 2, room.height + WALL_LABEL_RISE, project.wardrobe.walls[w].depth / 2)),
+    priority: RANK_WALL * RANK_STEP,
   }));
 }

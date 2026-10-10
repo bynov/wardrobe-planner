@@ -16,7 +16,7 @@ import { useMediaQuery } from '../useMediaQuery';
 import { Segmented, Switch } from '../controls';
 import { PlanEditor } from '../PlanEditor';
 import { LIGHT, sceneColors } from './colors';
-import { labelDistanceFactor, wallLabels, widthLabels } from './dimLabels';
+import { LABEL_STYLE, declutter, labelSizePx, wallLabels, widthLabels, type LabelRect } from './dimLabels';
 import type { MessageKey } from '../../i18n';
 
 /**
@@ -57,28 +57,59 @@ export type ViewPreset = 'iso' | 'top' | Wall;
 export const VIEW_PRESETS: ViewPreset[] = ['iso', 'back', 'left', 'right', 'top'];
 
 /**
- * The dimension callouts. Width callouts are world-sized so they shrink with the room instead of
- * piling up as it recedes (see `dimLabels.ts`); wall names keep a fixed pixel size — they float at
- * the ceiling, well clear of the floor-level widths, and world-sized they would balloon in the top
- * view, where the ceiling is nearest the camera.
+ * The width and wall-name callouts, at a fixed pixel size. Whenever the camera or the canvas
+ * changes, their anchors are projected to the screen and `declutter` picks the ones that do not
+ * collide; the rest are hidden through their style, so moving the camera never re-renders React.
  */
 function DimLabels({ project }: { project: Project }) {
-  const height = useThree((s) => s.size.height);
   const { t, lang, units } = useT();
   const widths = useMemo(() => widthLabels(project, layoutAll(project), units), [project, units]);
   // `t` is a fresh closure every render; `lang` is all it reads here.
   const names = useMemo(() => wallLabels(project, (w) => t(`wall.${w}` as MessageKey)), [project, lang]);
-  const factor = labelDistanceFactor(height);
+  const labels = useMemo(() => [...widths, ...names], [widths, names]);
+  const els = useRef(new Map<string, HTMLDivElement>());
+  const lastView = useRef('');
+  const ndc = useMemo(() => new THREE.Vector3(), []);
+  useEffect(() => {
+    lastView.current = ''; // new labels: re-run the declutter on the next frame
+  }, [labels]);
+  useFrame(({ camera, size }) => {
+    const view = `${size.width}x${size.height}:${camera.matrixWorld.elements.join(',')}:${camera.projectionMatrix.elements.join(',')}`;
+    if (view === lastView.current) return;
+    lastView.current = view;
+    const rects: LabelRect[] = [];
+    for (const l of labels) {
+      const el = els.current.get(l.key);
+      if (!el) continue;
+      ndc.set(l.at.x, l.at.y, l.at.z).project(camera);
+      if (ndc.z < -1 || ndc.z > 1) continue; // behind the camera or past the far plane: drei hides it
+      const x = ((ndc.x + 1) / 2) * size.width;
+      const y = ((1 - ndc.y) / 2) * size.height;
+      const est = labelSizePx(l.text);
+      const w = el.offsetWidth || est.width;
+      const h = el.offsetHeight || est.height;
+      rects.push({ key: l.key, x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2, priority: l.priority });
+    }
+    const shown = declutter(rects);
+    for (const [key, el] of els.current) {
+      const v = shown.has(key) ? '' : 'hidden';
+      if (el.style.visibility !== v) el.style.visibility = v;
+    }
+  });
   return (
     <group>
-      {widths.map((l) => (
-        <Html key={l.key} position={[l.at.x, l.at.y, l.at.z]} center distanceFactor={factor}>
-          <div className="dim3d">{l.text}</div>
-        </Html>
-      ))}
-      {names.map((l) => (
+      {labels.map((l) => (
         <Html key={l.key} position={[l.at.x, l.at.y, l.at.z]} center>
-          <div className="dim3d">{l.text}</div>
+          <div
+            className="dim3d"
+            style={LABEL_STYLE}
+            ref={(el) => {
+              if (el) els.current.set(l.key, el);
+              else els.current.delete(l.key);
+            }}
+          >
+            {l.text}
+          </div>
         </Html>
       ))}
     </group>
