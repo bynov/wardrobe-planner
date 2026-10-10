@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeTemplate } from '../model/templates';
-import { decodeShare, encodeShare, MAX_INFLATED_BYTES, MAX_SHARE_HASH_CHARS, ShareTooLongError, shareUrl } from './share';
+import { decodeShare, encodeShare, MAX_INFLATED_BYTES, inflateCapped, MAX_SHARE_HASH_CHARS, ShareTooLongError, shareUrl } from './share';
 import { serializeProject } from './persist';
 
 /** What the `j=` fallback branch produces, built here independently of the module under test. */
@@ -63,8 +63,12 @@ describe('share encoding', () => {
       new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
 
     it('rejects an over-long hash without decoding it', async () => {
-      expect((await decodeShare('#p=' + 'A'.repeat(MAX_SHARE_HASH_CHARS))).ok).toBe(false);
-      expect((await decodeShare('#j=' + 'A'.repeat(MAX_SHARE_HASH_CHARS))).ok).toBe(false);
+      // Otherwise valid (whitespace-padded JSON): only the length check can make this fail.
+      const padded = serializeProject(defaultProject()) + ' '.repeat(MAX_SHARE_HASH_CHARS);
+      const hash = '#j=' + base64url(padded);
+      expect(hash.length).toBeGreaterThan(MAX_SHARE_HASH_CHARS);
+      expect((await decodeShare(hash)).ok).toBe(false);
+      expect((await decodeShare('#j=' + base64url(serializeProject(defaultProject()) + ' '.repeat(100)))).ok).toBe(true);
     });
 
     it('stops inflating a deflate bomb once it passes the cap', async () => {
@@ -76,10 +80,30 @@ describe('share encoding', () => {
       expect(r.ok).toBe(false);
     });
 
+    it('cancels the stream as soon as the cap is passed, not after reading it all', async () => {
+      const bomb = await deflate(new Uint8Array(2 * MAX_INFLATED_BYTES));
+      const proto = ReadableStreamDefaultReader.prototype;
+      const cancel = vi.spyOn(proto, 'cancel');
+      const read = vi.spyOn(proto, 'read');
+      try {
+        const out = await inflateCapped(bomb as Uint8Array<ArrayBuffer>, new DecompressionStream('deflate-raw'));
+        expect(out).toBeNull();
+        expect(cancel).toHaveBeenCalledTimes(1);
+        expect(read.mock.calls.length).toBeGreaterThan(0);
+      } finally {
+        cancel.mockRestore();
+        read.mockRestore();
+      }
+    });
+
     it('refuses to encode a project whose link would be too long', async () => {
       const p = defaultProject();
-      // incompressible name: random bytes as hex
-      const noise = Array.from({ length: 40_000 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+      // Hard to compress: base36 digits from a fixed LCG, so the test is deterministic.
+      let seed = 12345;
+      const noise = Array.from({ length: 60_000 }, () => {
+        seed = (seed * 16807) % 2147483647;
+        return Math.floor((seed / 2147483647) * 36).toString(36);
+      }).join('');
       await expect(encodeShare({ ...p, name: noise })).rejects.toThrow(ShareTooLongError);
       await expect(encodeShare({ ...p, name: noise })).rejects.toThrow('error.shareTooLong');
     });

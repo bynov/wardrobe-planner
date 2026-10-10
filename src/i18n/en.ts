@@ -252,7 +252,7 @@ export const en = {
   'error.badShape': 'File does not contain a wardrobe project',
   'error.failsValidation': 'Project fails validation: {reason}',
   'error.badShareLink': 'The link does not contain a project',
-  'error.shareTooLong': 'The design is too large to share as a link — save it as a JSON file instead.',
+  'error.shareTooLong': 'The design is too large to share as a link — save it as a JSON file instead',
   // toasts
   'toast.imported': 'Project imported',
   'toast.importFailed': 'Import failed: {error}',

@@ -67,14 +67,13 @@ async function pump(
 export async function encodeShare(p: Project): Promise<string> {
   const bytes = new TextEncoder().encode(serializeProject(p));
   const CS = compression();
-  if (!CS) return SHARE_PLAIN + toBase64Url(bytes);
-  const body = SHARE_DEFLATE + toBase64Url(await pump(bytes, new CS(FORMAT)));
+  const body = CS ? SHARE_DEFLATE + toBase64Url(await pump(bytes, new CS(FORMAT))) : SHARE_PLAIN + toBase64Url(bytes);
   if (body.length > MAX_SHARE_HASH_CHARS) throw new ShareTooLongError();
   return body;
 }
 
 /** Inflates chunk by chunk and cancels as soon as the total passes the cap; null means too big. */
-async function inflateCapped(bytes: Uint8Array<ArrayBuffer>, ds: DecompressionStream): Promise<Uint8Array | null> {
+export async function inflateCapped(bytes: Uint8Array<ArrayBuffer>, ds: DecompressionStream): Promise<Uint8Array | null> {
   const reader = new Blob([bytes]).stream().pipeThrough(ds).getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
