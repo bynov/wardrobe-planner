@@ -73,9 +73,9 @@ Dark theme and phone layout:
    be reached. The plan shows every rail as a dashed line, so the two read apart.
 7. Room / door / wardrobe settings (gap to ceiling, plinth, panel thickness) are in **Room** mode
    (on a phone: the projects sheet). The **mm | in** toggle (in the top bar on desktop, in the
-   **⋯** menu on a phone) switches every displayed length, including drawings, cut list and PDF;
+   **⋯** menu on a phone) switches every displayed length, including drawings, cut list, PDF and the lengths in error messages;
    files stay in millimetres. The language (EN · RU) is in the **⋯** menu.
-8. **3D** mode to orbit around the room; **Cut list** mode for the parts; **Export PDF** for the
+8. **3D** mode to orbit around the room; **Cut list** mode for the parts (sizes are nominal; a note above the table, and on the PDF page, says so); **Export PDF** for the
    scheme (the 3D picture is rendered off-screen if you never opened 3D mode).
 9. **Share link** (on a phone: in the **⋯** menu) copies a URL with the whole project packed into the fragment — nothing is
    stored on a server. **Export JSON** / **Import JSON** move a project between browsers; an
