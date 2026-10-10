@@ -39,6 +39,7 @@ export const ru: Record<MessageKey, string> = {
   'ui.cutlistTitle': 'Список деталей',
   'ui.cutlistSummary': '{parts} деталей · {sizes} размеров · метки совпадают с чертежами',
   'ui.cutlistExcludes': 'Короба ящиков, направляющие и фурнитура не включены.',
+  'ui.cutlistDisclaimer': 'Размеры номинальные и не гарантируются. Перед раскроем сверьте каждый размер с помещением и материалом; учтите толщину плит, кромку и монтажные допуски.',
   'ui.showingLastValid': 'Показан последний корректный проект — ошибок проверки: {n}',
   'ui.moreErrors': 'ещё {n}…',
   'ui.lessErrors': 'свернуть',
@@ -223,6 +224,7 @@ export const ru: Record<MessageKey, string> = {
   'pdf.cutListCont': 'Раскрой (страница {n})',
   'pdf.legend': 'Расположение: {list}',
   'pdf.total': 'Всего деталей: {n}',
+  'pdf.cutlistDisclaimer': 'Размеры номинальные и не гарантируются — перед раскроем сверьте каждый размер с помещением и материалом.',
   'pdf.snapshotFailed': '(не удалось сделать снимок 3D)',
   'pdf.snapshotMissing': '(загляните один раз на вкладку 3D, чтобы снимок попал в PDF)',
   // validation

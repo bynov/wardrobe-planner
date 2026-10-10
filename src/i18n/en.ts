@@ -37,6 +37,7 @@ export const en = {
   'ui.cutlistTitle': 'Cut list',
   'ui.cutlistSummary': '{parts} parts · {sizes} sizes · tags match the drawings',
   'ui.cutlistExcludes': 'Drawer boxes, runners and hardware are not included.',
+  'ui.cutlistDisclaimer': 'Sizes are nominal and not guaranteed. Check every dimension against the room and your material before cutting; allow for panel thickness, edge banding and fitting tolerances.',
   'ui.showingLastValid': 'Showing the last valid design — validation errors: {n}',
   'ui.moreErrors': '{n} more…',
   'ui.lessErrors': 'show fewer',
@@ -219,6 +220,7 @@ export const en = {
   'pdf.cutListCont': 'Cut list (page {n})',
   'pdf.legend': 'Locations: {list}',
   'pdf.total': 'Total parts: {n}',
+  'pdf.cutlistDisclaimer': 'Sizes are nominal and not guaranteed — check every dimension against the room and your material before cutting.',
   'pdf.snapshotFailed': '(3D snapshot failed)',
   'pdf.snapshotMissing': '(visit the 3D tab once to include a snapshot)',
   // validation

@@ -18,6 +18,7 @@ export function CutListTable() {
       <div className="cutlist-head">
         <p className="meta">{t('ui.cutlistSummary', { parts: total, sizes: rows.length })}</p>
         <p className="meta">{t('ui.cutlistExcludes')}</p>
+        <p className="note">{t('ui.cutlistDisclaimer')}</p>
       </div>
       <div className="card tablewrap">
         <table>

@@ -138,10 +138,11 @@ a.menu-item { text-decoration: none; }
 .dim3d { background: color-mix(in oklch, var(--surface) 88%, transparent); color: var(--ink); padding: 1px 4px; border-radius: 3px; font-size: 12px; white-space: nowrap; }
 
 /* ---- cut list ---- */
-.cutlist-page { max-width: 1100px; margin: 0 auto; padding: 28px; }
+.cutlist-page { max-width: 1100px; width: 100%; box-sizing: border-box; margin: 0 auto; padding: 28px; }
 .cutlist-page h2 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
 .cutlist-page .cutlist-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; margin-bottom: 16px; }
 .cutlist-page .cutlist-head p { margin: 0; }
+.cutlist-page .note { flex-basis: 100%; box-sizing: border-box; font-size: 13px; color: var(--ink2); padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 6px; max-width: 70ch; }
 .cutlist-page .card { overflow-x: auto; }
 .cutlist-page table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cutlist-page th { padding: 11px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); background: var(--surface2); }
