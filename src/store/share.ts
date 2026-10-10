@@ -15,6 +15,18 @@ const SHARE_PLAIN = 'j=';
 /** deflate without the zlib/gzip wrapper: the smallest of the three for a payload this size. */
 const FORMAT = 'deflate-raw';
 
+/** A real link is about 1 kB; browsers and chat apps keep URLs well under this. */
+export const MAX_SHARE_HASH_CHARS = 32_000;
+/** A project is tens of kB of JSON; anything inflating past this is a bomb or not a project. */
+export const MAX_INFLATED_BYTES = 1_000_000;
+
+/** `encodeShare` result too long for a link; the message is the i18n key for the toast. */
+export class ShareTooLongError extends Error {
+  constructor() {
+    super('error.shareTooLong');
+  }
+}
+
 const stripHash = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash);
 
 /** True for a hash this module can try to read, so other hashes (a plain anchor) are left alone. */
@@ -56,21 +68,52 @@ export async function encodeShare(p: Project): Promise<string> {
   const bytes = new TextEncoder().encode(serializeProject(p));
   const CS = compression();
   if (!CS) return SHARE_PLAIN + toBase64Url(bytes);
-  return SHARE_DEFLATE + toBase64Url(await pump(bytes, new CS(FORMAT)));
+  const body = SHARE_DEFLATE + toBase64Url(await pump(bytes, new CS(FORMAT)));
+  if (body.length > MAX_SHARE_HASH_CHARS) throw new ShareTooLongError();
+  return body;
+}
+
+/** Inflates chunk by chunk and cancels as soon as the total passes the cap; null means too big. */
+async function inflateCapped(bytes: Uint8Array<ArrayBuffer>, ds: DecompressionStream): Promise<Uint8Array | null> {
+  const reader = new Blob([bytes]).stream().pipeThrough(ds).getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > MAX_INFLATED_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.length;
+  }
+  return out;
 }
 
 /** Reads a hash written by `encodeShare` (with or without its `#`). Never throws. */
 export async function decodeShare(hash: string): Promise<ParseResult> {
   const body = stripHash(hash);
   const bad: ParseResult = { ok: false, error: msg('error.badShareLink') };
+  if (body.length > MAX_SHARE_HASH_CHARS) return bad;
   try {
     let text: string;
     if (body.startsWith(SHARE_DEFLATE)) {
       const DS = decompression();
       if (!DS) return bad;
-      text = new TextDecoder().decode(await pump(fromBase64Url(body.slice(SHARE_DEFLATE.length)), new DS(FORMAT)));
+      const inflated = await inflateCapped(fromBase64Url(body.slice(SHARE_DEFLATE.length)), new DS(FORMAT));
+      if (!inflated) return bad;
+      text = new TextDecoder().decode(inflated);
     } else if (body.startsWith(SHARE_PLAIN)) {
-      text = new TextDecoder().decode(fromBase64Url(body.slice(SHARE_PLAIN.length)));
+      const bytes = fromBase64Url(body.slice(SHARE_PLAIN.length));
+      if (bytes.length > MAX_INFLATED_BYTES) return bad;
+      text = new TextDecoder().decode(bytes);
     } else {
       return bad;
     }

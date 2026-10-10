@@ -256,6 +256,7 @@ export const ru: Record<MessageKey, string> = {
   'error.badShape': 'Файл не содержит проект гардеробной',
   'error.failsValidation': 'Проект не проходит проверку: {reason}',
   'error.badShareLink': 'Ссылка не содержит проект',
+  'error.shareTooLong': 'Проект слишком велик для ссылки — сохраните его как JSON-файл.',
   // toasts
   'toast.imported': 'Проект импортирован',
   'toast.importFailed': 'Ошибка импорта: {error}',

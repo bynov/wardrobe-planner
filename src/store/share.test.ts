@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProject } from '../model/defaults';
 import { makeTemplate } from '../model/templates';
-import { decodeShare, encodeShare, shareUrl } from './share';
+import { decodeShare, encodeShare, MAX_INFLATED_BYTES, MAX_SHARE_HASH_CHARS, ShareTooLongError, shareUrl } from './share';
 import { serializeProject } from './persist';
 
 /** What the `j=` fallback branch produces, built here independently of the module under test. */
@@ -54,5 +54,34 @@ describe('share encoding', () => {
     expect(shareUrl({ origin: 'https://walkinplanner.com', pathname: '/app/' }, 'p=AAA')).toBe(
       'https://walkinplanner.com/app/#p=AAA',
     );
+  });
+
+  describe('size guards', () => {
+    const toBytesB64 = (bytes: Uint8Array): string =>
+      btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const deflate = async (bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array> =>
+      new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+
+    it('rejects an over-long hash without decoding it', async () => {
+      expect((await decodeShare('#p=' + 'A'.repeat(MAX_SHARE_HASH_CHARS))).ok).toBe(false);
+      expect((await decodeShare('#j=' + 'A'.repeat(MAX_SHARE_HASH_CHARS))).ok).toBe(false);
+    });
+
+    it('stops inflating a deflate bomb once it passes the cap', async () => {
+      // A valid project padded with whitespace: without the cap this would decode to ok: true.
+      const padded = serializeProject(defaultProject()) + ' '.repeat(2 * MAX_INFLATED_BYTES);
+      const bomb = await deflate(new TextEncoder().encode(padded));
+      expect(bomb.length).toBeLessThan(MAX_SHARE_HASH_CHARS); // small enough to pass the hash cap
+      const r = await decodeShare('#p=' + toBytesB64(bomb));
+      expect(r.ok).toBe(false);
+    });
+
+    it('refuses to encode a project whose link would be too long', async () => {
+      const p = defaultProject();
+      // incompressible name: random bytes as hex
+      const noise = Array.from({ length: 40_000 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+      await expect(encodeShare({ ...p, name: noise })).rejects.toThrow(ShareTooLongError);
+      await expect(encodeShare({ ...p, name: noise })).rejects.toThrow('error.shareTooLong');
+    });
   });
 });
