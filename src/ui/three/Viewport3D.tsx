@@ -16,7 +16,7 @@ import { useMediaQuery } from '../useMediaQuery';
 import { Segmented, Switch } from '../controls';
 import { PlanEditor } from '../PlanEditor';
 import { LIGHT, sceneColors } from './colors';
-import { formatLen } from '../../units';
+import { labelDistanceFactor, wallLabels, widthLabels } from './dimLabels';
 import type { MessageKey } from '../../i18n';
 
 /**
@@ -55,6 +55,35 @@ const cameraTarget = (room: Room): THREE.Vector3 => new THREE.Vector3(room.width
 /** Camera presets: the default corner view, a straight look at one wall's inside face, or the plan from above. */
 export type ViewPreset = 'iso' | 'top' | Wall;
 export const VIEW_PRESETS: ViewPreset[] = ['iso', 'back', 'left', 'right', 'top'];
+
+/**
+ * The dimension callouts. Width callouts are world-sized so they shrink with the room instead of
+ * piling up as it recedes (see `dimLabels.ts`); wall names keep a fixed pixel size — they float at
+ * the ceiling, well clear of the floor-level widths, and world-sized they would balloon in the top
+ * view, where the ceiling is nearest the camera.
+ */
+function DimLabels({ project }: { project: Project }) {
+  const height = useThree((s) => s.size.height);
+  const { t, lang, units } = useT();
+  const widths = useMemo(() => widthLabels(project, layoutAll(project), units), [project, units]);
+  // `t` is a fresh closure every render; `lang` is all it reads here.
+  const names = useMemo(() => wallLabels(project, (w) => t(`wall.${w}` as MessageKey)), [project, lang]);
+  const factor = labelDistanceFactor(height);
+  return (
+    <group>
+      {widths.map((l) => (
+        <Html key={l.key} position={[l.at.x, l.at.y, l.at.z]} center distanceFactor={factor}>
+          <div className="dim3d">{l.text}</div>
+        </Html>
+      ))}
+      {names.map((l) => (
+        <Html key={l.key} position={[l.at.x, l.at.y, l.at.z]} center>
+          <div className="dim3d">{l.text}</div>
+        </Html>
+      ))}
+    </group>
+  );
+}
 
 const FIT_MARGIN = 1.05; // breathing room around the fitted room
 const WALL_FIT_MARGIN = 1.15;
@@ -164,11 +193,10 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
   // The PDF picture must not change with the screen theme.
   const colors = snapshotOnly ? LIGHT : sceneColors(theme, prefersDark);
   const [view, setView] = useState<{ preset: ViewPreset; nonce: number }>({ preset: 'iso', nonce: 0 });
-  const { t, units } = useT();
+  const { t } = useT();
   const { room } = project;
 
   const parts = useMemo(() => buildParts(project), [project]);
-  const columns = useMemo(() => layoutAll(project), [project]);
   /** Wall-local +z in world space: the direction parts explode away from their wall. */
   const explodeDirs = useMemo(() => {
     const out = {} as Record<Wall, Vec3>;
@@ -193,29 +221,7 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
         {parts.map((p) => (
           <PartMesh key={p.id} part={p} explode={explode} explodeDir={explodeDirs[p.wall]} colors={colors} faded={fadedWalls.has(p.wall)} />
         ))}
-        {showDims && (
-          <group>
-            {columns.map((L) => {
-              if (L.kind !== 'unit') return null;
-              const frame = wallFrame(room, L.wall);
-              const p = localToWorld(frame, v3((L.s0 + L.s1) / 2, -60, L.depth + 80));
-              return (
-                <Html key={`${L.wall}-${L.columnIndex}`} position={[p.x, p.y, p.z]} center>
-                  <div className="dim3d">{formatLen(Math.round(L.width), units)}</div>
-                </Html>
-              );
-            })}
-            {WALLS.filter((w) => project.wardrobe.walls[w].enabled).map((w) => {
-              const frame = wallFrame(room, w);
-              const p = localToWorld(frame, v3(wallLength(room, w) / 2, room.height + 80, project.wardrobe.walls[w].depth / 2));
-              return (
-                <Html key={w} position={[p.x, p.y, p.z]} center>
-                  <div className="dim3d">{t(`wall.${w}` as MessageKey)}</div>
-                </Html>
-              );
-            })}
-          </group>
-        )}
+        {showDims && <DimLabels project={project} />}
         {!snapshotOnly && <OrbitControls makeDefault target={[target.x, target.y, target.z]} />}
         {onFirstFrame && <FirstFrame onFirstFrame={onFirstFrame} />}
       </Canvas>
