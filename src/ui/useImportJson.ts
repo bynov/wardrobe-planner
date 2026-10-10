@@ -12,13 +12,13 @@ export function useImportJson() {
 
   const load = async (file: File | undefined) => {
     if (!file) return;
-    const { toast, createProject, ui: { lang } } = useStore.getState();
+    const { toast, createProject, ui: { lang, units } } = useStore.getState();
     // A shape-valid file is always loaded, even when it fails validation: the design tab lists the
     // errors and the user fixes them there — rejecting the file outright left them nothing to edit.
     // It lands as a new project: overwriting the open one would let autosave bury it.
     const r = parseProjectShape(await file.text());
     if (!r.ok) {
-      toast({ key: 'toast.importFailed', params: { error: parseErrorText(lang, r) } });
+      toast({ key: 'toast.importFailed', params: { error: parseErrorText(lang, r, units) } });
       return;
     }
     clearSnapshot();

@@ -18,6 +18,6 @@ export function useT(): {
     units,
     u: t(lang, `ui.units.${units}` as MessageKey),
     t: (key, params) => t(lang, key, params),
-    tmDeep: (m) => tmDeep(lang, m),
+    tmDeep: (m) => tmDeep(lang, m, units),
   };
 }

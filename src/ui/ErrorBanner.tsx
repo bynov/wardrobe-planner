@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { tmDeep, type Lang } from '../i18n';
+import type { Units } from '../units';
 import type { Project, ValidationError, Wall } from '../model/types';
 import { useStore, type Selection } from '../store/store';
 import { useT } from './useT';
@@ -18,10 +19,10 @@ export function errorTarget(p: Project, path: string): Partial<Selection> | null
 }
 
 /** One entry per distinct rendered text; repeats collapse into a ×N count. */
-export function dedupeErrors(lang: Lang, errors: ValidationError[]): { text: string; path: string; count: number }[] {
+export function dedupeErrors(lang: Lang, units: Units, errors: ValidationError[]): { text: string; path: string; count: number }[] {
   const out = new Map<string, { text: string; path: string; count: number }>();
   for (const e of errors) {
-    const text = tmDeep(lang, e.message);
+    const text = tmDeep(lang, e.message, units);
     const seen = out.get(text);
     if (seen) seen.count += 1;
     else out.set(text, { text, path: e.path, count: 1 });
@@ -37,9 +38,9 @@ export function ErrorBanner() {
   const project = useStore((s) => s.project);
   const errors = useStore((s) => s.errors);
   const select = useStore((s) => s.select);
-  const { lang, t } = useT();
+  const { lang, units, t } = useT();
   const [expanded, setExpanded] = useState(false);
-  const all = dedupeErrors(lang, errors);
+  const all = dedupeErrors(lang, units, errors);
   if (all.length === 0) return null;
   const collapsible = all.length > MAX_ERRORS_SHOWN;
   const hidden = collapsible && !expanded ? all.length - MAX_ERRORS_SHOWN : 0;

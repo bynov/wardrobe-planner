@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultProject } from './defaults';
 import { MAX_ROOM_DIM, validate } from './validate';
 import { MAX_DRAWER_FRONT } from '../geometry/layout';
-import { tmDeep } from '../i18n';
+import { len, tmDeep } from '../i18n';
 import { makeUnit, makeZone } from './factory';
 import type { Zone } from './types';
 
@@ -48,7 +48,7 @@ describe('validate', () => {
     q.wardrobe.walls.back.segments[0].push(makeUnit(600, [makeZone('open')]));
     const err = validate(q).find((e) => e.message.key === 'error.segmentOverflow');
     expect(err).toBeTruthy();
-    expect(err!.message.params?.n).toBe(600);
+    expect(err!.message.params?.n).toEqual(len(600));
   });
 
   it('error.columnWidth: unit width 100', () => {
@@ -179,7 +179,7 @@ describe('validate', () => {
     if (unit.kind === 'unit') unit.zones = [makeZone('drawers', null, 2)];
     const err = validate(q).find((e) => e.message.key === 'error.drawerTooTall');
     expect(err).toBeTruthy();
-    expect(err!.message.params?.n).toBe(MAX_DRAWER_FRONT);
+    expect(err!.message.params?.n).toEqual(len(MAX_DRAWER_FRONT));
     // ...and a sane drawer stack does not trip it
     if (unit.kind === 'unit') unit.zones = [makeZone('drawers', 600, 3), makeZone('hanging')];
     expect(validate(q).some((e) => e.message.key === 'error.drawerTooTall')).toBe(false);
@@ -311,8 +311,9 @@ describe('validate: a gap\'s wall-mounted rail', () => {
     const low = err(399);
     expect(low).toBeTruthy();
     expect(low!.path).toBe('walls.back.segments.0.0');
-    expect(low!.message.params).toMatchObject({ wall: 'wall.back', unit: 1, min: 400, max: 2320 });
-    expect(tmDeep('en', low!.message)).toBe('Back wall, gap 1: rail height must be between 400 and 2320 mm');
+    expect(low!.message.params).toMatchObject({ wall: 'wall.back', unit: 1, min: len(400), max: len(2320) });
+    expect(tmDeep('en', low!.message)).toBe('Back wall, gap 1: rail height must be between 400 mm and 2320 mm');
+    expect(tmDeep('en', low!.message, 'in')).toBe('Back wall, gap 1: rail height must be between 15 3/4″ and 91 5/16″');
     expect(err(2321)).toBeTruthy();
   });
 });

@@ -1,11 +1,15 @@
 import { WALLS, doorArc, doorSpan, localToWorld, minUnitWidth, segmentUsed, wallFrame, wallLength, wallSegments } from '../geometry/frames';
 import { MAX_DRAWER_FRONT, MIN_DRAWER_FRONT, MIN_SHOE_PITCH, MIN_ZONE_HEIGHT, ROD_CLEARANCE, drawerFrontHeight, heights, layoutAll, layoutUnit, zoneHeights } from '../geometry/layout';
 import type { MessageKey, Params } from '../i18n';
-import { msg } from '../i18n';
+import { len, msg } from '../i18n';
 import { v3 } from '../geometry/vec';
 import type { Project, ValidationError } from './types';
 
 export const MAX_ROOM_DIM = 20000;
+/** Smallest depth a wall's units may have. */
+export const MIN_WALL_DEPTH = 200;
+/** Smallest panel and back thickness. */
+export const MIN_THICKNESS = 1;
 
 /** How far a gap's wall-mounted rail must stay above the plinth and below the run's top edge. */
 export const GAP_RAIL_FLOOR_CLEARANCE = 300;
@@ -54,8 +58,8 @@ export function validate(p: Project): ValidationError[] {
   const push = (path: string, key: MessageKey, params?: Params) => errs.push({ path, message: msg(key, params) });
   const w = p.wardrobe, t = w.panelThickness;
   if (!(p.room.width > 0 && p.room.depth > 0 && p.room.height > 0)) push('room', 'error.roomDims');
-  if (p.room.width > MAX_ROOM_DIM || p.room.depth > MAX_ROOM_DIM || p.room.height > MAX_ROOM_DIM) push('room', 'error.roomTooBig');
-  if (!(t >= 1 && w.backThickness >= 1)) push('wardrobe.panelThickness', 'error.thickness');
+  if (p.room.width > MAX_ROOM_DIM || p.room.depth > MAX_ROOM_DIM || p.room.height > MAX_ROOM_DIM) push('room', 'error.roomTooBig', { n: len(MAX_ROOM_DIM) });
+  if (!(t >= MIN_THICKNESS && w.backThickness >= MIN_THICKNESS)) push('wardrobe.panelThickness', 'error.thickness', { n: len(MIN_THICKNESS) });
   if (w.plinthHeight < 0 || w.topGap < 0 || w.doorMargin < 0) push('wardrobe', 'error.negative');
   if (p.room.height < w.plinthHeight + w.topGap + 2 * t + MIN_ZONE_HEIGHT) push('room.height', 'error.roomHeight');
   if (!(p.door.width > 0)) push('door.width', 'error.doorWidth');
@@ -66,14 +70,14 @@ export function validate(p: Project): ValidationError[] {
   for (const wall of WALLS) {
     const plan = w.walls[wall];
     const W = { wall: `wall.${wall}` };
-    if (plan.depth < 200) push(`walls.${wall}.depth`, 'error.wallDepth', W);
+    if (plan.depth < MIN_WALL_DEPTH) push(`walls.${wall}.depth`, 'error.wallDepth', { ...W, n: len(MIN_WALL_DEPTH) });
     const segs = wallSegments(p, wall);
     if (plan.enabled) {
       segs.forEach((seg) => {
         const over = segmentUsed(p, seg) - (seg.s1 - seg.s0);
         // Only a door wall is split in two, so only there does a segment number mean anything.
         const segment = wall === doorWall ? ` #${seg.index + 1}` : '';
-        if (over > 0 && plan.segments[seg.index].length > 0) push(`walls.${wall}.segments.${seg.index}`, 'error.segmentOverflow', { ...W, segment, n: Math.round(over) });
+        if (over > 0 && plan.segments[seg.index].length > 0) push(`walls.${wall}.segments.${seg.index}`, 'error.segmentOverflow', { ...W, segment, n: len(Math.round(over)) });
       });
     }
     plan.segments.forEach((cols, si) => cols.forEach((c, ci) => {
@@ -87,34 +91,34 @@ export function validate(p: Project): ValidationError[] {
         if (c.rail) {
           const min = w.plinthHeight + GAP_RAIL_FLOOR_CLEARANCE;
           const max = H.topY - GAP_RAIL_TOP_CLEARANCE;
-          if (!(c.rail.height >= min && c.rail.height <= max)) push(path, 'error.gapRailHeight', { ...U, min, max });
+          if (!(c.rail.height >= min && c.rail.height <= max)) push(path, 'error.gapRailHeight', { ...U, min: len(min), max: len(max) });
         }
         return;
       }
-      if (c.width < minUnitWidth(w)) push(path, 'error.columnWidth', { ...U, n: minUnitWidth(w) });
+      if (c.width < minUnitWidth(w)) push(path, 'error.columnWidth', { ...U, n: len(minUnitWidth(w)) });
       if (c.zones.length === 0) { push(path, 'error.noZones', U); return; }
       const { heights: zh, leftover } = zoneHeights(c, H.interiorHeight, t);
       // A pinned rail is checked against absolute Ys, so it borrows the real layout — only for the
       // units that pin one, since every other unit's zones need nothing but their heights.
       const zls = c.zones.some((z) => z.rod) ? layoutUnit(p, wall, si as 0 | 1, ci, c, 0).zones : null;
-      if (leftover < 0) push(path, 'error.zonesOverflow', { ...U, n: Math.round(-leftover) });
+      if (leftover < 0) push(path, 'error.zonesOverflow', { ...U, n: len(Math.round(-leftover)) });
       c.zones.forEach((z, zi) => {
         const zp = `${path}.zones.${zi}`;
-        if (zh[zi] < MIN_ZONE_HEIGHT) push(zp, 'error.zoneHeight', { ...U, n: MIN_ZONE_HEIGHT });
+        if (zh[zi] < MIN_ZONE_HEIGHT) push(zp, 'error.zoneHeight', { ...U, n: len(MIN_ZONE_HEIGHT) });
         if ((z.type === 'shelves' || z.type === 'shoes') && z.count < 1) push(zp, 'error.shelfCount', U);
         // Only worth checking once there is at least one board to space out.
-        if (z.type === 'shoes' && z.count >= 1 && zh[zi] / z.count < MIN_SHOE_PITCH) push(zp, 'error.shoePitch', { ...U, n: MIN_SHOE_PITCH });
+        if (z.type === 'shoes' && z.count >= 1 && zh[zi] / z.count < MIN_SHOE_PITCH) push(zp, 'error.shoePitch', { ...U, n: len(MIN_SHOE_PITCH) });
         // A negative offset always lands past one end, so it needs no rule of its own.
         if (z.type === 'hanging' && z.rod && zls) {
           const { rodY, yBot, yTop } = zls[zi];
-          if (rodY === null || rodY < yBot + ROD_CLEARANCE || rodY > yTop - ROD_CLEARANCE) push(zp, 'error.rodOutOfZone', U);
+          if (rodY === null || rodY < yBot + ROD_CLEARANCE || rodY > yTop - ROD_CLEARANCE) push(zp, 'error.rodOutOfZone', { ...U, n: len(ROD_CLEARANCE) });
         }
         if (z.type === 'drawers') {
           if (z.count < 1) push(zp, 'error.drawerCount', U);
           else {
             const front = drawerFrontHeight(zh[zi], z.count);
-            if (front < MIN_DRAWER_FRONT) push(zp, 'error.drawerHeight', { ...U, n: MIN_DRAWER_FRONT });
-            else if (Math.floor(front) > MAX_DRAWER_FRONT) push(zp, 'error.drawerTooTall', { ...U, n: MAX_DRAWER_FRONT });
+            if (front < MIN_DRAWER_FRONT) push(zp, 'error.drawerHeight', { ...U, n: len(MIN_DRAWER_FRONT) });
+            else if (Math.floor(front) > MAX_DRAWER_FRONT) push(zp, 'error.drawerTooTall', { ...U, n: len(MAX_DRAWER_FRONT) });
           }
         }
       });

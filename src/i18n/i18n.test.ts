@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { en } from './en';
 import { ru } from './ru';
-import { LANGS, detectLang, msg, t, tm } from './index';
+import { LANGS, detectLang, len, msg, t, tm, tmDeep } from './index';
 import { UNITS } from '../units';
 import { THEMES } from '../ui/theme';
 import { WALL_STATUS_KINDS } from '../ui/wallStatus';
@@ -26,6 +26,15 @@ describe('i18n', () => {
     expect(tm('ru', msg('ui.freeWidth', { n: 5 }))).toContain('5');
     expect(detectLang('ru-RU')).toBe('ru');
     expect(detectLang(undefined)).toBe('en');
+  });
+
+  it('renders a Len param in the display unit', () => {
+    const m = msg('error.segmentOverflow', { wall: 'wall.back', segment: '', n: len(600) });
+    expect(t('en', m.key, m.params)).toBe('wall.back: units exceed the available length by 600 mm');
+    expect(tm('en', m, 'in')).toBe('wall.back: units exceed the available length by 23 5/8″');
+    expect(tmDeep('en', m)).toBe('Back wall: units exceed the available length by 600 mm');
+    expect(tmDeep('en', m, 'in')).toBe('Back wall: units exceed the available length by 23 5/8″');
+    expect(tmDeep('ru', m, 'in')).toContain('23 5/8″');
   });
 
   // Each of these is looked up by building the key from a union value and casting, so a gap
