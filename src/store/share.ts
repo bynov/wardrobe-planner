@@ -66,6 +66,7 @@ async function pump(
 /** The hash body of a link that opens `p`: prefix + base64url payload, no leading `#`. */
 export async function encodeShare(p: Project): Promise<string> {
   const bytes = new TextEncoder().encode(serializeProject(p));
+  if (bytes.length > MAX_INFLATED_BYTES) throw new ShareTooLongError(); // the reader would refuse it
   const CS = compression();
   const body = CS ? SHARE_DEFLATE + toBase64Url(await pump(bytes, new CS(FORMAT))) : SHARE_PLAIN + toBase64Url(bytes);
   if (body.length > MAX_SHARE_HASH_CHARS) throw new ShareTooLongError();

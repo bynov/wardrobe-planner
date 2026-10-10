@@ -96,6 +96,12 @@ describe('share encoding', () => {
       }
     });
 
+    it('refuses to encode a project the reader would refuse to inflate', async () => {
+      // Compresses to a tiny hash, so only the inflated-size check can catch it.
+      const p = { ...defaultProject(), name: 'a'.repeat(MAX_INFLATED_BYTES) };
+      await expect(encodeShare(p)).rejects.toThrow(ShareTooLongError);
+    });
+
     it('refuses to encode a project whose link would be too long', async () => {
       const p = defaultProject();
       // Hard to compress: base36 digits from a fixed LCG, so the test is deterministic.
