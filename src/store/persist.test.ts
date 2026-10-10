@@ -19,7 +19,7 @@ import {
   serializeProject,
 } from './persist';
 import { defaultProject } from '../model/defaults';
-import { msg } from '../i18n';
+import { len, msg } from '../i18n';
 import { makeUnit, makeZone } from '../model/factory';
 import { layoutUnit } from '../geometry/layout';
 import { WALLS } from '../geometry/frames';
@@ -174,7 +174,7 @@ describe('parseErrorText', () => {
     expect(
       parseErrorText('en', {
         error: msg('error.failsValidation'),
-        reason: msg('error.columnWidth', { wall: 'wall.back', unit: 2, n: 136 }),
+        reason: msg('error.columnWidth', { wall: 'wall.back', unit: 2, n: len(136) }),
       }),
     ).toBe('Project fails validation: Back wall, unit 2: the unit is narrower than 136 mm');
     expect(parseErrorText('ru', { error: msg('error.notJson') })).toBe('Файл не является корректным JSON');

@@ -164,6 +164,10 @@ export function cutListColumns(lang: Lang, units: Units): [string, number][] {
 /** Right edge of the cut-list table — the last column may run up to here. */
 export const CUT_TABLE_MAX_X = W - M;
 
+/** Foot-line space kept free at the right for "Total parts: n", so the disclaimer never runs into it. */
+const CUT_TOTAL_RESERVED_W = 45;
+const CUT_DISCLAIMER_FONT_SIZE = 8;
+
 function cutListPages(doc: jsPDF, rows: CutRow[], lang: Lang, units: Units): void {
   const cols = cutListColumns(lang, units);
   const pages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
@@ -203,6 +207,12 @@ function cutListPages(doc: jsPDF, rows: CutRow[], lang: Lang, units: Units): voi
       locLines.forEach((ln, i) => doc.text(ln, cols[2][1], y + i * LOC_LINE_H));
       y += ROW_H;
     });
+    if (page === 0) {
+      // One line at the foot, same baseline as the total; a line that would wrap is cut to its first line.
+      doc.setFontSize(CUT_DISCLAIMER_FONT_SIZE);
+      const [line] = doc.splitTextToSize(t(lang, 'pdf.cutlistDisclaimer'), CUT_TABLE_MAX_X - M - CUT_TOTAL_RESERVED_W) as string[];
+      doc.text(line, M, H - M / 2);
+    }
   }
   const total = rows.reduce((s, r) => s + r.qty, 0);
   doc.setFontSize(9);

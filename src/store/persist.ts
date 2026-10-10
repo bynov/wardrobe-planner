@@ -1,4 +1,4 @@
-import { isTheme, type Theme } from '../ui/theme';
+import { isTheme, type Theme } from './theme';
 import { isLang, msg, t, tmDeep, type Lang, type Msg } from '../i18n';
 import { WALLS } from '../geometry/frames';
 import { defaultProject } from '../model/defaults';
@@ -136,10 +136,10 @@ export function parseProjectJson(text: string): ParseResult {
 }
 
 /** Renders a ParseResult's error (with its nested validation reason, if any) as text in `lang`. */
-export function parseErrorText(lang: Lang, r: { error: Msg; reason?: Msg }): string {
+export function parseErrorText(lang: Lang, r: { error: Msg; reason?: Msg }, units: Units = 'mm'): string {
   return r.reason
-    ? t(lang, r.error.key, { ...r.error.params, reason: tmDeep(lang, r.reason) })
-    : tmDeep(lang, r.error);
+    ? t(lang, r.error.key, { ...r.error.params, reason: tmDeep(lang, r.reason, units) })
+    : tmDeep(lang, r.error, units);
 }
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;

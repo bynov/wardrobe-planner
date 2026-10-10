@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store/store';
-import { encodeShare, shareUrl } from '../store/share';
+import { encodeShare, ShareTooLongError, shareUrl } from '../store/share';
 import { exportPdfBlob } from '../pdf/exportPdf';
 import { downloadBlob } from './download';
 import { takeSnapshot } from './three/offscreenSnapshot';
@@ -24,6 +24,10 @@ export function useExport() {
     try {
       url = shareUrl(window.location, await encodeShare(project));
     } catch (e) {
+      if (e instanceof ShareTooLongError) {
+        toast({ key: 'error.shareTooLong' });
+        return;
+      }
       // Compression or encoding gave way: say so rather than let the rejection vanish.
       toast({ key: 'toast.shareFailed', params: { error: e instanceof Error ? e.message : String(e) } });
       return;

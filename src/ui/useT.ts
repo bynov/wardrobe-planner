@@ -17,7 +17,7 @@ export function useT(): {
     lang,
     units,
     u: t(lang, `ui.units.${units}` as MessageKey),
-    t: (key, params) => t(lang, key, params),
-    tmDeep: (m) => tmDeep(lang, m),
+    t: (key, params) => t(lang, key, params, units),
+    tmDeep: (m) => tmDeep(lang, m, units),
   };
 }

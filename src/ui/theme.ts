@@ -1,11 +1,6 @@
-export type Theme = 'auto' | 'light' | 'dark';
+import type { Theme } from '../store/theme';
 
-export const THEMES: Theme[] = ['auto', 'light', 'dark'];
-
-export const isTheme = (v: unknown): v is Theme => THEMES.includes(v as Theme);
-
-/** The theme button's cycle: auto -> light -> dark -> auto. */
-export const nextTheme = (t: Theme): Theme => THEMES[(THEMES.indexOf(t) + 1) % THEMES.length];
+export { THEMES, isTheme, nextTheme, type Theme } from '../store/theme';
 
 /** Surface colours of the two themes, as in the `theme-color` metas of the HTML pages (tokens.css `--surface`). */
 export const THEME_COLOR_LIGHT = '#fefefd';

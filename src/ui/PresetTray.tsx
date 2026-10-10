@@ -10,10 +10,9 @@ import { Switch } from './controls';
 import { useToggleWall } from './useToggleWall';
 import { PresetGlyph } from './PresetGlyph';
 import { useT } from './useT';
+import { MIN_WALL_DEPTH } from '../model/validate';
 import { PHONE_QUERY, useMediaQuery } from './useMediaQuery';
 
-/** Smallest depth a wall's units may have; mirrors `error.wallDepth`. */
-const MIN_WALL_DEPTH = 200;
 const DEPTH_STEP = 10;
 
 /** The shelf of presets below the canvas: where the next unit goes, how much room is there, and the cards. */

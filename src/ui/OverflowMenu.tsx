@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Menu, MenuItem, Segmented } from './controls';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { useStore } from '../store/store';
@@ -26,6 +26,7 @@ export function OverflowMenu() {
   const phone = useMediaQuery(PHONE_QUERY);
   const [open, setOpen] = useState(false);
   const [help, setHelp] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const importJson = useImportJson();
   const run = (fn: () => void) => () => {
     setOpen(false);
@@ -46,7 +47,7 @@ export function OverflowMenu() {
         anchor="right"
         width={MENU_WIDTH}
         trigger={
-          <button type="button" className="icon" aria-label={t('ui.moreActions')} title={t('ui.moreActions')} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <button ref={triggerRef} type="button" className="icon" aria-label={t('ui.moreActions')} title={t('ui.moreActions')} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             ⋯
           </button>
         }
@@ -91,7 +92,15 @@ export function OverflowMenu() {
       </Menu>
       {/* outside the menu so it survives the menu closing */}
       <input {...importJson.inputProps} />
-      {help && <ShortcutsDialog onClose={() => setHelp(false)} />}
+      {help && (
+        <ShortcutsDialog
+          onClose={() => {
+            setHelp(false);
+            // the menu item that opened the dialog is gone by now, so hand focus back to the trigger
+            triggerRef.current?.focus();
+          }}
+        />
+      )}
     </>
   );
 }

@@ -39,7 +39,7 @@ export function MobileShell() {
         {/* Share, Redo, units, language and the JSON file actions: no room for them up here */}
         <OverflowMenu />
       </header>
-      {tab === 'design' && <HintBar />}
+      {tab === 'design' && <HintBar variant="phone" />}
       <main className="mbody">
         {tab === 'design' && (
           <div className={`mdesign${open ? ' open' : ''}`}>

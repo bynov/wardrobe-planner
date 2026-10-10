@@ -1,10 +1,10 @@
 import { leftOf, rightOf } from '../geometry/frames';
-import { msg } from '../i18n';
+import { msg, type Msg } from '../i18n';
 import type { Wall } from '../model/types';
 import { useStore } from '../store/store';
 
 /** How many `error.segmentOverflow` errors currently name one of `walls`. */
-const overflowsOn = (errors: { message: { key: string; params?: Record<string, string | number> } }[], walls: Wall[]): number =>
+const overflowsOn = (errors: { message: Msg }[], walls: Wall[]): number =>
   errors.filter((e) => e.message.key === 'error.segmentOverflow' && walls.some((w) => e.message.params?.wall === `wall.${w}`)).length;
 
 /**

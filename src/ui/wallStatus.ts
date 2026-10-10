@@ -1,7 +1,7 @@
 import { minUnitWidth, segmentFree, wallSegments } from '../geometry/frames';
-import { t, type Lang } from '../i18n';
+import { fmtLenParam, len, t, type Lang } from '../i18n';
 import type { Project, Wall } from '../model/types';
-import { formatLen, type Units } from '../units';
+import type { Units } from '../units';
 
 export const WALL_STATUS_KINDS = ['off', 'full', 'free', 'over'] as const;
 
@@ -30,8 +30,7 @@ export function wallStatus(p: Project, wall: Wall): WallStatus {
 
 /** A length the way the wall tabs show it: millimetres carry their unit name, inches their ″. */
 export function lenText(lang: Lang, mm: number, units: Units): string {
-  const n = formatLen(Math.round(mm), units, { suffix: true });
-  return units === 'mm' ? `${n} ${t(lang, 'ui.units.mm')}` : n;
+  return fmtLenParam(lang, len(Math.round(mm)), units);
 }
 
 export function wallStatusText(s: WallStatus, lang: Lang, units: Units): string {

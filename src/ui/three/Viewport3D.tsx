@@ -16,7 +16,7 @@ import { useMediaQuery } from '../useMediaQuery';
 import { Segmented, Switch } from '../controls';
 import { PlanEditor } from '../PlanEditor';
 import { LIGHT, sceneColors } from './colors';
-import { formatLen } from '../../units';
+import { LABEL_STYLE, declutter, labelSizePx, wallLabels, widthLabels, type LabelRect } from './dimLabels';
 import type { MessageKey } from '../../i18n';
 
 /**
@@ -55,6 +55,66 @@ const cameraTarget = (room: Room): THREE.Vector3 => new THREE.Vector3(room.width
 /** Camera presets: the default corner view, a straight look at one wall's inside face, or the plan from above. */
 export type ViewPreset = 'iso' | 'top' | Wall;
 export const VIEW_PRESETS: ViewPreset[] = ['iso', 'back', 'left', 'right', 'top'];
+
+/**
+ * The width and wall-name callouts, at a fixed pixel size. Whenever the camera or the canvas
+ * changes, their anchors are projected to the screen and `declutter` picks the ones that do not
+ * collide; the rest are hidden through their style, so moving the camera never re-renders React.
+ */
+function DimLabels({ project }: { project: Project }) {
+  const { t, lang, units } = useT();
+  const widths = useMemo(() => widthLabels(project, layoutAll(project), units), [project, units]);
+  // `t` is a fresh closure every render; `lang` is all it reads here.
+  const names = useMemo(() => wallLabels(project, (w) => t(`wall.${w}` as MessageKey)), [project, lang]);
+  const labels = useMemo(() => [...widths, ...names], [widths, names]);
+  const els = useRef(new Map<string, HTMLDivElement>());
+  const lastView = useRef('');
+  const ndc = useMemo(() => new THREE.Vector3(), []);
+  useEffect(() => {
+    lastView.current = ''; // new labels: re-run the declutter on the next frame
+  }, [labels]);
+  useFrame(({ camera, size }) => {
+    const view = `${size.width}x${size.height}:${camera.matrixWorld.elements.join(',')}:${camera.projectionMatrix.elements.join(',')}`;
+    if (view === lastView.current) return;
+    lastView.current = view;
+    const rects: LabelRect[] = [];
+    for (const l of labels) {
+      const el = els.current.get(l.key);
+      if (!el) continue;
+      ndc.set(l.at.x, l.at.y, l.at.z).project(camera);
+      if (ndc.z < -1 || ndc.z > 1) continue; // behind the camera or past the far plane: drei hides it
+      const x = ((ndc.x + 1) / 2) * size.width;
+      const y = ((1 - ndc.y) / 2) * size.height;
+      const est = labelSizePx(l.text);
+      const w = el.offsetWidth || est.width;
+      const h = el.offsetHeight || est.height;
+      rects.push({ key: l.key, x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2, priority: l.priority });
+    }
+    const shown = declutter(rects);
+    for (const [key, el] of els.current) {
+      const v = shown.has(key) ? '' : 'hidden';
+      if (el.style.visibility !== v) el.style.visibility = v;
+    }
+  });
+  return (
+    <group>
+      {labels.map((l) => (
+        <Html key={l.key} position={[l.at.x, l.at.y, l.at.z]} center>
+          <div
+            className="dim3d"
+            style={LABEL_STYLE}
+            ref={(el) => {
+              if (el) els.current.set(l.key, el);
+              else els.current.delete(l.key);
+            }}
+          >
+            {l.text}
+          </div>
+        </Html>
+      ))}
+    </group>
+  );
+}
 
 const FIT_MARGIN = 1.05; // breathing room around the fitted room
 const WALL_FIT_MARGIN = 1.15;
@@ -164,11 +224,10 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
   // The PDF picture must not change with the screen theme.
   const colors = snapshotOnly ? LIGHT : sceneColors(theme, prefersDark);
   const [view, setView] = useState<{ preset: ViewPreset; nonce: number }>({ preset: 'iso', nonce: 0 });
-  const { t, units } = useT();
+  const { t } = useT();
   const { room } = project;
 
   const parts = useMemo(() => buildParts(project), [project]);
-  const columns = useMemo(() => layoutAll(project), [project]);
   /** Wall-local +z in world space: the direction parts explode away from their wall. */
   const explodeDirs = useMemo(() => {
     const out = {} as Record<Wall, Vec3>;
@@ -193,29 +252,7 @@ export function Viewport3D({ project: projectProp, snapshotOnly = false, onFirst
         {parts.map((p) => (
           <PartMesh key={p.id} part={p} explode={explode} explodeDir={explodeDirs[p.wall]} colors={colors} faded={fadedWalls.has(p.wall)} />
         ))}
-        {showDims && (
-          <group>
-            {columns.map((L) => {
-              if (L.kind !== 'unit') return null;
-              const frame = wallFrame(room, L.wall);
-              const p = localToWorld(frame, v3((L.s0 + L.s1) / 2, -60, L.depth + 80));
-              return (
-                <Html key={`${L.wall}-${L.columnIndex}`} position={[p.x, p.y, p.z]} center>
-                  <div className="dim3d">{formatLen(Math.round(L.width), units)}</div>
-                </Html>
-              );
-            })}
-            {WALLS.filter((w) => project.wardrobe.walls[w].enabled).map((w) => {
-              const frame = wallFrame(room, w);
-              const p = localToWorld(frame, v3(wallLength(room, w) / 2, room.height + 80, project.wardrobe.walls[w].depth / 2));
-              return (
-                <Html key={w} position={[p.x, p.y, p.z]} center>
-                  <div className="dim3d">{t(`wall.${w}` as MessageKey)}</div>
-                </Html>
-              );
-            })}
-          </group>
-        )}
+        {showDims && <DimLabels project={project} />}
         {!snapshotOnly && <OrbitControls makeDefault target={[target.x, target.y, target.z]} />}
         {onFirstFrame && <FirstFrame onFirstFrame={onFirstFrame} />}
       </Canvas>

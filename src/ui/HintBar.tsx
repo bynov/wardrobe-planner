@@ -3,7 +3,10 @@ import { HINT_KEY } from '../store/projects';
 import { useStore } from '../store/store';
 import { useT } from './useT';
 
-const STEPS = ['ui.hint.step1', 'ui.hint.step2', 'ui.hint.step3'] as const;
+const STEPS = {
+  desktop: ['ui.hint.step1', 'ui.hint.step2', 'ui.hint.step3'],
+  phone: ['ui.hint.phone.step1', 'ui.hint.phone.step2', 'ui.hint.phone.step3'],
+} as const;
 
 /** Storage can be disabled outright, in which case the hint simply shows every time. */
 const wasDismissed = (): boolean => {
@@ -27,7 +30,7 @@ const remember = (): void => {
  * It shows on a first run only, goes for good once dismissed, and steps aside as soon as the user
  * has actually edited something (`past` is non-empty) — whichever comes first.
  */
-export function HintBar() {
+export function HintBar({ variant = 'desktop' }: { variant?: 'desktop' | 'phone' }) {
   const firstRun = useStore((s) => s.ui.firstRun);
   const edited = useStore((s) => s.past.length > 0);
   const [dismissed, setDismissed] = useState(wasDismissed);
@@ -36,7 +39,7 @@ export function HintBar() {
   if (!firstRun || edited || dismissed) return null;
   return (
     <div className="hintbar">
-      {STEPS.map((key, i) => (
+      {STEPS[variant].map((key, i) => (
         <span className="step" key={key}>
           <span className="step-n mono">{i + 1}</span>
           {t(key)}
