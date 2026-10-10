@@ -46,6 +46,9 @@ export const en = {
   'ui.hint.step1': 'Click a wall in the plan',
   'ui.hint.step2': 'Press + in the elevation to add a unit',
   'ui.hint.step3': 'Click a unit to edit it',
+  'ui.hint.phone.step1': 'Pick a wall from the chips',
+  'ui.hint.phone.step2': 'Tap + in the elevation to add a unit',
+  'ui.hint.phone.step3': 'Tap a unit to edit it',
   'ui.hint.dismiss': 'Got it',
   // forms
   'ui.section.room': 'Room, {u}',

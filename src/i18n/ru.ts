@@ -48,6 +48,9 @@ export const ru: Record<MessageKey, string> = {
   'ui.hint.step1': 'Кликните по стене на плане',
   'ui.hint.step2': 'Нажмите «+» на развёртке, чтобы добавить модуль',
   'ui.hint.step3': 'Кликните по модулю, чтобы его настроить',
+  'ui.hint.phone.step1': 'Выберите стену в списке выше',
+  'ui.hint.phone.step2': 'Коснитесь «+» на развёртке, чтобы добавить модуль',
+  'ui.hint.phone.step3': 'Коснитесь модуля, чтобы его настроить',
   'ui.hint.dismiss': 'Понятно',
   // forms
   'ui.section.room': 'Комната, {u}',
