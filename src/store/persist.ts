@@ -1,4 +1,4 @@
-import { isTheme, type Theme } from '../ui/theme';
+import { isTheme, type Theme } from './theme';
 import { isLang, msg, t, tmDeep, type Lang, type Msg } from '../i18n';
 import { WALLS } from '../geometry/frames';
 import { defaultProject } from '../model/defaults';

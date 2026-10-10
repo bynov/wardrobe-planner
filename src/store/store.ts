@@ -20,7 +20,7 @@ import {
   type ProjectMeta,
 } from './projects';
 import { detectUnits, type Units } from '../units';
-import type { Theme } from '../ui/theme';
+import type { Theme } from './theme';
 
 export type Tab = 'setup' | 'design' | '3d' | 'cutlist';
 
