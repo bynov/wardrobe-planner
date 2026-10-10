@@ -593,10 +593,10 @@ describe('wallElevation — shoe shelves', () => {
     lips.forEach((q, k) => expect(lowY(q)).toBeCloseTo(z.shoeShelves[k].yFront, 6));
   });
 
-  it('labels the zone "Shoes ×5" and keeps the label off the boards', () => {
-    expect(hasText(d, 'Shoes ×5')).toBe(true);
-    expect(hasText(wallElevation(p, 'back', 'ru'), 'Обувь ×5')).toBe(true);
-    const label = of(d, 'text').find((q) => q.text === 'Shoes ×5')!;
+  it('labels the zone "Shoes 900 ×5" and keeps the label off the boards', () => {
+    expect(hasText(d, 'Shoes 900 ×5')).toBe(true);
+    expect(hasText(wallElevation(p, 'back', 'ru'), 'Обувь 900 ×5')).toBe(true);
+    const label = of(d, 'text').find((q) => q.text === 'Shoes 900 ×5')!;
     expect(label.at.y).toBeGreaterThan(z.yBot);
     expect(label.at.y).toBeLessThan(z.yTop);
     for (const sh of z.shoeShelves) expect(label.at.y > sh.yFront && label.at.y < sh.yBack).toBe(false);

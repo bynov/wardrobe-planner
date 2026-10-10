@@ -255,7 +255,7 @@ function drawUnit(prims: Prim[], u: UnitLayout, p: Project, lang: Lang, s: numbe
     const band = zoneLabelBand(z, th);
     const labelY = band.y;
     const label = z.zone.type === 'shoes'
-      ? t(lang, 'drawing.shoes', { n: z.zone.count })
+      ? t(lang, 'drawing.shoes', { h: whole(z.height, units), n: z.zone.count })
       : t(lang, 'drawing.zone', { type: t(lang, `zone.${z.zone.type}`), n: whole(z.height, units) });
     const labelSize = s * 0.8;
     const labelPrim = text(v2(cx, labelY), label, labelSize, 'middle');

@@ -198,7 +198,7 @@ export const en = {
   'drawing.noWardrobe': 'no wardrobe',
   'drawing.wallSection': '{wall}',
   'drawing.zone': '{type} {n}',
-  'drawing.shoes': 'Shoes ×{n}',
+  'drawing.shoes': 'Shoes {h} ×{n}',
   'drawing.rodHeight': 'rail at {n}',
   'drawing.rodAcrossShort': '⟂ rail',
   // pdf

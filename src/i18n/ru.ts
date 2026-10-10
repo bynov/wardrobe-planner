@@ -202,7 +202,7 @@ export const ru: Record<MessageKey, string> = {
   'drawing.noWardrobe': 'нет гардероба',
   'drawing.wallSection': '{wall}',
   'drawing.zone': '{type} {n}',
-  'drawing.shoes': 'Обувь ×{n}',
+  'drawing.shoes': 'Обувь {h} ×{n}',
   'drawing.rodHeight': 'штанга на {n}',
   'drawing.rodAcrossShort': '⟂ штанга',
   // pdf
